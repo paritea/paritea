@@ -1,0 +1,24 @@
+name: Code Style - Ruff
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check:
+    name: Lint and check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install ruff
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: "--version"
+
+      - name: Lint code
+        run: ruff check
+
+      - name: Check formatting
+        run: ruff format --check --diff
