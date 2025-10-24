@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Union, Optional
+from typing import Union, Optional, Iterable
 
 import frozendict as fd
 
@@ -68,6 +68,9 @@ class PauliString(fd.frozendict[int, Pauli]):
                 product[e] = edge_result
 
         return PauliString(product)
+
+    def restrict(self, edge_indices: Iterable[int]) -> "PauliString":
+        return PauliString({idx: self[idx] for idx in edge_indices})
 
     def commutes(self, other: "PauliString") -> bool:
         for e in self.keys() & other.keys():
