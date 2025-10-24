@@ -28,6 +28,14 @@ class Pauli(StrEnum):
         else:
             raise AssertionError("Should never be reached!")
 
+    def flip(self) -> "Pauli":
+        if self == Pauli.X:
+            return Pauli.Z
+        elif self == Pauli.Z:
+            return Pauli.X
+        else:
+            return self
+
     def commutes(self, other: "Pauli") -> bool:
         return self == Pauli.I or other == Pauli.I or self == other
 

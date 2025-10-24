@@ -26,7 +26,7 @@ def from_pyzx(pyzx_graph: BaseGraph) -> Diagram:
             raise ValueError(f"Unsupported PyZX vertex type: {v_type}")
 
         v_phase = pyzx_graph.phase(v)
-        if v_phase != 0 and not isinstance(v_phase, Fraction):
+        if Fraction(v_phase, 1).denominator > 2:
             raise ValueError(f"Unsupported PyZX vertex phase: {v_phase} for vertex {v}")
 
         vertex_to_id[v] = diagram.add_node(NodeInfo(type=pyzx_v_type_to_node_type[v_type], phase=v_phase))
@@ -38,6 +38,6 @@ def from_pyzx(pyzx_graph: BaseGraph) -> Diagram:
         if e_type != PyZxEdgeType.SIMPLE:
             raise ValueError(f"Unsupported PyZX edge type: {e_type}")
 
-        diagram.add_edge(source, target, None)
+        diagram.add_edge(vertex_to_id[source], vertex_to_id[target], None)
 
     return diagram

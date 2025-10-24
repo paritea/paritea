@@ -1,6 +1,6 @@
 from enum import StrEnum
 from fractions import Fraction
-from typing import NamedTuple, Union, Literal
+from recordclass import RecordClass
 
 import rustworkx as rx
 
@@ -12,12 +12,12 @@ class NodeType(StrEnum):
     H = "H"  # H box
 
 
-class NodeInfo(NamedTuple):
+class NodeInfo(RecordClass):
     type: NodeType
-    phase: Union[Fraction, Literal[0]] = 0
+    phase: Fraction = Fraction(0, 1)
 
 
-class Diagram(rx.PyGraph):
+class Diagram(rx.PyGraph[NodeInfo, None]):
     """
     A ZX diagram as an open graph.
 
@@ -28,5 +28,9 @@ class Diagram(rx.PyGraph):
     def type(self, node_idx: int) -> NodeType:
         return self.get_node_data(node_idx).type
 
-    def phase(self, node_idx: int) -> NodeType:
+    def phase(self, node_idx: int) -> Fraction:
         return self.get_node_data(node_idx).phase
+
+    def add_to_phase(self, node_idx: int, phase: Fraction):
+        old_phase = self.get_node_data(node_idx).phase
+        self.get_node_data(node_idx).phase = (old_phase + phase) % 2
