@@ -1,0 +1,68 @@
+import dataclasses
+from typing import List, Iterable, Tuple, Mapping, Set
+
+from .diagram import Diagram, NodeType
+from .pauli import PauliString, Pauli
+from .web import compute_pauli_webs
+
+
+@dataclasses.dataclass(init=True)
+class FlipOperators:
+    diagram: Diagram
+    stab_flip_ops: List[PauliString]
+    region_flip_ops: List[PauliString]
+    stab_gen_set: List[PauliString]
+    region_gen_set: List[PauliString]
+    region_flip_op_stab_flip_map: Mapping[int, Set[int]]
+
+
+def _flip_operators(
+    web_generating_set: Iterable[PauliString],
+    restriction_func=lambda x: x,
+) -> Tuple[List[PauliString], List[PauliString]]:
+    """
+    Calculates flip operators for the given collection of webs, which is presumed to be a minimal generating set for
+    some space under the given restriction function (defaults to identity).
+
+    Note that this function might change the generating set in use, which will be returned.
+
+    :return: The flip operators and the new generating set, such that the items at the same indices correspond.
+    """
+
+    flip_ops = []
+    new_gen_set = list(web_generating_set)
+    for curr_gen_idx in range(len(new_gen_set)):
+        curr_gen = restriction_func(new_gen_set[curr_gen_idx])
+        flip_op = None
+        for edge, p in curr_gen.items():
+            if p != Pauli.I:
+                flip_op = PauliString.edge_flip(edge, p)
+        if flip_op is None:
+            raise AssertionError(f"No flip operator found for generator {curr_gen}!")
+
+        new_gen_set = [
+            new_gen_set[i]
+            if i == curr_gen_idx or restriction_func(new_gen_set[i]).commutes(flip_op)
+            else new_gen_set[i] * flip_op
+            for i in range(len(new_gen_set))
+        ]
+
+    return flip_ops, new_gen_set
+
+
+def build_flip_operators(d: Diagram) -> FlipOperators:  # TODO normalise flip ops ahead of time
+    boundary_nodes = d.filter_nodes(lambda ni: ni.type == NodeType.B)
+    boundary_edges = []
+    for b in boundary_nodes:
+        boundary_edges += d.incident_edges(b)
+    stabs, regions = compute_pauli_webs(d)
+
+    stab_flip_ops, stab_gen_set = _flip_operators(stabs, lambda w: w.restrict(boundary_edges))
+    region_flip_ops, region_gen_set = _flip_operators(regions)
+
+    region_flip_op_stab_flip_map = {
+        i: {j for j in range(len(stab_gen_set)) if not region_flip_ops[i].commutes(stab_gen_set[j])}
+        for i in range(len(region_flip_ops))
+    }
+
+    return FlipOperators(d, stab_flip_ops, region_flip_ops, stab_gen_set, region_gen_set, region_flip_op_stab_flip_map)
