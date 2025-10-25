@@ -11,7 +11,7 @@ def test_empty():
 
 
 def test_random():
-    g = pyzx.generate.cliffordT(qubits=4, depth=4)
+    g = pyzx.generate.cliffordT(qubits=4, depth=4, p_t=0.0)
     d = from_pyzx(g)
 
     assert d.num_nodes() == g.num_vertices()
