@@ -52,6 +52,9 @@ def _flip_operators(
 
 
 def build_flip_operators(d: Diagram) -> FlipOperators:
+    """
+    Builds flip operators, obtaining new generating sets for the stabilising and detecting webs of the diagram.
+    """
     boundary_edges = d.boundary_edges()
     stabs, regions = compute_pauli_webs(d)
 
