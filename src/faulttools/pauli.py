@@ -28,6 +28,9 @@ class Pauli(StrEnum):
         else:
             raise AssertionError("Should never be reached!")
 
+    def __repr__(self):
+        return f"Pauli{self.name}"
+
     def flip(self) -> "Pauli":
         if self == Pauli.X:
             return Pauli.Z
@@ -70,7 +73,7 @@ class PauliString(fd.frozendict[int, Pauli]):
         return PauliString(product)
 
     def restrict(self, edge_indices: Iterable[int]) -> "PauliString":
-        return PauliString({idx: self[idx] for idx in edge_indices})
+        return PauliString({idx: self[idx] for idx in set(edge_indices).intersection(self.keys())})
 
     def commutes(self, other: "PauliString") -> bool:
         for e in self.keys() & other.keys():

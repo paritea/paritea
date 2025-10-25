@@ -3,8 +3,9 @@ from faulttools.flip_operators import FlipOperators
 from faulttools.noise_model import NoiseModel, Fault
 
 
-# TODO guarantee diagram form in which no two boundaries are connected
 def dagger_form(model: NoiseModel, flip_ops: FlipOperators) -> NoiseModel:
+    assert model.diagram() is flip_ops.diagram
+
     new_faults = []
     for atomic_fault, atomic_weight in model.atomic_weights():
         atomic_fault_flips = atomic_fault.edge_flips

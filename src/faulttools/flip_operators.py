@@ -1,12 +1,12 @@
 import dataclasses
 from typing import List, Iterable, Tuple, Mapping, Set
 
-from .diagram import Diagram, NodeType
+from .diagram import Diagram
 from .pauli import PauliString, Pauli
 from .web import compute_pauli_webs
 
 
-@dataclasses.dataclass(init=True)
+@dataclasses.dataclass(init=True, frozen=True)
 class FlipOperators:
     diagram: Diagram
     stab_flip_ops: List[PauliString]
@@ -40,6 +40,7 @@ def _flip_operators(
         if flip_op is None:
             raise AssertionError(f"No flip operator found for generator {curr_gen}!")
 
+        flip_ops.append(flip_op)
         new_gen_set = [
             new_gen_set[i]
             if i == curr_gen_idx or restriction_func(new_gen_set[i]).commutes(flip_op)
@@ -50,11 +51,8 @@ def _flip_operators(
     return flip_ops, new_gen_set
 
 
-def build_flip_operators(d: Diagram) -> FlipOperators:  # TODO normalise flip ops ahead of time
-    boundary_nodes = d.filter_nodes(lambda ni: ni.type == NodeType.B)
-    boundary_edges = []
-    for b in boundary_nodes:
-        boundary_edges += d.incident_edges(b)
+def build_flip_operators(d: Diagram) -> FlipOperators:
+    boundary_edges = d.boundary_edges()
     stabs, regions = compute_pauli_webs(d)
 
     stab_flip_ops, stab_gen_set = _flip_operators(stabs, lambda w: w.restrict(boundary_edges))

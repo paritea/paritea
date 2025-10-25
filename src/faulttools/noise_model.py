@@ -3,6 +3,7 @@ from typing import List, Optional, Iterable, Tuple, NamedTuple, Set
 from .diagram import Diagram
 from .pauli import PauliString, Pauli
 
+
 class Fault(NamedTuple):
     """
     A fault, described by 1. diagram edges it flips and 2. detectors it violates / flips.
@@ -10,12 +11,14 @@ class Fault(NamedTuple):
     Note that detectors may have once been part of a diagram, and two faults may be equivalent even though one is found
     to violate detectors and the other is not.
     """
+
     edge_flips: PauliString
     detector_flips: Set[int]
 
     @staticmethod
     def edge_flip(edge_idx: int, flip: Pauli) -> "Fault":
         return Fault(PauliString.edge_flip(edge_idx, flip), set())
+
 
 class NoiseModel:
     _diagram: Diagram
@@ -29,6 +32,7 @@ class NoiseModel:
         w_z: Optional[int] = None,
         idealised_edges: Optional[List[int]] = None,
     ) -> "NoiseModel":
+        idealised_edges = idealised_edges or []
         atomic_weights: List[Tuple[Fault, int]] = []
         for edge_idx in diagram.edge_indices():
             if edge_idx in idealised_edges:
