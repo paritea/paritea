@@ -25,7 +25,7 @@ class NoiseModel:
     _atomic_weights: List[Tuple[Fault, int]]
 
     @staticmethod
-    def edge_flip_noise(  # TODO test this
+    def edge_flip_noise(
         diagram: Diagram,
         w_x: Optional[int] = None,
         w_y: Optional[int] = None,
