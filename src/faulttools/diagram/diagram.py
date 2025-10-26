@@ -1,5 +1,7 @@
 from enum import StrEnum
 from fractions import Fraction
+from typing import List, Set
+
 from recordclass import RecordClass
 
 import rustworkx as rx
@@ -34,3 +36,12 @@ class Diagram(rx.PyGraph[NodeInfo, None]):
     def add_to_phase(self, node_idx: int, phase: Fraction):
         old_phase = self.get_node_data(node_idx).phase
         self.get_node_data(node_idx).phase = (old_phase + phase) % 2
+
+    def boundary_nodes(self) -> rx.NodeIndices:
+        return self.filter_nodes(lambda ni: ni.type == NodeType.B)
+
+    def boundary_edges(self) -> Set[int]:
+        boundary_edges: List[int] = []
+        for b in self.boundary_nodes():
+            boundary_edges += self.incident_edges(b)
+        return set(boundary_edges)

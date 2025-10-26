@@ -26,7 +26,7 @@ class GraphOrdering(NamedTuple):
 
 
 def determine_ordering(d: Diagram) -> GraphOrdering:
-    boundaries = d.filter_nodes(lambda ni: ni.type == NodeType.B)
+    boundaries = d.boundary_nodes()
     z_boundaries = {d.neighbors(b)[0]: b for b in boundaries}
     internal_spiders = list(set(d.node_indices()).difference(boundaries).difference(z_boundaries.keys()))
     pi_2_spiders = list(filter(lambda _v: d.phase(_v).denominator == 2, internal_spiders))

@@ -158,7 +158,7 @@ def _ensure_red_green(d: Diagram) -> Iterable[int]:
             new_nodes.append(_place_node_between(d, NodeType.X, s, t))
 
     # Ensure boundaries are not connected to a red spider
-    boundaries = d.filter_nodes(lambda ni: ni.type == NodeType.B)
+    boundaries = d.boundary_nodes()
     for boundary in boundaries:
         neighbour = list(d.neighbors(boundary))[0]
         if d.type(neighbour) == NodeType.X:

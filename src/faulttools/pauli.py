@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Union, Optional
+from typing import Union, Optional, Iterable
 
 import frozendict as fd
 
@@ -27,6 +27,9 @@ class Pauli(StrEnum):
             return Pauli.Z
         else:
             raise AssertionError("Should never be reached!")
+
+    def __repr__(self):
+        return f"Pauli{self.name}"
 
     def flip(self) -> "Pauli":
         if self == Pauli.X:
@@ -68,6 +71,9 @@ class PauliString(fd.frozendict[int, Pauli]):
                 product[e] = edge_result
 
         return PauliString(product)
+
+    def restrict(self, edge_indices: Iterable[int]) -> "PauliString":
+        return PauliString({idx: self[idx] for idx in set(edge_indices).intersection(self.keys())})
 
     def commutes(self, other: "PauliString") -> bool:
         for e in self.keys() & other.keys():
