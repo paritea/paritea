@@ -1,7 +1,7 @@
 import dataclasses
 from typing import List, Iterable, Tuple, Mapping, Set
 
-from .diagram import Diagram
+from .diagram import Diagram, NodeType
 from .pauli import PauliString, Pauli
 from .web import compute_pauli_webs
 
@@ -56,6 +56,16 @@ def build_flip_operators(d: Diagram) -> FlipOperators:
     Builds flip operators, obtaining new generating sets for the stabilising and detecting webs of the diagram.
     """
     boundary_edges = d.boundary_edges()
+    # To establish stabilisers (i.e. input-output relationships), we need to ensure that every boundary node has exactly
+    # one connected boundary edge.
+    assert all(
+        [
+            len(d.incident_edge_index_map(b)) == 1
+            and d.type(list(d.incident_edge_index_map(b).values())[0][1]) != NodeType.B
+            for b in d.boundary_nodes()
+        ]
+    ), "The diagram must allocate boundary nodes and edges one-to-one!"
+
     stabs, regions = compute_pauli_webs(d)
 
     stab_flip_ops, stab_gen_set = _flip_operators(stabs, lambda w: w.restrict(boundary_edges))
