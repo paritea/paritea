@@ -3,7 +3,7 @@ from faulttools.flip_operators import FlipOperators
 from faulttools.noise_model import NoiseModel, Fault
 
 
-def dagger_form(model: NoiseModel, flip_ops: FlipOperators) -> NoiseModel:
+def pushout(model: NoiseModel, flip_ops: FlipOperators) -> NoiseModel:
     assert model.diagram() is flip_ops.diagram
 
     new_faults = []
