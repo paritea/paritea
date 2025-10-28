@@ -13,7 +13,13 @@ pyzx_v_type_to_node_type = {
 }
 
 
-def from_pyzx(pyzx_graph: BaseGraph) -> Diagram:
+def from_pyzx(pyzx_graph: BaseGraph, convert_had_edges: bool = False) -> Diagram:
+    """
+    :param pyzx_graph: The PyZX graph to convert to a diagram.
+    :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
+    :return: The converted diagram.
+    """
+
     diagram = Diagram()
 
     vertex_to_id = {}
@@ -23,7 +29,7 @@ def from_pyzx(pyzx_graph: BaseGraph) -> Diagram:
 
         v_type = pyzx_graph.type(v)
         if v_type not in pyzx_v_type_to_node_type:
-            raise ValueError(f"Unsupported PyZX vertex type: {v_type}")
+            raise ValueError(f"Unsupported PyZX vertex type: {v_type.name}")
 
         v_phase = pyzx_graph.phase(v)
         if Fraction(v_phase, 1).denominator > 2:
@@ -35,9 +41,18 @@ def from_pyzx(pyzx_graph: BaseGraph) -> Diagram:
         source, target = pyzx_graph.edge_st(edge)
         e_type = pyzx_graph.edge_type(edge)
 
-        if e_type != PyZxEdgeType.SIMPLE:
-            raise ValueError(f"Unsupported PyZX edge type: {e_type}")
-
-        diagram.add_edge(vertex_to_id[source], vertex_to_id[target], None)
+        if e_type == PyZxEdgeType.SIMPLE:
+            diagram.add_edge(vertex_to_id[source], vertex_to_id[target], None)
+        elif e_type == PyZxEdgeType.HADAMARD:
+            if convert_had_edges:
+                h = diagram.add_node(NodeInfo(type=NodeType.H))
+                diagram.add_edge(vertex_to_id[source], h, None)
+                diagram.add_edge(h, vertex_to_id[target], None)
+            else:
+                raise ValueError(
+                    f"Unsupported PyZX edge type: {e_type.name}. Try explicitly converting the PyZX diagram and passing convert_had_edges=True."
+                )
+        else:
+            raise ValueError(f"Unsupported PyZX edge type: {e_type.name}")
 
     return diagram
