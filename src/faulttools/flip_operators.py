@@ -36,7 +36,8 @@ def _flip_operators(
         flip_op = None
         for edge, p in curr_gen.items():
             if p != Pauli.I:
-                flip_op = PauliString.edge_flip(edge, p)
+                flip_op = PauliString.edge_flip(edge, Pauli.Z if p == Pauli.X else Pauli.X)
+                break
         if flip_op is None:
             raise AssertionError(f"No flip operator found for generator {curr_gen}!")
 
@@ -44,7 +45,7 @@ def _flip_operators(
         new_gen_set = [
             new_gen_set[i]
             if i == curr_gen_idx or restriction_func(new_gen_set[i]).commutes(flip_op)
-            else new_gen_set[i] * flip_op
+            else new_gen_set[i] * new_gen_set[curr_gen_idx]
             for i in range(len(new_gen_set))
         ]
 
