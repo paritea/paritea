@@ -1,7 +1,10 @@
-from typing import List, Optional, Iterable, Tuple, NamedTuple, Set
+from typing import List, Optional, Iterable, Tuple, NamedTuple, Set, Mapping, Union
 
 from .diagram import Diagram
+from .diagram.conversion import to_diagram, DiagramParam
 from .pauli import PauliString, Pauli
+
+from .util import canonicalize_input
 
 
 class Fault(NamedTuple):
@@ -56,3 +59,17 @@ class NoiseModel:
 
     def atomic_weights(self) -> List[Tuple[Fault, int]]:
         return self._atomic_weights
+
+
+type NoiseModelParam = Union[NoiseModel, DiagramParam]
+
+
+def to_noise_model(obj: NoiseModelParam) -> NoiseModel:
+    if isinstance(obj, NoiseModel):
+        return obj
+    else:
+        return NoiseModel.edge_flip_noise(to_diagram(obj))
+
+
+def noise_model_params(*param_names: str):
+    return canonicalize_input(**{name: to_noise_model for name in param_names})
