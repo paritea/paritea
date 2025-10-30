@@ -11,11 +11,8 @@ from ..pauli import Pauli, PauliString
 
 class Stabilisers:
     def __init__(self, stabiliser_rref: GF2):
-        self._rref = stabiliser_rref
-        self._indices = self._rref.argmax(axis=1).view(np.ndarray)
-
-    def normalise_signatures(self, sigs: GF2) -> GF2:
-        return sigs + sigs[:, self._indices] @ self._rref
+        self.rref = stabiliser_rref
+        self.indices = self.rref.argmax(axis=1).view(np.ndarray)
 
 
 class AugmentedStabilisers:
@@ -25,16 +22,16 @@ class AugmentedStabilisers:
     @staticmethod
     def from_stabilisers(stabilisers: Stabilisers, num_sinks: int) -> "AugmentedStabilisers":
         self = AugmentedStabilisers()
-        self._rref = GF2(np.hstack([stabilisers._rref, GF2.Zeros((len(stabilisers._rref), num_sinks))]))
-        self._indices = stabilisers._indices
+        self._rref = GF2(np.hstack([stabilisers.rref, GF2.Zeros((len(stabilisers.rref), num_sinks))]))
+        self._indices = stabilisers.indices
 
         return self
 
-    def normalise_signature(self, sig: GF2) -> GF2:  # TODO remove
-        return self.normalise_signatures(GF2([sig]))[0]
+    def normalise_single(self, compiled_fault: GF2) -> GF2:  # TODO remove
+        return self.normalise(GF2([compiled_fault]))[0]
 
-    def normalise_signatures(self, sigs: GF2) -> GF2:
-        return sigs + sigs[:, self._indices] @ self._rref
+    def normalise(self, compiled_faults: GF2) -> GF2:
+        return compiled_faults + compiled_faults[:, self._indices] @ self._rref
 
 
 def _stabilisers(stabilisers: List[PauliString], boundary_idx_map: Mapping[int, int]) -> Stabilisers:
@@ -51,38 +48,22 @@ def _stabilisers(stabilisers: List[PauliString], boundary_idx_map: Mapping[int, 
     return Stabilisers(GF2(np_stabilisers).row_reduce(eye="left"))
 
 
-def _construct_signatures(
+def _compile_atomic_faults(
     noise: NoiseModel,
     stabilisers: AugmentedStabilisers,
     boundaries_to_idx: Mapping[int, int],
     detector_to_idx: Mapping[int, int],
 ) -> List[GF2]:
-    signatures = [signature for signature in noise.atomic_faults() if not signature.is_trivial()]
+    normalised_faults: List[GF2] = []
+    for f in noise.atomic_faults():
+        if f.is_trivial():
+            continue
 
-    signature_normal_forms: List[GF2] = []
-    for sig in signatures:
-        compiled_sig = sig.compile(boundaries_to_idx, detector_to_idx)
-        signature_normal_forms.append(stabilisers.normalise_signature(compiled_sig))
-    sig_nf = [GF2(l) for l in np.unique(signature_normal_forms, axis=0)]
+        compiled = f.compile(boundaries_to_idx, detector_to_idx)
+        normalised_faults.append(stabilisers.normalise_single(compiled))
+    sig_nf = [GF2(l) for l in np.unique(normalised_faults, axis=0)]
 
     return sig_nf
-
-
-def _boundary_signatures(stabs: Stabilisers, num_boundaries: int) -> GF2:
-    sigs = []
-    for i in range(num_boundaries):
-        # Z Signature
-        x_atomic_sig = GF2.Zeros(num_boundaries * 2)
-        x_atomic_sig[i] = 1
-        sigs.append(x_atomic_sig)
-        # X Signature
-        z_atomic_sig = GF2.Zeros(num_boundaries * 2)
-        z_atomic_sig[i + num_boundaries] = 1
-        sigs.append(z_atomic_sig)
-        # Y Signature
-        sigs.append(x_atomic_sig + z_atomic_sig)
-
-    return stabs.normalise_signatures(GF2(sigs))
 
 
 def _is_fault_equivalence(
@@ -126,18 +107,18 @@ def _is_fault_equivalence(
     compiled_stabilisers = _stabilisers(stabilisers, d1_edge_idx_map)
 
     if not quiet:
-        print("Constructing signatures of d1...")
+        print("Compiling atomic faults for d1...")
     g1_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, len(d1_detector_idx_map))
-    g1_sig_nf = _construct_signatures(noise_1, g1_stabs, d1_edge_idx_map, d1_detector_idx_map)
+    g1_sig_nf = _compile_atomic_faults(noise_1, g1_stabs, d1_edge_idx_map, d1_detector_idx_map)
     if not quiet:
-        print(f"Retrieved {len(g1_sig_nf)} signatures for d1!")
+        print(f"Retrieved {len(g1_sig_nf)} unique faults for d1!")
 
     if not quiet:
-        print("Constructing signatures of d2...")
+        print("Compiling atomic faults for d2...")
     g2_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, len(d2_detector_idx_map))
-    g2_sig_nf = _construct_signatures(noise_2, g2_stabs, d2_edge_idx_map, d2_detector_idx_map)
+    g2_sig_nf = _compile_atomic_faults(noise_2, g2_stabs, d2_edge_idx_map, d2_detector_idx_map)
     if not quiet:
-        print(f"Retrieved {len(g2_sig_nf)} signatures for d2!")
+        print(f"Retrieved {len(g2_sig_nf)} unique faults for d2!")
 
     if not quiet:
         print("Checking if d1 is fault-bound by d2...")
