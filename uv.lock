@@ -57,6 +57,7 @@ dependencies = [
     { name = "pyzx" },
     { name = "recordclass" },
     { name = "rustworkx" },
+    { name = "tqdm" },
 ]
 
 [package.dev-dependencies]
@@ -72,6 +73,7 @@ requires-dist = [
     { name = "pyzx", specifier = ">=0.9.0" },
     { name = "recordclass", specifier = ">=0.23.1" },
     { name = "rustworkx", specifier = ">=0.17.1" },
+    { name = "tqdm", specifier = ">=4.67.1" },
 ]
 
 [package.metadata.requires-dev]
