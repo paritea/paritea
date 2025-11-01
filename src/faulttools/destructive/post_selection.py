@@ -42,8 +42,17 @@ def post_select(noise: NoiseModel, stabilisers: List[PauliString], num_detectors
         f"{len(detectable)} detected, {len(undetectable)} undetectable, {len(detectable) + len(undetectable)} total"
     )
 
-    for curr_detector in tqdm(range(num_detectors), desc="Detectors: ", leave=True, miniters=1):
-        detected_faults = [f for f in detectable if f & detector_masks[curr_detector] > 0]
+    remaining_detectors = list(range(num_detectors))
+    for _ in tqdm(range(num_detectors), desc="Detectors: ", leave=True, miniters=1):
+        num_detected_faults = {
+            det: len([f for f in detectable if f & detector_masks[det] > 0]) for det in remaining_detectors
+        }
+        min_number = min(num_detected_faults.values())
+        # Choose the next best detector
+        next_best_detector = [det for det in remaining_detectors if num_detected_faults[det] == min_number][0]
+        remaining_detectors.remove(next_best_detector)
+
+        detected_faults = [f for f in detectable if f & detector_masks[next_best_detector] > 0]
         for comb in tqdm(
             itertools.combinations(detected_faults, r=2),
             total=math.comb(len(detected_faults), 2),
