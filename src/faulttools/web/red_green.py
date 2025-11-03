@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple, Iterable
 from pyzx.graph.base import upair
 
 from ..diagram import Diagram, NodeType, NodeInfo
-from ..pauli import PauliString, Pauli
+from ..pauli import Pauli
 
 
 @dataclass(init=True, frozen=True)
@@ -85,15 +85,12 @@ class AdditionalNodes:
         del adj[w3][r]
         del adj[r][w3]
 
-    def remove_from(self, d: Diagram, web: PauliString) -> Dict[Tuple[int, int], Pauli]:
+    def remove_from(self, d: Diagram, web: Dict[Tuple[int, int], Pauli]) -> None:
         adj = {n1: {n2: True for n2 in d.neighbors(n1)} for n1 in d.node_indices()}
-        tuple_web = {upair(*d.get_edge_endpoints_by_index(e_idx)): p for e_idx, p in web.items()}
         for id_node in self.extra_id_nodes:
-            self._remove_extra_id_node(adj, tuple_web, id_node)
+            self._remove_extra_id_node(adj, web, id_node)
         for hadamard in self.expanded_hadamards:
-            self._remove_expanded_hadamard(adj, tuple_web, hadamard)
-
-        return tuple_web
+            self._remove_expanded_hadamard(adj, web, hadamard)
 
 
 def _place_node_between(d: Diagram, _type: NodeType, n1: int, n2: int) -> int:
