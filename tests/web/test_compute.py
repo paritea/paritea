@@ -1,11 +1,14 @@
 import json
 from typing import List, Callable, Iterable
 
+import numpy as np
 import pytest
+from galois import GF2
 from pyzx import Graph, VertexType
 
 import generate
 from faulttools import PauliString, Pauli
+from faulttools.diagram import Diagram
 from faulttools.diagram.conversion import from_pyzx
 from faulttools.web import compute_pauli_webs
 
@@ -44,14 +47,34 @@ def web_io(request) -> WebFileIO:
 
 
 @pytest.fixture
-def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Iterable[PauliString], Iterable[PauliString]], None]:
-    def _assert(stabs: Iterable[PauliString], regions: Iterable[PauliString]) -> None:
-        exp_stabs = web_io.read_stabilising()
-        exp_regions = web_io.read_detecting()
+def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, Iterable[PauliString], Iterable[PauliString]], None]:
+    def _assert(d: Diagram, stabs: Iterable[PauliString], regions: Iterable[PauliString]) -> None:
+        edge_idx_map = {e: i for i, e in enumerate(d.edge_indices())}
+
+        compiled_stabs = GF2([web.compile(edge_idx_map) for web in stabs])
+        compiled_regions = GF2([web.compile(edge_idx_map) for web in regions])
+        compiled_exp_stabs = GF2([web.compile(edge_idx_map) for web in web_io.read_stabilising()])
+        compiled_exp_regions = GF2([web.compile(edge_idx_map) for web in web_io.read_detecting()])
 
         try:
-            assert set(stabs) == set(exp_stabs)
-            assert set(exp_regions) == set(exp_regions)
+            assert len(compiled_regions) == len(compiled_exp_regions)
+            if len(compiled_regions) > 0:
+                assert np.array_equal(compiled_regions.row_reduce(), compiled_exp_regions.row_reduce()), (
+                    "Region spaces are not equal"
+                )
+
+            # Stabilising web spaces must only be equal modulo the detecting web spaces. Thus, test the entire Pauli web
+            # space for equality, which yields the property under test combined with detecting web space equality.
+            if len(compiled_regions) > 0:
+                web_space_basis = GF2(np.vstack([compiled_stabs, compiled_regions]))
+                exp_web_space_basis = GF2(np.vstack([compiled_exp_stabs, compiled_exp_regions]))
+            else:
+                web_space_basis = compiled_stabs
+                exp_web_space_basis = compiled_exp_stabs
+
+            assert np.array_equal(web_space_basis.row_reduce(), exp_web_space_basis.row_reduce()), (
+                "Web spaces are not equal"
+            )
         except AssertionError as e:
             web_io.write_stabilising(list(stabs), file_name_suffix="_actual")
             web_io.write_detecting(list(regions), file_name_suffix="_actual")
@@ -70,11 +93,11 @@ def test_identity_webs(assert_pauli_webs):
     d = from_pyzx(g)
 
     stabs, regions = compute_pauli_webs(d)
-    assert_pauli_webs(stabs, regions)
+    assert_pauli_webs(d, stabs, regions)
 
 
 def test_zweb_webs(assert_pauli_webs):
     d = from_pyzx(generate.zweb(2, 2))
     stabs, regions = compute_pauli_webs(d)
 
-    assert_pauli_webs(stabs, regions)
+    assert_pauli_webs(d, stabs, regions)
