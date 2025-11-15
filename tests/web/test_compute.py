@@ -6,7 +6,8 @@ import pytest
 from galois import GF2
 from pyzx import Graph, VertexType
 
-import generate
+import generate.diagram.syndrome
+import generate.stabilisers
 from faulttools import PauliString, Pauli
 from faulttools.diagram import Diagram
 from faulttools.diagram.conversion import from_pyzx
@@ -97,7 +98,7 @@ def test_identity_webs(assert_pauli_webs):
 
 
 def test_zweb_webs(assert_pauli_webs):
-    d = from_pyzx(generate.zweb(2, 2))
+    d = from_pyzx(generate.diagram.zweb(2, 2))
     stabs, regions = compute_pauli_webs(d)
 
     assert_pauli_webs(d, stabs, regions)
