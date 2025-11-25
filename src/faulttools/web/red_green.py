@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple, Iterable
 
 from pyzx.graph.base import upair
 
-from ..diagram import Diagram, NodeType, NodeInfo
+from ..diagram import Diagram, NodeType
 from ..pauli import Pauli
 
 
@@ -94,9 +94,9 @@ class AdditionalNodes:
 
 
 def _place_node_between(d: Diagram, _type: NodeType, n1: int, n2: int) -> int:
-    node = d.add_node(NodeInfo(_type))
+    node = d.add_node(_type)
     d.remove_edge(n1, n2)
-    d.add_edges_from_no_data([(n1, node), (node, n2)])
+    d.add_edges([(n1, node), (node, n2)])
 
     return node
 
@@ -131,7 +131,7 @@ def _euler_expand_edges(d: Diagram) -> Iterable[ExpandedHadamard]:
         v1, v2 = d.neighbors(v)
 
         d.remove_node(v)
-        d.add_edge(v1, v2, None)
+        d.add_edge(v1, v2)
 
         flip = d.type(v1) == d.type(v2) and d.type(v1) == NodeType.X
         w1, w2, w3 = _decompose_between(v1, v2, flip)
@@ -183,9 +183,12 @@ def to_red_green_form(d: Diagram) -> AdditionalNodes:
         additional_nodes.add_expanded_hadamard(hadamard)
 
     # Verify that diagram is clifford
-    offending_vertices = d.filter_nodes(
-        lambda ni: ni.phase.denominator > 2
-        or (ni.type != NodeType.Z and ni.type != NodeType.X and ni.type != NodeType.B)
+    offending_vertices = list(
+        filter(
+            lambda n: d.phase(n).denominator > 2
+            or (d.type(n) != NodeType.Z and d.type(n) != NodeType.X and d.type(n) != NodeType.B),
+            d.node_indices(),
+        )
     )
     if len(offending_vertices) > 0:
         raise AssertionError(
