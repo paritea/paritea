@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, List
 
 from pyzx import Mat2
 from .red_green import to_red_green_form
@@ -15,7 +15,7 @@ from copy import deepcopy
 
 def _compute(
     diagram: Diagram, stabilisers: bool, detecting_regions: bool
-) -> Tuple[Optional[Iterable[PauliString]], Optional[Iterable[PauliString]]]:
+) -> Tuple[Optional[List[PauliString]], Optional[List[PauliString]]]:
     """
     Performs full stabiliser and detecting region computation, depending on the given flags. Enabling both flags in one
     call is preferred to enabling them in separate calls as they may share basic computations.
@@ -64,7 +64,7 @@ def _compute(
     return stabs, regions
 
 
-def compute_stabilisers(diagram: Diagram) -> Iterable[PauliString]:
+def compute_stabilisers(diagram: Diagram) -> List[PauliString]:
     """
     :return: A set of stabilising webs for the given diagram that forms a basis for the diagrams stabilisers when
         restricted to its boundary. A full basis for all stabilising webs is only obtained combining the return value with a
@@ -73,14 +73,14 @@ def compute_stabilisers(diagram: Diagram) -> Iterable[PauliString]:
     return _compute(diagram, stabilisers=True, detecting_regions=False)[0]
 
 
-def compute_detecting_regions(diagram: Diagram) -> Iterable[PauliString]:
+def compute_detecting_regions(diagram: Diagram) -> List[PauliString]:
     """
     :return: A basis for the detecting regions of the given diagram.
     """
     return _compute(diagram, stabilisers=False, detecting_regions=True)[1]
 
 
-def compute_pauli_webs(diagram: Diagram) -> Tuple[Iterable[PauliString], Iterable[PauliString]]:
+def compute_pauli_webs(diagram: Diagram) -> Tuple[List[PauliString], List[PauliString]]:
     """
     See .compute_stabilisers and .compute_detecting_regions of this package.
     """
