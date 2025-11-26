@@ -59,6 +59,7 @@ class Diagram(SupportsPositioning, Protocol):
         self.edge_indices = self._g.edge_indices
         self.edge_indices_from_endpoints = self._g.edge_indices_from_endpoints
         self.get_edge_endpoints_by_index = self._g.get_edge_endpoints_by_index
+        self.incident_edges = self._g.incident_edges
         self.has_parallel_edges = self._g.has_parallel_edges
         self.add_edges = self._g.add_edges_from_no_data
         self.remove_edge = self._g.remove_edge

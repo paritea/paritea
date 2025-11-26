@@ -1,8 +1,10 @@
-from typing import List, Optional, Iterable, Tuple, NamedTuple, Set, Union
+from typing import List, Optional, Iterable, Tuple, NamedTuple, Set, Mapping, Union
 
 from .diagram import Diagram
 from .diagram.conversion import to_diagram, DiagramParam
 from .pauli import PauliString, Pauli
+
+from galois import GF2
 
 from .util import canonicalize_input
 
@@ -21,6 +23,34 @@ class Fault(NamedTuple):
     @staticmethod
     def edge_flip(edge_idx: int, flip: Pauli) -> "Fault":
         return Fault(PauliString.edge_flip(edge_idx, flip), set())
+
+    def is_trivial(self) -> bool:
+        return len(self.detector_flips) == 0 and self.edge_flips.is_trivial()
+
+    def compile(self, edge_idx_map: Mapping[int, int], detector_idx_map: Mapping[int, int]) -> GF2:
+        num_edges = len(edge_idx_map)
+        compiled = GF2.Zeros(num_edges * 2 + len(detector_idx_map))
+        for edge, pauli in self.edge_flips.items():
+            idx = edge_idx_map[edge]
+            if pauli == Pauli.Z or pauli == Pauli.Y:
+                compiled[idx] = 1
+            if pauli == Pauli.X or pauli == Pauli.Y:
+                compiled[idx + num_edges] = 1
+
+        for detector in self.detector_flips:
+            compiled[detector_idx_map[detector] + num_edges * 2] = 1
+
+        return compiled
+
+    @staticmethod
+    def compiled_to_int(compiled: GF2) -> int:
+        out = 0
+        for bit in compiled.tolist():
+            out = (out << 1) | bit
+        return out
+
+    def to_int(self, edge_idx_map: Mapping[int, int], detector_idx_map: Mapping[int, int]) -> int:
+        return Fault.compiled_to_int(self.compile(edge_idx_map, detector_idx_map))
 
 
 class NoiseModel:
