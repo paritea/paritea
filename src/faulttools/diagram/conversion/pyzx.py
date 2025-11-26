@@ -103,7 +103,7 @@ def _from_pyzx(
     return diagram
 
 
-def to_pyzx(d: Diagram, with_mapping: bool = True) -> Union[BaseGraph, Tuple[BaseGraph, Dict[int, int]]]:
+def to_pyzx(d: Diagram, with_mapping: bool = False) -> Union[BaseGraph, Tuple[BaseGraph, Dict[int, int]]]:
     """
     Constructs a PyZX diagram from the given diagram instance, reassigning original node ids and positions. Does not
     convert original hadamard edges back.
