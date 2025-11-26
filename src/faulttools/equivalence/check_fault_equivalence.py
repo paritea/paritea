@@ -96,12 +96,10 @@ def _is_fault_equivalence(
             f"Weight sets detected: {atomic_weights_1} and {atomic_weights_2}"
         )
 
-    # TODO index boundaries the same way / force and use boundary bijection
-
     d1, d2 = noise_1.diagram(), noise_2.diagram()
-    d1_edge_idx_map = {d1.incident_edges(b)[0]: i for i, b in enumerate(sorted(d1.boundary_nodes()))}
+    d1_edge_idx_map = {d1.incident_edges(b)[0]: i for i, b in enumerate(d1.io_sorted())}
     d1_detector_idx_map = {i: i for i in range(num_detectors_1)}
-    d2_edge_idx_map = {d2.incident_edges(b)[0]: i for i, b in enumerate(sorted(d2.boundary_nodes()))}
+    d2_edge_idx_map = {d2.incident_edges(b)[0]: i for i, b in enumerate(d2.io_sorted())}
     d2_detector_idx_map = {i: i for i in range(num_detectors_2)}
 
     compiled_stabilisers = _stabilisers(stabilisers, d1_edge_idx_map)

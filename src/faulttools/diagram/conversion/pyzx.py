@@ -94,6 +94,12 @@ def _from_pyzx(
         else:
             raise ValueError(f"Unsupported PyZX edge type: {e_type.name}")
 
+    if len(pyzx_graph.inputs()) > 0 or len(pyzx_graph.outputs()) > 0:
+        diagram.set_io(
+            inputs=[vertex_to_id[i] for i in pyzx_graph.inputs()],
+            outputs=[vertex_to_id[o] for o in pyzx_graph.outputs()],
+        )
+
     return diagram
 
 

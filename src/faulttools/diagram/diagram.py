@@ -1,7 +1,7 @@
 from copy import deepcopy
 from enum import StrEnum
 from fractions import Fraction
-from typing import List, Set, Dict, Optional, Any, Iterable, Protocol, Self, Mapping, runtime_checkable
+from typing import List, Set, Dict, Optional, Any, Iterable, Protocol, Self, Mapping, runtime_checkable, Tuple
 
 from recordclass import RecordClass
 
@@ -40,6 +40,7 @@ class Diagram(SupportsPositioning, Protocol):
         self._g = rx.PyGraph[_NodeInfo, None]()
         self._x: Dict[int, int] = dict()
         self._y: Dict[int, int] = dict()
+        self._io: Optional[Tuple[List[int], List[int]]] = None
         # Additional untyped keys for node index mappings
         self.additional_keys = set(additional_keys or [])
         for key in self.additional_keys:
@@ -147,6 +148,40 @@ class Diagram(SupportsPositioning, Protocol):
 
     def y(self, node_idx: int) -> int:
         return self._y.get(node_idx, -1)
+
+    def set_io(self, inputs: List[int], outputs: List[int]) -> Self:
+        """
+        Sets the boundary node indices regarded as inputs / outputs. Their order directly determines their index through
+        isomorphic conversion to a states outputs, i.e. they are indexed as <...all-inputs><...all-outputs>.
+        """
+        if len(set(inputs)) != len(inputs) or len(set(outputs)) != len(outputs):
+            raise ValueError(
+                f"IO may not contain duplicate node indices. Unique I/O:"
+                f" {len(set(inputs))}/{len(set(outputs))}, Given I/O: {len(inputs)}/{len(outputs)}"
+            )
+        boundaries = set(self.boundary_nodes())
+        unique_io = set(inputs).union(set(outputs))
+        if unique_io != boundaries:
+            raise ValueError(
+                f"The provided IO must be a 1-1 allocation of boundary nodes."
+                f"Surplus IO: {unique_io.difference(boundaries)}."
+                f"Unaccounted boundaries: {boundaries.difference(unique_io)}"
+            )
+
+        self._io = (inputs, outputs)
+        return self
+
+    def io(self) -> Tuple[List[int], List[int]]:
+        if self._io is None:
+            raise ValueError("IO is not set!")
+
+        return self._io
+
+    def io_sorted(self) -> List[int]:
+        if self._io is None:
+            return sorted(self.boundary_nodes())
+
+        return self._io[0] + self._io[1]
 
     ### Convenience ###
 
