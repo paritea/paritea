@@ -1,10 +1,10 @@
-import generate
+import generate.diagram
 from faulttools import build_flip_operators, NoiseModel, pushout
 from faulttools.diagram.conversion import from_pyzx
 
 
 def test_dagger_form():
-    d = from_pyzx(generate.zweb(2, 2))
+    d = from_pyzx(generate.diagram.zweb(2, 2))
     flip_ops = build_flip_operators(d)
     noise_model = NoiseModel.edge_flip_noise(d)
 

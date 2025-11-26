@@ -1,7 +1,8 @@
 from enum import StrEnum
-from typing import Union, Optional, Iterable
+from typing import Union, Optional, Iterable, Mapping
 
 import frozendict as fd
+from galois import GF2
 
 
 class Pauli(StrEnum):
@@ -87,3 +88,14 @@ class PauliString(fd.frozendict[int, Pauli]):
             if self[p] != Pauli.I:
                 return False
         return True
+
+    def compile(self, edge_idx_map: Mapping[int, int]) -> GF2:
+        num_edges = len(edge_idx_map)
+        compiled = GF2.Zeros(num_edges * 2)
+        for edge, pauli in self.items():
+            if pauli == Pauli.Z or pauli == Pauli.Y:
+                compiled[edge_idx_map[edge]] = 1
+            if pauli == Pauli.X or pauli == Pauli.Y:
+                compiled[edge_idx_map[edge] + num_edges] = 1
+
+        return compiled

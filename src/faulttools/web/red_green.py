@@ -4,8 +4,8 @@ from typing import Dict, List, Tuple, Iterable
 
 from pyzx.graph.base import upair
 
-from ..diagram import Diagram, NodeType, NodeInfo
-from ..pauli import PauliString, Pauli
+from ..diagram import Diagram, NodeType
+from ..pauli import Pauli
 
 
 @dataclass(init=True, frozen=True)
@@ -85,21 +85,18 @@ class AdditionalNodes:
         del adj[w3][r]
         del adj[r][w3]
 
-    def remove_from(self, d: Diagram, web: PauliString) -> Dict[Tuple[int, int], Pauli]:
+    def remove_from(self, d: Diagram, web: Dict[Tuple[int, int], Pauli]) -> None:
         adj = {n1: {n2: True for n2 in d.neighbors(n1)} for n1 in d.node_indices()}
-        tuple_web = {upair(*d.get_edge_endpoints_by_index(e_idx)): p for e_idx, p in web.items()}
         for id_node in self.extra_id_nodes:
-            self._remove_extra_id_node(adj, tuple_web, id_node)
+            self._remove_extra_id_node(adj, web, id_node)
         for hadamard in self.expanded_hadamards:
-            self._remove_expanded_hadamard(adj, tuple_web, hadamard)
-
-        return tuple_web
+            self._remove_expanded_hadamard(adj, web, hadamard)
 
 
 def _place_node_between(d: Diagram, _type: NodeType, n1: int, n2: int) -> int:
-    node = d.add_node(NodeInfo(_type))
+    node = d.add_node(_type)
     d.remove_edge(n1, n2)
-    d.add_edges_from_no_data([(n1, node), (node, n2)])
+    d.add_edges([(n1, node), (node, n2)])
 
     return node
 
@@ -134,7 +131,7 @@ def _euler_expand_edges(d: Diagram) -> Iterable[ExpandedHadamard]:
         v1, v2 = d.neighbors(v)
 
         d.remove_node(v)
-        d.add_edge(v1, v2, None)
+        d.add_edge(v1, v2)
 
         flip = d.type(v1) == d.type(v2) and d.type(v1) == NodeType.X
         w1, w2, w3 = _decompose_between(v1, v2, flip)
@@ -186,9 +183,12 @@ def to_red_green_form(d: Diagram) -> AdditionalNodes:
         additional_nodes.add_expanded_hadamard(hadamard)
 
     # Verify that diagram is clifford
-    offending_vertices = d.filter_nodes(
-        lambda ni: ni.phase.denominator > 2
-        or (ni.type != NodeType.Z and ni.type != NodeType.X and ni.type != NodeType.B)
+    offending_vertices = list(
+        filter(
+            lambda n: d.phase(n).denominator > 2
+            or (d.type(n) != NodeType.Z and d.type(n) != NodeType.X and d.type(n) != NodeType.B),
+            d.node_indices(),
+        )
     )
     if len(offending_vertices) > 0:
         raise AssertionError(
