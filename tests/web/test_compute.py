@@ -1,5 +1,5 @@
 import json
-from typing import List, Callable, Iterable
+from typing import List, Callable
 
 import numpy as np
 import pytest
@@ -48,8 +48,17 @@ def web_io(request) -> WebFileIO:
 
 
 @pytest.fixture
-def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, Iterable[PauliString], Iterable[PauliString]], None]:
-    def _assert(d: Diagram, stabs: Iterable[PauliString], regions: Iterable[PauliString]) -> None:
+def generate_web_files(web_io: WebFileIO) -> Callable[[Diagram, List[PauliString], List[PauliString]], None]:
+    def _generate(_: Diagram, stabs: List[PauliString], regions: List[PauliString]) -> None:
+        web_io.write_stabilising(stabs)
+        web_io.write_detecting(regions)
+
+    return _generate
+
+
+@pytest.fixture
+def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, List[PauliString], List[PauliString]], None]:
+    def _assert(d: Diagram, stabs: List[PauliString], regions: List[PauliString]) -> None:
         edge_idx_map = {e: i for i, e in enumerate(d.edge_indices())}
 
         compiled_stabs = GF2([web.compile(edge_idx_map) for web in stabs])
@@ -60,9 +69,16 @@ def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, Iterable[PauliStr
         try:
             assert len(compiled_regions) == len(compiled_exp_regions)
             if len(compiled_regions) > 0:
-                assert np.array_equal(compiled_regions.row_reduce(), compiled_exp_regions.row_reduce()), (
-                    "Region spaces are not equal"
-                )
+                cr_rref = compiled_regions.row_reduce()
+                cer_rref = compiled_exp_regions.row_reduce()
+
+                cr_nonzero = [row for row in cr_rref if any(row)]
+                cer_nonzero = [row for row in cer_rref if any(row)]
+
+                assert len(cr_nonzero) == len(cr_rref)
+                assert len(cer_nonzero) == len(cer_rref)
+
+                assert np.array_equal(cr_rref, cer_rref), "Region spaces are not equal"
 
             # Stabilising web spaces must only be equal modulo the detecting web spaces. Thus, test the entire Pauli web
             # space for equality, which yields the property under test combined with detecting web space equality.
@@ -77,8 +93,8 @@ def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, Iterable[PauliStr
                 "Web spaces are not equal"
             )
         except AssertionError as e:
-            web_io.write_stabilising(list(stabs), file_name_suffix="_actual")
-            web_io.write_detecting(list(regions), file_name_suffix="_actual")
+            web_io.write_stabilising(stabs, file_name_suffix="_actual")
+            web_io.write_detecting(regions, file_name_suffix="_actual")
 
             raise e
 
