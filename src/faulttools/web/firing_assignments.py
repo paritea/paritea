@@ -1,13 +1,14 @@
 from collections import defaultdict
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Tuple
 
 import numpy as np
 
 from pyzx import Mat2
+from pyzx.graph.base import upair
 from pyzx.linalg import Z2
 
 from ..diagram import Diagram, NodeType
-from ..pauli import Pauli, PauliString
+from ..pauli import Pauli
 
 
 class GraphOrdering(NamedTuple):
@@ -72,24 +73,26 @@ def create_firing_verification(d: Diagram, ordering: GraphOrdering) -> Mat2:
     return m_d
 
 
-def convert_firing_assignment_to_web(d: Diagram, ordering: GraphOrdering, v: List[Z2]) -> PauliString:
-    web: Dict[int, Pauli] = defaultdict(lambda: Pauli.I)
+def convert_firing_assignment_to_web_prototype(
+    d: Diagram, ordering: GraphOrdering, v: List[Z2]
+) -> Dict[Tuple[int, int], Pauli]:
+    prot: Dict[Tuple[int, int], Pauli] = defaultdict(lambda: Pauli.I)
 
     for adj_vertex, g_vertex in ordering.ordering_to_graph.items():
         g_type = d.type(g_vertex)
         # Fire all green spiders with full red edges and thus their red neighbours
         if g_type == NodeType.Z and v[adj_vertex + len(ordering.z_boundaries)] == 1:
             for _n in d.neighbors(g_vertex):
-                web[d.edge_indices_from_endpoints(g_vertex, _n)[0]] *= Pauli.X
+                prot[upair(g_vertex, _n)] *= Pauli.X
         # Fire all red spiders with full green edges and thus their green neighbours
         if g_type == NodeType.X and v[adj_vertex + len(ordering.z_boundaries)] == 1:
             for _n in d.neighbors(g_vertex):
-                web[d.edge_indices_from_endpoints(g_vertex, _n)[0]] *= Pauli.Z
+                prot[upair(g_vertex, _n)] *= Pauli.Z
 
     # Fire all green output edges
     for g_z_boundary, g_boundary in ordering.z_boundaries.items():
         adj_z_boundary = ordering.ord(g_z_boundary)
         if v[adj_z_boundary] == 1:
-            web[d.edge_indices_from_endpoints(g_z_boundary, g_boundary)[0]] *= Pauli.Z
+            prot[upair(g_z_boundary, g_boundary)] *= Pauli.Z
 
-    return PauliString(web)
+    return prot

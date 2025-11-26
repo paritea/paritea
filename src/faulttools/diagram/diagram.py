@@ -1,6 +1,7 @@
+from copy import deepcopy
 from enum import StrEnum
 from fractions import Fraction
-from typing import List, Set
+from typing import List, Set, Dict, Optional, Any, Iterable, Protocol, Self, Mapping, runtime_checkable
 
 from recordclass import RecordClass
 
@@ -14,12 +15,20 @@ class NodeType(StrEnum):
     H = "H"  # H box
 
 
-class NodeInfo(RecordClass):
+class _NodeInfo(RecordClass):
     type: NodeType
-    phase: Fraction = Fraction(0, 1)
+    phase: Fraction
 
 
-class Diagram(rx.PyGraph[NodeInfo, None]):
+class SupportsPositioning(Protocol):
+    def set_x(self, node_idx: int, x: int) -> None: ...
+    def set_y(self, node_idx: int, y: int) -> None: ...
+    def x(self, node_idx: int) -> int: ...
+    def y(self, node_idx: int) -> int: ...
+
+
+@runtime_checkable
+class Diagram(SupportsPositioning, Protocol):
     """
     A ZX diagram as an open graph.
 
@@ -27,21 +36,129 @@ class Diagram(rx.PyGraph[NodeInfo, None]):
     Node data must be an instance of NodeInfo.
     """
 
+    def __init__(self, additional_keys: Optional[Iterable[str]] = None):
+        self._g = rx.PyGraph[_NodeInfo, None]()
+        self._x: Dict[int, int] = dict()
+        self._y: Dict[int, int] = dict()
+        # Additional untyped keys for node index mappings
+        self.additional_keys = set(additional_keys or [])
+        for key in self.additional_keys:
+            setattr(self, f"_{key}", dict())
+            setattr(self, f"{key}", lambda idx: getattr(self, f"_{key}").get(idx))
+            setattr(self, f"set_{key}", lambda idx, arg: getattr(self, f"_{key}").update({idx: arg}) or self)
+        self._rebind_methods()
+
+    def _rebind_methods(self):
+        # Delegations from the wrapped graph, which must be rebound on each new instance
+        self.num_nodes = self._g.num_nodes
+        self.has_node = self._g.has_node
+        self.node_indices = self._g.node_indices
+        self.num_edges = self._g.num_edges
+        self.has_edge = self._g.has_edge
+        self.edge_list = self._g.edge_list
+        self.edge_indices = self._g.edge_indices
+        self.edge_indices_from_endpoints = self._g.edge_indices_from_endpoints
+        self.get_edge_endpoints_by_index = self._g.get_edge_endpoints_by_index
+        self.incident_edges = self._g.incident_edges
+        self.has_parallel_edges = self._g.has_parallel_edges
+        self.add_edges = self._g.add_edges_from_no_data
+        self.remove_edge = self._g.remove_edge
+        self.neighbors = self._g.neighbors
+
+    def __deepcopy__(self, memo) -> Self:
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        result._rebind_methods()
+        return result
+
+    def add_node(
+        self,
+        t: NodeType,
+        phase: Optional[Fraction] = None,
+        x: Optional[int] = None,
+        y: Optional[int] = None,
+        **kwargs: Dict[str, Any],
+    ) -> int:
+        idx = self._g.add_node(_NodeInfo(t, phase or Fraction(0, 1)))
+        if x is not None:
+            self._x[idx] = x
+        if y is not None:
+            self._y[idx] = y
+        for key, arg in kwargs.items():
+            if key not in self.additional_keys:
+                raise ValueError(f"Custom key {key} is not supported on this diagram.")
+            getattr(self, f"_{key}")[idx] = arg
+
+        return idx
+
+    def remove_node(self, idx: int) -> None:
+        self._g.remove_node(idx)
+        self._x.pop(idx, "")
+        self._y.pop(idx, "")
+        for key in self.additional_keys:
+            getattr(self, f"_{key}").pop(idx, "")
+
+    def add_edge(self, a: int, b: int) -> int:
+        return self._g.add_edge(a, b, None)
+
+    def compose(self, other: Self, node_map: Mapping[int, int]) -> Dict[int, int]:
+        """
+        Add another diagram into this diagram.
+
+        :param Self other: The other Diagram to add onto this diagram.
+        :param Mapping[int, int] node_map: A map from nodes in this diagram to nodes in the other, where an edge should
+            be created.
+
+        :returns: new_node_ids: A dictionary mapping node index from the other
+            Diagram to the equivalent node index in this Diagram after they've
+            been combined.
+        """
+
+        new_node_ids = self._g.compose(other._g, {i: (o, None) for i, o in node_map.items()})
+        for other_node, new_this_node in new_node_ids.items():
+            self._x[new_this_node] = other._x[other_node]
+            self._y[new_this_node] = other._y[other_node]
+            for key in self.additional_keys.intersection(other.additional_keys):
+                getattr(self, f"_{key}")[new_this_node] = getattr(other, f"_{key}")[other_node]
+
+        return new_node_ids
+
+    ### Properties ###
+
     def type(self, node_idx: int) -> NodeType:
-        return self.get_node_data(node_idx).type
+        return self._g.get_node_data(node_idx).type
 
     def phase(self, node_idx: int) -> Fraction:
-        return self.get_node_data(node_idx).phase
+        return self._g.get_node_data(node_idx).phase
+
+    def set_x(self, node_idx: int, x: int) -> Self:
+        self._x[node_idx] = x
+        return self
+
+    def set_y(self, node_idx: int, y: int) -> Self:
+        self._y[node_idx] = y
+        return self
+
+    def x(self, node_idx: int) -> int:
+        return self._x.get(node_idx, -1)
+
+    def y(self, node_idx: int) -> int:
+        return self._y.get(node_idx, -1)
+
+    ### Convenience ###
 
     def add_to_phase(self, node_idx: int, phase: Fraction):
-        old_phase = self.get_node_data(node_idx).phase
-        self.get_node_data(node_idx).phase = (old_phase + phase) % 2
+        old_phase = self._g.get_node_data(node_idx).phase
+        self._g.get_node_data(node_idx).phase = (old_phase + phase) % 2
 
     def boundary_nodes(self) -> rx.NodeIndices:
-        return self.filter_nodes(lambda ni: ni.type == NodeType.B)
+        return self._g.filter_nodes(lambda ni: ni.type == NodeType.B)
 
     def boundary_edges(self) -> Set[int]:
         boundary_edges: List[int] = []
         for b in self.boundary_nodes():
-            boundary_edges += self.incident_edges(b)
+            boundary_edges += self._g.incident_edges(b)
         return set(boundary_edges)

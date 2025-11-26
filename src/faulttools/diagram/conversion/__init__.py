@@ -1,6 +1,6 @@
 from typing import Union
 
-from .pyzx import from_pyzx as from_pyzx
+from .pyzx import from_pyzx as from_pyzx, from_pyzx_reversible as from_pyzx_reversible, to_pyzx as to_pyzx
 from .. import Diagram
 
 import pyzx as zx
