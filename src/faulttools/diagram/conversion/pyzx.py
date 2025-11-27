@@ -121,13 +121,12 @@ def to_pyzx(d: Diagram, with_mapping: bool = False) -> Union[BaseGraph, Tuple[Ba
             g.add_vertex_indexed(pyzx_id)
         else:
             pyzx_id = g.add_vertex()
-        if with_mapping:
-            mapping[n] = pyzx_id
+        mapping[n] = pyzx_id
         g.set_type(pyzx_id, node_type_to_pyzx_v_type[d.type(n)])
         g.set_qubit(pyzx_id, d.y(n))
         g.set_row(pyzx_id, d.x(n))
 
-    g.add_edge_table({(s, t): [1, 0] for s, t in d.edge_list()})
+    g.add_edge_table({(mapping[s], mapping[t]): [1, 0] for s, t in d.edge_list()})
 
     if with_mapping:
         return g, mapping
