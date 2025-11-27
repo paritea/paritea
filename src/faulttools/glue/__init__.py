@@ -1,0 +1,1 @@
+from .sinter import wrap_dem_as_sinter_task as wrap_dem_as_sinter_task
