@@ -22,7 +22,7 @@ class Fault(NamedTuple):
 
     @staticmethod
     def edge_flip(edge_idx: int, flip: Pauli) -> "Fault":
-        return Fault(PauliString.edge_flip(edge_idx, flip), set())
+        return Fault(PauliString.unary(edge_idx, flip), set())
 
     def is_trivial(self) -> bool:
         return len(self.detector_flips) == 0 and self.edge_flips.is_trivial()

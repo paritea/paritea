@@ -8,10 +8,10 @@ def test_constructor():
 
 
 def test_edge_flip_factory():
-    assert PauliString.edge_flip(4, Pauli.I) == {}
-    assert PauliString.edge_flip(4, Pauli.Z) == {4: Pauli.Z}
-    assert PauliString.edge_flip(4, Pauli.Z) == {4: Pauli.Z}
-    assert PauliString.edge_flip(4, Pauli.Z) == {4: Pauli.Z}
+    assert PauliString.unary(4, Pauli.I) == {}
+    assert PauliString.unary(4, Pauli.Z) == {4: Pauli.Z}
+    assert PauliString.unary(4, Pauli.Z) == {4: Pauli.Z}
+    assert PauliString.unary(4, Pauli.Z) == {4: Pauli.Z}
 
 
 def test_mult():

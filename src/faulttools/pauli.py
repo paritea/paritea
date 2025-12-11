@@ -47,11 +47,11 @@ class Pauli(StrEnum):
 class PauliString(fd.frozendict[int, Pauli]):
     """
     A Pauli string representation as a mapping from edge indices to Pauli rotations.
-    Note that identity rotations may be elided by the implementation at will.
+    Identity rotations are not stored in the resulting string.
     """
 
     @staticmethod
-    def edge_flip(edge: int, pauli: Pauli) -> "PauliString":
+    def unary(edge: int, pauli: Pauli) -> "PauliString":
         return PauliString({edge: pauli})
 
     def __new__(cls, o: Optional[Union[dict, str]] = None):
@@ -62,23 +62,23 @@ class PauliString(fd.frozendict[int, Pauli]):
         elif isinstance(o, dict):
             return super().__new__(cls, {e: p for e, p in o.items() if p != Pauli.I})
         else:
-            return super().__new__(cls, o)
+            raise ValueError("Unknown source type for PauliString.")
 
     def __mul__(self, other: "PauliString") -> "PauliString":
         product = {e: self.get(e, other.get(e)) for e in self.keys() ^ other.keys()}
-        for e in self.keys() & other.keys():
-            edge_result = self[e] * other[e]
-            if edge_result != Pauli.I:
-                product[e] = edge_result
+        for k in self.keys() & other.keys():
+            result = self[k] * other[k]
+            if result != Pauli.I:
+                product[k] = result
 
         return PauliString(product)
 
-    def restrict(self, edge_indices: Iterable[int]) -> "PauliString":
-        return PauliString({idx: self[idx] for idx in set(edge_indices).intersection(self.keys())})
+    def restrict(self, indices: Iterable[int]) -> "PauliString":
+        return PauliString({idx: self[idx] for idx in set(indices).intersection(self.keys())})
 
     def commutes(self, other: "PauliString") -> bool:
-        for e in self.keys() & other.keys():
-            if not self[e].commutes(other[e]):
+        for k in self.keys() & other.keys():
+            if not self[k].commutes(other[k]):
                 return False
 
         return True
@@ -89,13 +89,13 @@ class PauliString(fd.frozendict[int, Pauli]):
                 return False
         return True
 
-    def compile(self, edge_idx_map: Mapping[int, int]) -> GF2:
-        num_edges = len(edge_idx_map)
-        compiled = GF2.Zeros(num_edges * 2)
-        for edge, pauli in self.items():
+    def compile(self, idx_map: Mapping[int, int]) -> GF2:
+        num_indices = len(idx_map)
+        compiled = GF2.Zeros(num_indices * 2)
+        for idx, pauli in self.items():
             if pauli == Pauli.Z or pauli == Pauli.Y:
-                compiled[edge_idx_map[edge]] = 1
+                compiled[idx_map[idx]] = 1
             if pauli == Pauli.X or pauli == Pauli.Y:
-                compiled[edge_idx_map[edge] + num_edges] = 1
+                compiled[idx_map[idx] + num_indices] = 1
 
         return compiled
