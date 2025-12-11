@@ -36,7 +36,7 @@ def _flip_operators(
         flip_op = None
         for edge, p in curr_gen.items():
             if p != Pauli.I:
-                flip_op = PauliString.edge_flip(edge, Pauli.Z if p == Pauli.X else Pauli.X)
+                flip_op = PauliString.unary(edge, Pauli.Z if p == Pauli.X else Pauli.X)
                 break
         if flip_op is None:
             raise AssertionError(f"No flip operator found for generator {curr_gen}!")

@@ -41,6 +41,7 @@ class Diagram(SupportsPositioning, Protocol):
         self._x: Dict[int, int] = dict()
         self._y: Dict[int, int] = dict()
         self._io: Optional[Tuple[List[int], List[int]]] = None
+        self._is_io_virtual: bool = True
         # Additional untyped keys for node index mappings
         self.additional_keys = set(additional_keys or [])
         for key in self.additional_keys:
@@ -149,7 +150,7 @@ class Diagram(SupportsPositioning, Protocol):
     def y(self, node_idx: int) -> int:
         return self._y.get(node_idx, -1)
 
-    def set_io(self, inputs: List[int], outputs: List[int]) -> Self:
+    def set_io(self, inputs: List[int], outputs: List[int], virtual: bool = False) -> Self:
         """
         Sets the boundary node indices regarded as inputs / outputs. Their order directly determines their index through
         isomorphic conversion to a states outputs, i.e. they are indexed as <...all-inputs><...all-outputs>.
@@ -161,14 +162,15 @@ class Diagram(SupportsPositioning, Protocol):
             )
         boundaries = set(self.boundary_nodes())
         unique_io = set(inputs).union(set(outputs))
-        if unique_io != boundaries:
+        if unique_io != boundaries and not virtual:
             raise ValueError(
-                f"The provided IO must be a 1-1 allocation of boundary nodes."
+                f"The provided IO must be a 1-1 allocation of boundary nodes, or be virtual."
                 f"Surplus IO: {unique_io.difference(boundaries)}."
                 f"Unaccounted boundaries: {boundaries.difference(unique_io)}"
             )
 
         self._io = (inputs, outputs)
+        self._is_io_virtual = virtual
         return self
 
     def io(self) -> Tuple[List[int], List[int]]:
@@ -182,6 +184,15 @@ class Diagram(SupportsPositioning, Protocol):
             return sorted(self.boundary_nodes())
 
         return self._io[0] + self._io[1]
+
+    def virtualize_io(self):
+        pass
+
+    def realize_io(self) -> Tuple[List[int], List[int]]:
+        pass
+
+    def is_io_virtual(self) -> bool:
+        return self._is_io_virtual
 
     ### Convenience ###
 
