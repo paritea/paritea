@@ -1,6 +1,7 @@
 from typing import Optional, Tuple, Dict, List
 
-from pyzx import Mat2
+import numpy as np
+
 from .red_green import to_red_green_form
 from .firing_assignments import (
     determine_ordering,
@@ -31,7 +32,7 @@ def _compute(
     m_d = create_firing_verification(d, ordering)
 
     # Compute row span of valid firing assignment space
-    sol_row_basis = Mat2(m_d.nullspace())
+    sol_row_basis = m_d.null_space()
 
     stabs = None
     if stabilisers:
@@ -39,8 +40,11 @@ def _compute(
         boundary_selected_basis = sol_row_basis.transpose()[: len(ordering.z_boundaries) * 2, :]
 
         pivot_cols = []
-        boundary_selected_basis.gauss(pivot_cols=pivot_cols)
-        stab_sols = [sol_row_basis.data[i] for i in pivot_cols]
+        for row in boundary_selected_basis.row_reduce():
+            nonzero_indices = np.nonzero(row)[0]
+            if len(nonzero_indices) > 0:
+                pivot_cols.append(nonzero_indices[0])
+        stab_sols = [sol_row_basis[i].tolist() for i in pivot_cols]
         web_prototypes = list(map(lambda v: convert_firing_assignment_to_web_prototype(d, ordering, v), stab_sols))
         for web_prototype in web_prototypes:
             additional_nodes.remove_from(d, web_prototype)
@@ -50,12 +54,12 @@ def _compute(
     if detecting_regions:
         # Search for solutions that do not highlight boundary edges, i.e. detecting regions
         boundary_selected_basis = sol_row_basis.transpose()[: len(ordering.z_boundaries) * 2, :]
-        boundary_nullspace_vectors = boundary_selected_basis.nullspace()
+        boundary_nullspace_vectors = boundary_selected_basis.null_space()
         # Empty nullspace of boundary edges -> no webs that highlight no boundary edges -> no detecting regions
         if len(boundary_nullspace_vectors) == 0:
             region_sols = []
         else:
-            region_sols = (Mat2(boundary_nullspace_vectors) * sol_row_basis).data
+            region_sols = (boundary_nullspace_vectors @ sol_row_basis).tolist()
         web_prototypes = list(map(lambda v: convert_firing_assignment_to_web_prototype(d, ordering, v), region_sols))
         for web_prototype in web_prototypes:
             additional_nodes.remove_from(d, web_prototype)
