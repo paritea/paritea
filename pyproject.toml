@@ -17,7 +17,20 @@ dependencies = [
 ]
 
 [dependency-groups]
+all = [
+    { include-group = "bench" },
+    { include-group = "dev" },
+    { include-group = "test" },
+]
+
+bench = [
+    "pyinstrument>=5.1.1",
+]
+
 dev = [
-    "pytest>=8.4.2",
     "ruff==0.14.7", # Pinned to ensure everyone uses the same rules
+]
+
+test = [
+    "pytest>=8.4.2",
 ]
