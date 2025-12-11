@@ -1,9 +1,8 @@
 from collections import defaultdict
 from typing import Dict, List, NamedTuple, Tuple
 
-import numpy as np
+from galois import GF2
 
-from pyzx import Mat2
 from pyzx.graph.base import upair
 from pyzx.linalg import Z2
 
@@ -51,24 +50,26 @@ def determine_ordering(d: Diagram) -> GraphOrdering:
     return GraphOrdering(graph_to_ordering, ordering_to_graph, z_boundaries, internal_spiders, pi_2_spiders)
 
 
-def create_firing_verification(d: Diagram, ordering: GraphOrdering) -> Mat2:
+def create_firing_verification(d: Diagram, ordering: GraphOrdering) -> GF2:
     num_z_boundaries = len(ordering.z_boundaries)
     num_non_boundary_spiders = num_z_boundaries + len(ordering.internal_spiders)
-    adj_matrix = Mat2.zeros(num_non_boundary_spiders, num_non_boundary_spiders)
+    adj_matrix = GF2.Zeros((num_non_boundary_spiders, num_non_boundary_spiders))
 
     for s, t in d.edge_list():
         if d.type(s) != NodeType.B and d.type(t) != NodeType.B:
-            adj_matrix[ordering.ord(s), ordering.ord(t)] += 1
-            adj_matrix[ordering.ord(t), ordering.ord(s)] += 1
+            adj_matrix[ordering.ord(s), ordering.ord(t)] = 1
+            adj_matrix[ordering.ord(t), ordering.ord(s)] = 1
 
-    m_d = Mat2.zeros(adj_matrix.rows(), adj_matrix.cols() + num_z_boundaries)
-    m_d[0:num_z_boundaries, 0:num_z_boundaries] = Mat2.id(num_z_boundaries)
+    rows, cols = num_non_boundary_spiders, num_non_boundary_spiders + num_z_boundaries
+    m_d = GF2.Zeros((rows, cols))
+
+    m_d[0:num_z_boundaries, 0:num_z_boundaries] = GF2.Identity(num_z_boundaries)
+
     m_d[:, num_z_boundaries:] = adj_matrix
+
     num_pi_2 = len(ordering.pi_2_spiders)
-    slice_key = (slice(m_d.rows() - num_pi_2, m_d.rows()), slice(m_d.cols() - num_pi_2, m_d.cols()))
-    m_d[slice_key] = Mat2(
-        (np.array(m_d[slice_key].data, dtype=bool) ^ np.array(Mat2.id(num_pi_2).data, dtype=bool)).tolist()
-    )
+    slice_key = (slice(rows - num_pi_2, rows), slice(cols - num_pi_2, cols))
+    m_d[slice_key] = m_d[slice_key].view(dtype=bool) ^ GF2.Identity(num_pi_2).view(dtype=bool)
 
     return m_d
 
