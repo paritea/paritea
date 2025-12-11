@@ -136,12 +136,12 @@ def test_zweb_webs(assert_pauli_webs):
     assert_pauli_webs(d, stabs, regions)
 
 
-@pytest.mark.parametrize("code_size", [3, 5])
-def test_rotated_surface_code_shor(code_size, assert_pauli_webs):
+@pytest.mark.parametrize("code_size,repeat", [(3, 1), (5, 1), (5, 3)])
+def test_rotated_surface_code_shor(code_size, repeat, assert_pauli_webs):
     d = generate.diagram.syndrome.generate_shor_extraction(
         generate.stabilisers.rotated_planar_surface_code_stabilisers(code_size),
         qubits=code_size**2,
-        repeat=1,
+        repeat=repeat,
     )
 
     stabs, regions = compute_pauli_webs(d)
