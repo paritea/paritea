@@ -1,6 +1,6 @@
 # Fault Tools
 
-A (soon to be) collection of tools to handle and manage faults in ZX diagrams.
+A (soon to be) collection of tools to handle and manage faults in ZX diagrams, as well as compute related properties.
 
 ## Developer Setup
 
@@ -12,7 +12,7 @@ In particular, a virtual environment must be active to use the packages containe
 
 Developers should then install all required dependencies via:
 ```shell
-uv sync
+uv sync --group all
 ```
 This will by default install developer dependencies as well, such as test and code style dependencies.
 
