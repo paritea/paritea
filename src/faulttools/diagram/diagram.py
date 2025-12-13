@@ -1,7 +1,7 @@
 from copy import deepcopy
 from enum import StrEnum
 from fractions import Fraction
-from typing import List, Set, Dict, Optional, Any, Iterable, Protocol, Self, Mapping, runtime_checkable, Tuple
+from typing import List, Set, Dict, Optional, Any, Iterable, Protocol, Self, Mapping, runtime_checkable, Tuple, Sequence
 
 from recordclass import RecordClass
 
@@ -36,7 +36,7 @@ class Diagram(SupportsPositioning, Protocol):
     Node data must be an instance of NodeInfo.
     """
 
-    def __init__(self, additional_keys: Optional[Iterable[str]] = None):
+    def __init__(self, *, additional_keys: Optional[Iterable[str]] = None):
         self._g = rx.PyGraph[_NodeInfo, None]()
         self._x: Dict[int, int] = dict()
         self._y: Dict[int, int] = dict()
@@ -106,6 +106,26 @@ class Diagram(SupportsPositioning, Protocol):
     def add_edge(self, a: int, b: int) -> int:
         return self._g.add_edge(a, b, None)
 
+    def subgraph(self, nodes: Sequence[int], *, preserve_data: bool = True) -> Tuple["Diagram", rx.NodeMap]:
+        other = Diagram(additional_keys=self.additional_keys.copy() if preserve_data else None)
+        other_g, node_map = self._g.subgraph_with_nodemap(nodes)
+        other._g = other_g
+        other._rebind_methods()
+
+        if preserve_data:
+            for node in other.node_indices():
+                old_node = node_map[node]
+                if old_node in self._x:
+                    other._x[node] = self._x[old_node]
+                if old_node in self._y:
+                    other._y[node] = self._y[old_node]
+                for key in self.additional_keys:
+                    attr_map = getattr(self, f"_{key}")
+                    if old_node in attr_map:
+                        getattr(other, f"_{key}")[node] = attr_map[old_node]
+
+        return other, node_map
+
     def compose(self, other: Self, node_map: Mapping[int, int]) -> Dict[int, int]:
         """
         Add another diagram into this diagram.
@@ -150,7 +170,7 @@ class Diagram(SupportsPositioning, Protocol):
     def y(self, node_idx: int) -> int:
         return self._y.get(node_idx, -1)
 
-    def set_io(self, inputs: List[int], outputs: List[int], virtual: bool = False) -> Self:
+    def set_io(self, inputs: List[int], outputs: List[int], *, virtual: bool) -> Self:
         """
         Sets the boundary node indices regarded as inputs / outputs. Their order directly determines their index through
         isomorphic conversion to a states outputs, i.e. they are indexed as <...all-inputs><...all-outputs>.
@@ -160,14 +180,15 @@ class Diagram(SupportsPositioning, Protocol):
                 f"IO may not contain duplicate node indices. Unique I/O:"
                 f" {len(set(inputs))}/{len(set(outputs))}, Given I/O: {len(inputs)}/{len(outputs)}"
             )
-        boundaries = set(self.boundary_nodes())
-        unique_io = set(inputs).union(set(outputs))
-        if unique_io != boundaries and not virtual:
-            raise ValueError(
-                f"The provided IO must be a 1-1 allocation of boundary nodes, or be virtual."
-                f"Surplus IO: {unique_io.difference(boundaries)}."
-                f"Unaccounted boundaries: {boundaries.difference(unique_io)}"
-            )
+        if not virtual:
+            boundaries = set(self.boundary_nodes())
+            unique_io = set(inputs).union(set(outputs))
+            if unique_io != boundaries:
+                raise ValueError(
+                    f"The provided IO must be a 1-1 allocation of boundary nodes, or be virtual. "
+                    f"Surplus IO: {unique_io.difference(boundaries)}. "
+                    f"Unaccounted boundaries: {boundaries.difference(unique_io)}"
+                )
 
         self._io = (inputs, outputs)
         self._is_io_virtual = virtual
@@ -185,11 +206,32 @@ class Diagram(SupportsPositioning, Protocol):
 
         return self._io[0] + self._io[1]
 
-    def virtualize_io(self):
-        pass
+    def virtualize_io(self) -> None:
+        if self.is_io_virtual():
+            return
+
+        inputs, outputs = self.io()
+        new_inputs = [self._g.neighbors(inp)[0] for inp in inputs]
+        new_outputs = [self._g.neighbors(out)[0] for out in outputs]
+        for b in inputs + outputs:
+            self.remove_node(b)
+
+        self.set_io(new_inputs, new_outputs, virtual=True)
 
     def realize_io(self) -> Tuple[List[int], List[int]]:
-        pass
+        if not self.is_io_virtual():
+            return self.io()
+
+        inputs, outputs = self.io()
+        new_inputs = [self.add_node(NodeType.B) for _ in inputs]
+        new_outputs = [self.add_node(NodeType.B) for _ in outputs]
+        for inp, new_inp in zip(inputs, new_inputs):
+            self.add_edge(inp, new_inp)
+        for out, new_out in zip(outputs, new_outputs):
+            self.add_edge(out, new_out)
+        self.set_io(new_inputs, new_outputs, virtual=False)
+
+        return new_inputs, new_outputs
 
     def is_io_virtual(self) -> bool:
         return self._is_io_virtual

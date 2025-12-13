@@ -15,12 +15,15 @@ from copy import deepcopy
 
 
 def _compute(
-    diagram: Diagram, stabilisers: bool, detecting_regions: bool
+    diagram: Diagram, *, stabilisers: bool, detecting_regions: bool
 ) -> Tuple[Optional[List[PauliString]], Optional[List[PauliString]]]:
     """
     Performs full stabiliser and detecting region computation, depending on the given flags. Enabling both flags in one
     call is preferred to enabling them in separate calls as they may share basic computations.
     """
+
+    if diagram.is_io_virtual():
+        raise ValueError("This function does not accept diagrams with virtual IO!")
 
     def to_pauli_string(prototype: Dict[Tuple[int, int], Pauli]) -> PauliString:
         return PauliString({diagram.edge_indices_from_endpoints(*edge)[0]: p for edge, p in prototype.items()})

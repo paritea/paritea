@@ -98,6 +98,7 @@ def _from_pyzx(
         diagram.set_io(
             inputs=[vertex_to_id[i] for i in pyzx_graph.inputs()],
             outputs=[vertex_to_id[o] for o in pyzx_graph.outputs()],
+            virtual=False,
         )
 
     return diagram
@@ -116,7 +117,7 @@ def to_pyzx(d: Diagram, with_mapping: bool = False) -> Union[BaseGraph, Tuple[Ba
     mapping: Dict[int, int] = {}
 
     for n in d.node_indices():
-        if hasattr(d, "pyzx_index"):
+        if hasattr(d, "pyzx_index") and d.pyzx_index(n) is not None:
             pyzx_id = d.pyzx_index(n)
             g.add_vertex_indexed(pyzx_id)
         else:
