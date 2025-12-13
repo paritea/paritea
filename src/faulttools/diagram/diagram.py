@@ -36,11 +36,12 @@ class Diagram(SupportsPositioning, Protocol):
     Node data must be an instance of NodeInfo.
     """
 
-    def __init__(self, additional_keys: Optional[Iterable[str]] = None):
+    def __init__(self, *, additional_keys: Optional[Iterable[str]] = None):
         self._g = rx.PyGraph[_NodeInfo, None]()
         self._x: Dict[int, int] = dict()
         self._y: Dict[int, int] = dict()
         self._io: Optional[Tuple[List[int], List[int]]] = None
+        self._is_io_virtual: bool = True
         # Additional untyped keys for node index mappings
         self.additional_keys = set(additional_keys or [])
         for key in self.additional_keys:
@@ -149,7 +150,7 @@ class Diagram(SupportsPositioning, Protocol):
     def y(self, node_idx: int) -> int:
         return self._y.get(node_idx, -1)
 
-    def set_io(self, inputs: List[int], outputs: List[int]) -> Self:
+    def set_io(self, inputs: List[int], outputs: List[int], *, virtual: bool) -> Self:
         """
         Sets the boundary node indices regarded as inputs / outputs. Their order directly determines their index through
         isomorphic conversion to a states outputs, i.e. they are indexed as <...all-inputs><...all-outputs>.
@@ -159,16 +160,18 @@ class Diagram(SupportsPositioning, Protocol):
                 f"IO may not contain duplicate node indices. Unique I/O:"
                 f" {len(set(inputs))}/{len(set(outputs))}, Given I/O: {len(inputs)}/{len(outputs)}"
             )
-        boundaries = set(self.boundary_nodes())
-        unique_io = set(inputs).union(set(outputs))
-        if unique_io != boundaries:
-            raise ValueError(
-                f"The provided IO must be a 1-1 allocation of boundary nodes."
-                f"Surplus IO: {unique_io.difference(boundaries)}."
-                f"Unaccounted boundaries: {boundaries.difference(unique_io)}"
-            )
+        if not virtual:
+            boundaries = set(self.boundary_nodes())
+            unique_io = set(inputs).union(set(outputs))
+            if unique_io != boundaries:
+                raise ValueError(
+                    f"The provided IO must be a 1-1 allocation of boundary nodes, or be virtual. "
+                    f"Surplus IO: {unique_io.difference(boundaries)}. "
+                    f"Unaccounted boundaries: {boundaries.difference(unique_io)}"
+                )
 
         self._io = (inputs, outputs)
+        self._is_io_virtual = virtual
         return self
 
     def io(self) -> Tuple[List[int], List[int]]:
@@ -182,6 +185,36 @@ class Diagram(SupportsPositioning, Protocol):
             return sorted(self.boundary_nodes())
 
         return self._io[0] + self._io[1]
+
+    def virtualize_io(self) -> None:
+        if self.is_io_virtual():
+            return
+
+        inputs, outputs = self.io()
+        new_inputs = [self._g.neighbors(inp)[0] for inp in inputs]
+        new_outputs = [self._g.neighbors(out)[0] for out in outputs]
+        for b in inputs + outputs:
+            self.remove_node(b)
+
+        self.set_io(new_inputs, new_outputs, virtual=True)
+
+    def realize_io(self) -> Tuple[List[int], List[int]]:
+        if not self.is_io_virtual():
+            return self.io()
+
+        inputs, outputs = self.io()
+        new_inputs = [self.add_node(NodeType.B) for _ in inputs]
+        new_outputs = [self.add_node(NodeType.B) for _ in outputs]
+        for inp, new_inp in zip(inputs, new_inputs):
+            self.add_edge(inp, new_inp)
+        for out, new_out in zip(outputs, new_outputs):
+            self.add_edge(out, new_out)
+        self.set_io(new_inputs, new_outputs, virtual=False)
+
+        return new_inputs, new_outputs
+
+    def is_io_virtual(self) -> bool:
+        return self._is_io_virtual
 
     ### Convenience ###
 
