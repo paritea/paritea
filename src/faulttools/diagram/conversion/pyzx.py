@@ -98,6 +98,7 @@ def _from_pyzx(
         diagram.set_io(
             inputs=[vertex_to_id[i] for i in pyzx_graph.inputs()],
             outputs=[vertex_to_id[o] for o in pyzx_graph.outputs()],
+            virtual=False,
         )
 
     return diagram
