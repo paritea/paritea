@@ -1,6 +1,6 @@
 from faulttools import PauliString
 from faulttools.flip_operators import FlipOperators
-from faulttools.noise_model import NoiseModel, Fault
+from faulttools.noise import NoiseModel, Fault
 
 
 def pushout(model: NoiseModel, flip_ops: FlipOperators) -> NoiseModel:
