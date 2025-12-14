@@ -432,6 +432,7 @@ dependencies = [
     { name = "frozendict" },
     { name = "galois" },
     { name = "notebook" },
+    { name = "pymatching" },
     { name = "pyzx" },
     { name = "recordclass" },
     { name = "rustworkx" },
@@ -461,6 +462,7 @@ requires-dist = [
     { name = "frozendict", specifier = ">=2.4.6" },
     { name = "galois", specifier = ">=0.4.7" },
     { name = "notebook", specifier = ">=7.4.7" },
+    { name = "pymatching", specifier = ">=2.3.1" },
     { name = "pyzx", specifier = ">=0.9.0" },
     { name = "recordclass", specifier = ">=0.23.1" },
     { name = "rustworkx", specifier = ">=0.17.1" },
@@ -1240,6 +1242,15 @@ wheels = [
 ]
 
 [[package]]
+name = "networkx"
+version = "3.6.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6a/51/63fe664f3908c97be9d2e4f1158eb633317598cfa6e1fc14af5383f17512/networkx-3.6.1.tar.gz", hash = "sha256:26b7c357accc0c8cde558ad486283728b65b6a95d85ee1cd66bafab4c8168509", size = 2517025, upload-time = "2025-12-08T17:02:39.908Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl", hash = "sha256:d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762", size = 2068504, upload-time = "2025-12-08T17:02:38.159Z" },
+]
+
+[[package]]
 name = "notebook"
 version = "7.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1599,6 +1610,28 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/7a/83/a8f22466652250a847dfdf58f9a2717b470fdbbcb075c7f730bf608041a6/pyinstrument-5.1.1-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:88ef2e8f483a5e1501d79a7ebdab592a597467810ed24d8db09ab6f568e938d3", size = 152337, upload-time = "2025-08-12T11:35:19.849Z" },
     { url = "https://files.pythonhosted.org/packages/0d/a6/cd4590da14deaeda6315519c26064874bbb9648a1358b80e8a8ca5d4add0/pyinstrument-5.1.1-cp314-cp314t-win32.whl", hash = "sha256:265bc4389f82e6521777bfab426a62a15c4940955e86f75db79a44e7349f9757", size = 125621, upload-time = "2025-08-12T11:35:21.201Z" },
     { url = "https://files.pythonhosted.org/packages/b3/30/177102e798539368aef25688a6a171d66ec92e6f16b6b651a89045a2bd13/pyinstrument-5.1.1-cp314-cp314t-win_amd64.whl", hash = "sha256:fa254f269a72a007b5d02c18cd4b67081e0efabbd33e18acdbd5e3be905afa06", size = 126528, upload-time = "2025-08-12T11:35:22.578Z" },
+]
+
+[[package]]
+name = "pymatching"
+version = "2.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "networkx" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c5/92/60f1419500b49afb0925b0536538c352ef71b4bf182c28b0e3861141fc81/pymatching-2.3.1.tar.gz", hash = "sha256:dac1afab0a190a003a3689a18c3afc5c99a5beaa6a099d79e3d4c8b24c1fa7c5", size = 347052, upload-time = "2025-09-25T21:46:25.293Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/e9/cf2302b391f7c692feed5c1cddb07c2667722dd2944232cfb4c1a691e2ca/pymatching-2.3.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:4bde7bac71e3b1b1d55569c664a7a2d0b0d87962df12b9b45ce3e287d0ac0dff", size = 380195, upload-time = "2025-09-25T21:46:07.26Z" },
+    { url = "https://files.pythonhosted.org/packages/75/60/90c3fd4fe1b16dfc46aa3a774c9dc0438299aa07e7d9f41c3f6bbd207734/pymatching-2.3.1-cp312-cp312-macosx_11_0_x86_64.whl", hash = "sha256:fb06a9a60c32c490f2637a5d0ccb70c8c53024f970ab50d699bc8dc1c61f0534", size = 412898, upload-time = "2025-09-25T21:46:08.16Z" },
+    { url = "https://files.pythonhosted.org/packages/da/b5/25e97b533495a839780c89dac2b56e2b683100945ac4149645f9d95e7aee/pymatching-2.3.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b90cf168645adb78c9f81dd60c9e97e2aae005386b5795b54c8b4055d1492b1b", size = 626112, upload-time = "2025-09-25T21:46:09.591Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/50/e34731b6e7f1a46facaa5c189cc95a55b49a00730203d09f211ef4d5ee58/pymatching-2.3.1-cp312-cp312-win_amd64.whl", hash = "sha256:1f3a0d307b30ef52b7a9cabb58ec27a08ef057e09bcbd00ffe3c40f4e31e606d", size = 347938, upload-time = "2025-09-25T21:46:10.65Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/ee/1e89ba6a2811fad9f1c8d4254812c97904ee386e0490cdd0ee8c68d5d1cd/pymatching-2.3.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:5c010d2dc808a58e80874ada568a4d2bb8c9e81959b858e2e56a84ccc6b2b4ac", size = 380256, upload-time = "2025-09-25T21:46:11.567Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/ef/a3114a4c29cd43e180f0c494aa71beda969a347ee34459c4f816597d5e53/pymatching-2.3.1-cp313-cp313-macosx_11_0_x86_64.whl", hash = "sha256:8e3122358a398853d9e809beadcf52b2d7f38a7cac21e14bca6ce0b44045c376", size = 413004, upload-time = "2025-09-25T21:46:12.883Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/22/0d0494562792575be67358dcd8951678449b273af168dd5e52b887e51ab1/pymatching-2.3.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d0edddbae8437d173d7c1314c9cb853d4abc9b84be9b2274f76972ba89b1b5b5", size = 625873, upload-time = "2025-09-25T21:46:14.068Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/c4/0e53ff3c9312ffb0e1677ebb62172660c5614077dca9c69ccfc31b90b7e4/pymatching-2.3.1-cp313-cp313-win_amd64.whl", hash = "sha256:7ebce2e8bc98379f0bb7643a0ef0171142cf384ba626e46108c84249c868f0a6", size = 347977, upload-time = "2025-09-25T21:46:15.044Z" },
 ]
 
 [[package]]
