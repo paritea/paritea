@@ -3,7 +3,7 @@ from faulttools.flip_operators import FlipOperators
 from faulttools.noise import NoiseModel, Fault
 
 
-def pushout(model: NoiseModel, flip_ops: FlipOperators) -> NoiseModel:
+def push_out(model: NoiseModel, flip_ops: FlipOperators) -> NoiseModel:
     assert model.diagram() is flip_ops.diagram
 
     new_faults = []
