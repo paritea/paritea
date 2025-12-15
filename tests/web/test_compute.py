@@ -6,9 +6,7 @@ import pytest
 from galois import GF2
 from pyzx import Graph, VertexType
 
-import generate.diagram.syndrome
-import generate.stabilisers
-from faulttools import Pauli, PauliString
+from faulttools import Pauli, PauliString, generate
 from faulttools.diagram import Diagram
 from faulttools.diagram.conversion import from_pyzx
 from faulttools.web import compute_pauli_webs
@@ -130,7 +128,7 @@ def test_identity_webs(assert_pauli_webs):
 
 
 def test_zweb_webs(assert_pauli_webs):
-    d = from_pyzx(generate.diagram.zweb(2, 2))
+    d = from_pyzx(generate.zweb(2, 2))
     stabs, regions = compute_pauli_webs(d)
 
     assert_pauli_webs(d, stabs, regions)
@@ -138,8 +136,8 @@ def test_zweb_webs(assert_pauli_webs):
 
 @pytest.mark.parametrize("code_size,repeat", [(3, 1), (5, 1), (5, 3)])
 def test_rotated_surface_code_shor(code_size, repeat, assert_pauli_webs):
-    d = generate.diagram.syndrome.generate_shor_extraction(
-        generate.stabilisers.rotated_planar_surface_code_stabilisers(code_size),
+    d = generate.shor_extraction(
+        generate.rotated_planar_surface_code_stabilisers(code_size),
         qubits=code_size**2,
         repeat=repeat,
     )
