@@ -7,4 +7,5 @@ ignore = [
 
 select = [
     "I", # isort
+    "TID", # flake8-tidy-imports
 ]

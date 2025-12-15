@@ -3,8 +3,9 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from ..diagram import Diagram
-from ..pauli import Pauli, PauliString
+from faulttools.diagram import Diagram
+from faulttools.pauli import Pauli, PauliString
+
 from .firing_assignments import (
     convert_firing_assignment_to_web_prototype,
     create_firing_verification,

@@ -6,7 +6,7 @@ from pyzx import Graph
 from pyzx import VertexType as PyZxVertexType
 from pyzx.graph.base import BaseGraph
 
-from ..diagram import Diagram, NodeType
+from faulttools.diagram import Diagram, NodeType
 
 pyzx_v_type_to_node_type = {
     PyZxVertexType.BOUNDARY: NodeType.B,

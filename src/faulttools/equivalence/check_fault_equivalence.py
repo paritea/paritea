@@ -3,9 +3,10 @@ from typing import List, Mapping
 import numpy as np
 from galois import GF2
 
-from .. import NoiseModel, build_flip_operators, pushout
-from ..noise_model import NoiseModelParam, noise_model_params
-from ..pauli import Pauli, PauliString
+from faulttools import NoiseModel, build_flip_operators, pushout
+from faulttools.noise_model import NoiseModelParam, noise_model_params
+from faulttools.pauli import Pauli, PauliString
+
 from .enumeration import _smallest_size_iteration
 
 

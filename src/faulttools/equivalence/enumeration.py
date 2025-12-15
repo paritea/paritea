@@ -5,7 +5,7 @@ from typing import List, Optional
 from galois import GF2
 from tqdm.auto import tqdm
 
-from ..noise_model import Fault
+from faulttools.noise_model import Fault
 
 
 def _format_sig(sig: int, boundaries: int, sinks: int) -> str:

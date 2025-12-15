@@ -5,8 +5,8 @@ from galois import GF2
 from pyzx.graph.base import upair
 from pyzx.linalg import Z2
 
-from ..diagram import Diagram, NodeType
-from ..pauli import Pauli
+from faulttools.diagram import Diagram, NodeType
+from faulttools.pauli import Pauli
 
 
 class GraphOrdering(NamedTuple):

@@ -4,8 +4,8 @@ from typing import Dict, Iterable, List, Tuple
 
 from pyzx.graph.base import upair
 
-from ..diagram import Diagram, NodeType
-from ..pauli import Pauli
+from faulttools.diagram import Diagram, NodeType
+from faulttools.pauli import Pauli
 
 
 @dataclass(init=True, frozen=True)

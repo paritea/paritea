@@ -2,7 +2,8 @@ from typing import Union
 
 import pyzx as zx
 
-from .. import Diagram
+from faulttools.diagram import Diagram
+
 from .pyzx import from_pyzx as from_pyzx
 from .pyzx import from_pyzx_reversible as from_pyzx_reversible
 from .pyzx import to_pyzx as to_pyzx
