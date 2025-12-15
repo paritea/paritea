@@ -33,7 +33,7 @@ def determine_ordering(d: Diagram) -> GraphOrdering:
     graph_to_ordering: dict[int, int] = {}
     ordering_to_graph: dict[int, int] = {}
     idx = 0
-    for boundary in z_boundaries.keys():
+    for boundary in z_boundaries:
         graph_to_ordering[boundary] = idx
         ordering_to_graph[idx] = boundary
         idx += 1

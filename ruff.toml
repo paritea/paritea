@@ -19,8 +19,12 @@ select = [
     "C4",  # flake8-comprehensions
     "FBT", # flake8-boolean-trap
     "INP", # flake8-no-pep420
+    "PERF", # Perflint
+    "RUF", # Ruff-specific
     "S",   # flake8-bandit (Security)
+    "SIM", # flake8-simplify
     "SLF", # flake8-self
+    "SLOT", # flake8-slots
     "TID", # flake8-tidy-imports
     "TRY", # tryceratops
     "UP",  # pyupgrade

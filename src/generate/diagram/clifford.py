@@ -49,9 +49,9 @@ def clifford(qubits: int | None = None, spiders: int | None = None) -> GraphS:
         _connect_spiders(g, output_zs[i], outputs[i])
 
     # Create internal Clifford spiders
-    internal_spiders = []
-    for _ in range(spiders):
-        internal_spiders.append(_add_random_spider(g, random.choice(["Z", "X"]), qubit=random.randint(0, qubits - 1)))
+    internal_spiders = [
+        _add_random_spider(g, random.choice(["Z", "X"]), qubit=random.randint(0, qubits - 1)) for _ in range(spiders)
+    ]
 
     # Connect some spiders randomly
     all_spiders = input_zs + internal_spiders + output_zs

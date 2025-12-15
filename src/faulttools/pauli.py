@@ -77,17 +77,10 @@ class PauliString(fd.frozendict[int, Pauli]):
         return PauliString({idx: self[idx] for idx in set(indices).intersection(self.keys())})
 
     def commutes(self, other: "PauliString") -> bool:
-        for k in self.keys() & other.keys():
-            if not self[k].commutes(other[k]):
-                return False
-
-        return True
+        return all(self[k].commutes(other[k]) for k in self.keys() & other.keys())
 
     def is_trivial(self) -> bool:
-        for p in self:
-            if self[p] != Pauli.I:
-                return False
-        return True
+        return all(self[p] == Pauli.I for p in self)
 
     def compile(self, idx_map: Mapping[int, int]) -> GF2:
         num_indices = len(idx_map)

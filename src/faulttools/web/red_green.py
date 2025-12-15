@@ -157,13 +157,13 @@ def _ensure_red_green(d: Diagram) -> Iterable[int]:
     # Ensure boundaries are not connected to a red spider
     boundaries = d.boundary_nodes()
     for boundary in boundaries:
-        neighbour = list(d.neighbors(boundary))[0]
+        neighbour = next(iter(d.neighbors(boundary)))
         if d.type(neighbour) == NodeType.X:
             new_nodes.append(_place_node_between(d, NodeType.Z, boundary, neighbour))
 
     # Ensure boundaries are not connected to green spiders with nonzero phase or more than one boundary connection
     for boundary in boundaries:
-        neighbour = list(d.neighbors(boundary))[0]
+        neighbour = next(iter(d.neighbors(boundary)))
         neighbour_boundaries = [v for v in d.neighbors(neighbour) if d.type(v) == NodeType.B]
         if d.phase(neighbour) != 0 or len(neighbour_boundaries) > 1:
             new_x = _place_node_between(d, NodeType.X, boundary, neighbour)
