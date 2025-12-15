@@ -6,6 +6,9 @@ ignore = [
 ]
 
 select = [
+    "F", # pyflakes
+    "E", # pycodestyle Errors
+    "W", # pycodestyle Warnings
     "I", # isort
     "TID", # flake8-tidy-imports
 ]

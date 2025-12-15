@@ -171,7 +171,9 @@ def test_cnot_fuse():
 
 def test_cnot_target_fuse_flagged():
     """
-    Fusing a series of CNOT gates on the target qubits is a fault equivalent rewrite provided that additional flag qubits are employed.
+    Fusing a series of CNOT gates on the target qubits is a fault equivalent rewrite provided that additional flag
+    qubits are employed.
+
     Based on https://arxiv.org/pdf/2410.17240, https://doi.org/10.22331/q-2018-02-08-53 and external contribution.
     """
     c1 = zx.Circuit(4)

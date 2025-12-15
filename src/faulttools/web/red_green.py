@@ -106,8 +106,8 @@ _euler_decomposition_zxz = [NodeType.Z, NodeType.X, NodeType.Z]
 
 
 def _euler_expand_edges(d: Diagram) -> Iterable[ExpandedHadamard]:
-    """
-    A cut down version of pyzx.euler_expansion which does not add global scalars and does not prematurely 'merge' spiders
+    """A cut down version of pyzx.euler_expansion which does not add global scalars and does not prematurely 'merge'
+    spiders.
     """
 
     def _decompose_between(_v1: int, _v2: int, _flip: bool) -> Tuple[int, int, int]:

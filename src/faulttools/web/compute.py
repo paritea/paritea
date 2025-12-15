@@ -71,8 +71,8 @@ def _compute(
 def compute_stabilisers(diagram: Diagram) -> List[PauliString]:
     """
     :return: A set of stabilising webs for the given diagram that forms a basis for the diagrams stabilisers when
-        restricted to its boundary. A full basis for all stabilising webs is only obtained combining the return value with a
-        basis for the diagrams detecting regions.
+        restricted to its boundary. A full basis for all stabilising webs is only obtained combining the return value
+        with a basis for the diagrams detecting regions.
     """
     return _compute(diagram, stabilisers=True, detecting_regions=False)[0]
 

@@ -106,7 +106,8 @@ def _smallest_size_iteration(
             if combined_sig >> g2_sinks not in g1_lookup:
                 if not quiet:
                     tqdm.write(
-                        f"{_format_sig(combined_sig, g2_boundaries, g2_sinks)} has no equivalent in g1, or it was not yet generated and thus has higher weight!"
+                        f"{_format_sig(combined_sig, g2_boundaries, g2_sinks)} has no equivalent in g1, or it was not "
+                        f"yet generated and thus has higher weight!"
                     )
                 return max_size  # No equivalent error with equal or lower weight found
         if not quiet:
@@ -121,7 +122,8 @@ def _smallest_size_iteration(
         else:
             if not quiet:
                 tqdm.write(
-                    f"Discovered {num_new_signatures} new signatures this iteration (so far: {num_total_signatures}, max signatures: {num_max_signatures})!"
+                    f"Discovered {num_new_signatures} new signatures this iteration (so far: {num_total_signatures}, "
+                    f"max signatures: {num_max_signatures})!"
                 )
 
     return None

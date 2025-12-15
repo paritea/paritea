@@ -91,7 +91,8 @@ def _from_pyzx(
                 diagram.add_edge(h, vertex_to_id[target])
             else:
                 raise ValueError(
-                    f"Unsupported PyZX edge type: {e_type.name}. Try explicitly converting the PyZX diagram and passing convert_had_edges=True."
+                    f"Unsupported PyZX edge type: {e_type.name}. Try explicitly converting the PyZX diagram and passing"
+                    f" convert_had_edges=True."
                 )
         else:
             raise ValueError(f"Unsupported PyZX edge type: {e_type.name}")
