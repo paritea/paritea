@@ -32,7 +32,7 @@ class DiagramWithPyZXIndex(Diagram, SupportsPyZXIndex, Protocol):
     pass
 
 
-def from_pyzx(pyzx_graph: BaseGraph, convert_had_edges: bool = False) -> Diagram:
+def from_pyzx(pyzx_graph: BaseGraph, *, convert_had_edges: bool = False) -> Diagram:
     """
     Note: To obtain a graph that is convertible using 'to_pyzx' see 'from_pyzx_reversible'.
 
@@ -40,20 +40,20 @@ def from_pyzx(pyzx_graph: BaseGraph, convert_had_edges: bool = False) -> Diagram
     :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
     :return: The converted diagram.
     """
-    return _from_pyzx(pyzx_graph, convert_had_edges, reversible=False)
+    return _from_pyzx(pyzx_graph, convert_had_edges=convert_had_edges, reversible=False)
 
 
-def from_pyzx_reversible(pyzx_graph: BaseGraph, convert_had_edges: bool = False) -> DiagramWithPyZXIndex:
+def from_pyzx_reversible(pyzx_graph: BaseGraph, *, convert_had_edges: bool = False) -> DiagramWithPyZXIndex:
     """
     :param pyzx_graph: The PyZX graph to convert to a diagram.
     :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
     :return: The converted diagram.
     """
-    return _from_pyzx(pyzx_graph, convert_had_edges, reversible=True)
+    return _from_pyzx(pyzx_graph, convert_had_edges=convert_had_edges, reversible=True)
 
 
 def _from_pyzx(
-    pyzx_graph: BaseGraph, convert_had_edges: bool = False, reversible: bool = False
+    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: bool = False
 ) -> Union[Diagram, DiagramWithPyZXIndex]:
     if reversible:
         diagram: DiagramWithPyZXIndex = Diagram(additional_keys=["pyzx_index"])
@@ -107,7 +107,7 @@ def _from_pyzx(
     return diagram
 
 
-def to_pyzx(d: Diagram, with_mapping: bool = False) -> Union[BaseGraph, Tuple[BaseGraph, Dict[int, int]]]:
+def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> Union[BaseGraph, Tuple[BaseGraph, Dict[int, int]]]:
     """
     Constructs a PyZX diagram from the given diagram instance, reassigning original node ids and positions. Does not
     convert original hadamard edges back.

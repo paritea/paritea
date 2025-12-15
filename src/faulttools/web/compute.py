@@ -15,7 +15,7 @@ from .red_green import to_red_green_form
 
 
 def _compute(
-    diagram: Diagram, stabilisers: bool, detecting_regions: bool
+    diagram: Diagram, *, stabilisers: bool, detecting_regions: bool
 ) -> Tuple[Optional[List[PauliString]], Optional[List[PauliString]]]:
     """
     Performs full stabiliser and detecting region computation, depending on the given flags. Enabling both flags in one

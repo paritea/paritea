@@ -23,6 +23,7 @@ def _smallest_size_iteration(
     g1_sinks: int,
     g2_boundaries: int,
     g2_sinks: int,
+    *,
     quiet: bool = True,
 ) -> Optional[int]:
     """

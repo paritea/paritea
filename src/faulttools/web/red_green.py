@@ -110,7 +110,7 @@ def _euler_expand_edges(d: Diagram) -> Iterable[ExpandedHadamard]:
     spiders.
     """
 
-    def _decompose_between(_v1: int, _v2: int, _flip: bool) -> Tuple[int, int, int]:
+    def _decompose_between(_v1: int, _v2: int, *, _flip: bool) -> Tuple[int, int, int]:
         # Change decomposition to avoid introducing more X-spiders due to adjacent Z-spider
         pattern = _euler_decomposition_xzx if _flip else _euler_decomposition_zxz
 
@@ -134,7 +134,7 @@ def _euler_expand_edges(d: Diagram) -> Iterable[ExpandedHadamard]:
         d.add_edge(v1, v2)
 
         flip = d.type(v1) == d.type(v2) and d.type(v1) == NodeType.X
-        w1, w2, w3 = _decompose_between(v1, v2, flip)
+        w1, w2, w3 = _decompose_between(v1, v2, _flip=flip)
 
         expanded_hadamards.append(ExpandedHadamard(w1, w2, w3, origin=v, flipped_decomposition=flip))
 

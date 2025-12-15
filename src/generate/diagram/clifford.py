@@ -18,7 +18,7 @@ def _add_random_spider(graph, spider_type, qubit=None):
     return graph.add_vertex(ty=vtype, phase=phase, qubit=qubit, row=0.5)
 
 
-def _connect_spiders(graph: GraphS, v1, v2, hadamard=False):
+def _connect_spiders(graph: GraphS, v1, v2, *, hadamard=False):
     if hadamard:
         h = graph.add_vertex(zx.VertexType.H_BOX)
         graph.add_edges([(v1, h), (h, v2)])

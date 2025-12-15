@@ -73,6 +73,7 @@ def _is_fault_equivalence(
     num_detectors_1: int,
     num_detectors_2: int,
     stabilisers: List[PauliString],
+    *,
     quiet: bool = True,
 ) -> bool:
     """
@@ -139,6 +140,7 @@ def _is_fault_equivalence(
 def is_fault_equivalence(
     noise_1: NoiseModelParam,
     noise_2: NoiseModelParam,
+    *,
     quiet: bool = True,
 ) -> bool:
     """

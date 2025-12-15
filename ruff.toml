@@ -12,5 +12,6 @@ select = [
     "W", # pycodestyle Warnings
     "I", # isort
     "B", # flake8-Bugbear
+    "FBT", # flake8-boolean-trap
     "TID", # flake8-tidy-imports
 ]
