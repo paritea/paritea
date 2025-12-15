@@ -3,8 +3,8 @@ from collections.abc import Mapping
 import numpy as np
 from galois import GF2
 
-from faulttools import NoiseModel, build_flip_operators, pushout
-from faulttools.noise_model import NoiseModelParam, noise_model_params
+from faulttools import build_flip_operators, pushout
+from faulttools.noise import NoiseModel, NoiseModelParam, noise_model_params
 from faulttools.pauli import Pauli, PauliString
 
 from .enumeration import _smallest_size_iteration

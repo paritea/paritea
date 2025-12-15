@@ -4,7 +4,7 @@ import time
 from galois import GF2
 from tqdm.auto import tqdm
 
-from faulttools.noise_model import Fault
+from faulttools.noise import Fault
 
 
 def _format_sig(sig: int, boundaries: int, sinks: int) -> str:

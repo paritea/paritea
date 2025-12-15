@@ -3,10 +3,10 @@ from typing import NamedTuple
 
 from galois import GF2
 
-from .diagram import Diagram
-from .diagram.conversion import DiagramParam, to_diagram
-from .pauli import Pauli, PauliString
-from .util import canonicalize_input
+from faulttools.diagram import Diagram
+from faulttools.diagram.conversion import DiagramParam, to_diagram
+from faulttools.pauli import Pauli, PauliString
+from faulttools.util import canonicalize_input
 
 
 class Fault(NamedTuple):
