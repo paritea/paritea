@@ -1,5 +1,4 @@
 import pyzx as zx
-
 from pyzx.graph.graph_s import GraphS
 
 

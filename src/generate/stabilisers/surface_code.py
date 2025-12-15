@@ -1,6 +1,6 @@
 from typing import List
 
-from faulttools import PauliString, Pauli
+from faulttools import Pauli, PauliString
 
 
 def rotated_planar_surface_code_stabilisers(L: int) -> List[PauliString]:

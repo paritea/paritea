@@ -1,11 +1,10 @@
-from typing import List, Optional, Iterable, Tuple, NamedTuple, Set, Mapping, Union
-
-from .diagram import Diagram
-from .diagram.conversion import to_diagram, DiagramParam
-from .pauli import PauliString, Pauli
+from typing import Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple, Union
 
 from galois import GF2
 
+from .diagram import Diagram
+from .diagram.conversion import DiagramParam, to_diagram
+from .pauli import Pauli, PauliString
 from .util import canonicalize_input
 
 

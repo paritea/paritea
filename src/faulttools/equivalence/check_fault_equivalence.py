@@ -3,10 +3,10 @@ from typing import List, Mapping
 import numpy as np
 from galois import GF2
 
-from .. import NoiseModel, pushout, build_flip_operators
-from .enumeration import _smallest_size_iteration
-from ..noise_model import noise_model_params, NoiseModelParam
+from .. import NoiseModel, build_flip_operators, pushout
+from ..noise_model import NoiseModelParam, noise_model_params
 from ..pauli import Pauli, PauliString
+from .enumeration import _smallest_size_iteration
 
 
 class Stabilisers:

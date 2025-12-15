@@ -1,9 +1,8 @@
+import random
 from fractions import Fraction
 from typing import Optional
 
 import pyzx as zx
-import random
-
 from pyzx.graph.graph_s import GraphS
 
 

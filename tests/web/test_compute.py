@@ -1,5 +1,5 @@
 import json
-from typing import List, Callable, Mapping
+from typing import Callable, List, Mapping
 
 import numpy as np
 import pytest
@@ -8,7 +8,7 @@ from pyzx import Graph, VertexType
 
 import generate.diagram.syndrome
 import generate.stabilisers
-from faulttools import PauliString, Pauli
+from faulttools import Pauli, PauliString
 from faulttools.diagram import Diagram
 from faulttools.diagram.conversion import from_pyzx
 from faulttools.web import compute_pauli_webs

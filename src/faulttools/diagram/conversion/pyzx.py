@@ -1,8 +1,10 @@
 from fractions import Fraction
-from typing import Protocol, Union, Tuple, Dict
+from typing import Dict, Protocol, Tuple, Union
 
+from pyzx import EdgeType as PyZxEdgeType
+from pyzx import Graph
+from pyzx import VertexType as PyZxVertexType
 from pyzx.graph.base import BaseGraph
-from pyzx import VertexType as PyZxVertexType, EdgeType as PyZxEdgeType, Graph
 
 from ..diagram import Diagram, NodeType
 

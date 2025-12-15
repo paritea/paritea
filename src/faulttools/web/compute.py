@@ -1,17 +1,16 @@
-from typing import Optional, Tuple, Dict, List
+from copy import deepcopy
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from .red_green import to_red_green_form
-from .firing_assignments import (
-    determine_ordering,
-    create_firing_verification,
-    convert_firing_assignment_to_web_prototype,
-)
 from ..diagram import Diagram
-from ..pauli import PauliString, Pauli
-
-from copy import deepcopy
+from ..pauli import Pauli, PauliString
+from .firing_assignments import (
+    convert_firing_assignment_to_web_prototype,
+    create_firing_verification,
+    determine_ordering,
+)
+from .red_green import to_red_green_form
 
 
 def _compute(

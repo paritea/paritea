@@ -1,11 +1,10 @@
 from copy import deepcopy
 from enum import StrEnum
 from fractions import Fraction
-from typing import List, Set, Dict, Optional, Any, Iterable, Protocol, Self, Mapping, runtime_checkable, Tuple
-
-from recordclass import RecordClass
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Self, Set, Tuple, runtime_checkable
 
 import rustworkx as rx
+from recordclass import RecordClass
 
 
 class NodeType(StrEnum):

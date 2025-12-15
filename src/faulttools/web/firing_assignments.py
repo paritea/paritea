@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import Dict, List, NamedTuple, Tuple
 
 from galois import GF2
-
 from pyzx.graph.base import upair
 from pyzx.linalg import Z2
 

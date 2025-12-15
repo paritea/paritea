@@ -2,7 +2,6 @@ from fractions import Fraction
 from typing import List, Tuple
 
 import pytest
-
 import pyzx as zx
 
 from faulttools.diagram.conversion import from_pyzx

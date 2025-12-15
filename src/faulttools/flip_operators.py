@@ -1,8 +1,8 @@
 import dataclasses
-from typing import List, Iterable, Tuple, Mapping, Set
+from typing import Iterable, List, Mapping, Set, Tuple
 
 from .diagram import Diagram, NodeType
-from .pauli import PauliString, Pauli
+from .pauli import Pauli, PauliString
 from .web import compute_pauli_webs
 
 

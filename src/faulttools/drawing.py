@@ -1,5 +1,5 @@
-from pyzx.pauliweb import PauliWeb
 import pyzx as zx
+from pyzx.pauliweb import PauliWeb
 
 from faulttools import PauliString
 from faulttools.diagram import Diagram

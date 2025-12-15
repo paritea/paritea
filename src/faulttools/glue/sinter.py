@@ -1,5 +1,5 @@
 import sinter
-from stim import DetectorErrorModel, CompiledDemSampler
+from stim import CompiledDemSampler, DetectorErrorModel
 
 
 class DemWrappingCircuit:

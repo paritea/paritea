@@ -1,1 +1,2 @@
-from .diagram import Diagram as Diagram, NodeType as NodeType
+from .diagram import Diagram as Diagram
+from .diagram import NodeType as NodeType

@@ -1,6 +1,6 @@
 from typing import List
 
-from faulttools import PauliString, Pauli
+from faulttools import Pauli, PauliString
 from faulttools.diagram import Diagram, NodeType
 
 

@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import TypeVar, ParamSpec, Callable
+from typing import Callable, ParamSpec, TypeVar
 
 T = TypeVar("T")
 P = ParamSpec("P")

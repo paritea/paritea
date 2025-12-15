@@ -1,9 +1,9 @@
 import itertools
-from tqdm.auto import tqdm
 import time
 from typing import List, Optional
 
 from galois import GF2
+from tqdm.auto import tqdm
 
 from ..noise_model import Fault
 

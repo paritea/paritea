@@ -4,3 +4,7 @@ line-length = 120
 ignore = [
     "E741" # Ambiguous variable names, false positive on I for identity matrix
 ]
+
+select = [
+    "I", # isort
+]

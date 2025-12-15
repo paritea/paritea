@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Union, Optional, Iterable, Mapping
+from typing import Iterable, Mapping, Optional, Union
 
 import frozendict as fd
 from galois import GF2
