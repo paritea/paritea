@@ -1,2 +1,6 @@
-from .diagram import Diagram as Diagram
-from .diagram import NodeType as NodeType
+from .diagram import Diagram, NodeType
+
+__all__ = [
+    "Diagram",
+    "NodeType",
+]

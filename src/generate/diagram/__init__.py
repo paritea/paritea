@@ -1,2 +1,7 @@
-from .clifford import clifford as clifford
-from .zweb import zweb as zweb
+from .clifford import clifford
+from .zweb import zweb
+
+__all__ = [
+    "clifford",
+    "zweb",
+]
