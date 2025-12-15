@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, List, NamedTuple, Tuple
+from typing import NamedTuple
 
 from galois import GF2
 from pyzx.graph.base import upair
@@ -10,12 +10,12 @@ from faulttools.pauli import Pauli
 
 
 class GraphOrdering(NamedTuple):
-    graph_to_ordering: Dict[int, int]
-    ordering_to_graph: Dict[int, int]
+    graph_to_ordering: dict[int, int]
+    ordering_to_graph: dict[int, int]
 
-    z_boundaries: Dict[int, int]
-    internal_spiders: List[int]
-    pi_2_spiders: List[int]
+    z_boundaries: dict[int, int]
+    internal_spiders: list[int]
+    pi_2_spiders: list[int]
 
     def ord(self, s: int) -> int:
         return self.graph_to_ordering[s]
@@ -30,8 +30,8 @@ def determine_ordering(d: Diagram) -> GraphOrdering:
     internal_spiders = list(set(d.node_indices()).difference(boundaries).difference(z_boundaries.keys()))
     pi_2_spiders = list(filter(lambda _v: d.phase(_v).denominator == 2, internal_spiders))
 
-    graph_to_ordering: Dict[int, int] = dict()
-    ordering_to_graph: Dict[int, int] = dict()
+    graph_to_ordering: dict[int, int] = dict()
+    ordering_to_graph: dict[int, int] = dict()
     idx = 0
     for boundary in z_boundaries.keys():
         graph_to_ordering[boundary] = idx
@@ -74,9 +74,9 @@ def create_firing_verification(d: Diagram, ordering: GraphOrdering) -> GF2:
 
 
 def convert_firing_assignment_to_web_prototype(
-    d: Diagram, ordering: GraphOrdering, v: List[Z2]
-) -> Dict[Tuple[int, int], Pauli]:
-    prot: Dict[Tuple[int, int], Pauli] = defaultdict(lambda: Pauli.I)
+    d: Diagram, ordering: GraphOrdering, v: list[Z2]
+) -> dict[tuple[int, int], Pauli]:
+    prot: dict[tuple[int, int], Pauli] = defaultdict(lambda: Pauli.I)
 
     for adj_vertex, g_vertex in ordering.ordering_to_graph.items():
         g_type = d.type(g_vertex)

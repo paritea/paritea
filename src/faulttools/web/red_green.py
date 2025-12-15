@@ -1,6 +1,6 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Dict, Iterable, List, Tuple
 
 from pyzx.graph.base import upair
 
@@ -23,10 +23,10 @@ class ExpandedHadamard:
 
 
 class AdditionalNodes:
-    extra_id_nodes: List[ExtraIdNode]
-    expanded_hadamards: List[ExpandedHadamard]
+    extra_id_nodes: list[ExtraIdNode]
+    expanded_hadamards: list[ExpandedHadamard]
 
-    def __init__(self, extra_id_nodes: List[ExtraIdNode], expanded_hadamards: List[ExpandedHadamard]):
+    def __init__(self, extra_id_nodes: list[ExtraIdNode], expanded_hadamards: list[ExpandedHadamard]):
         self.extra_id_nodes = extra_id_nodes
         self.expanded_hadamards = expanded_hadamards
 
@@ -41,7 +41,7 @@ class AdditionalNodes:
         self.expanded_hadamards.append(expanded_hadamard)
 
     def _remove_extra_id_node(
-        self, adj: Dict[int, Dict[int, any]], web: Dict[Tuple[int, int], Pauli], id_node: ExtraIdNode
+        self, adj: dict[int, dict[int, any]], web: dict[tuple[int, int], Pauli], id_node: ExtraIdNode
     ):
         v1, v2 = adj[id_node.node].keys()
         web[upair(v1, v2)] = web.get(upair(v1, id_node.node), Pauli.I)
@@ -55,7 +55,7 @@ class AdditionalNodes:
         del adj[v2][id_node.node]
 
     def _remove_expanded_hadamard(
-        self, adj: Dict[int, Dict[int, any]], web: Dict[Tuple[int, int], Pauli], hadamard: ExpandedHadamard
+        self, adj: dict[int, dict[int, any]], web: dict[tuple[int, int], Pauli], hadamard: ExpandedHadamard
     ):
         w1, w2, w3 = hadamard.r1_node, hadamard.r2_node, hadamard.r3_node
         w1_left, w1_right = adj[w1].keys()
@@ -85,7 +85,7 @@ class AdditionalNodes:
         del adj[w3][r]
         del adj[r][w3]
 
-    def remove_from(self, d: Diagram, web: Dict[Tuple[int, int], Pauli]) -> None:
+    def remove_from(self, d: Diagram, web: dict[tuple[int, int], Pauli]) -> None:
         adj = {n1: {n2: True for n2 in d.neighbors(n1)} for n1 in d.node_indices()}
         for id_node in self.extra_id_nodes:
             self._remove_extra_id_node(adj, web, id_node)
@@ -110,7 +110,7 @@ def _euler_expand_edges(d: Diagram) -> Iterable[ExpandedHadamard]:
     spiders.
     """
 
-    def _decompose_between(_v1: int, _v2: int, *, _flip: bool) -> Tuple[int, int, int]:
+    def _decompose_between(_v1: int, _v2: int, *, _flip: bool) -> tuple[int, int, int]:
         # Change decomposition to avoid introducing more X-spiders due to adjacent Z-spider
         pattern = _euler_decomposition_xzx if _flip else _euler_decomposition_zxz
 

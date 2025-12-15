@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Iterable, List, Mapping, Set, Tuple
+from collections.abc import Iterable, Mapping
 
 from .diagram import Diagram, NodeType
 from .pauli import Pauli, PauliString
@@ -9,17 +9,17 @@ from .web import compute_pauli_webs
 @dataclasses.dataclass(init=True, frozen=True)
 class FlipOperators:
     diagram: Diagram
-    stab_flip_ops: List[PauliString]
-    region_flip_ops: List[PauliString]
-    stab_gen_set: List[PauliString]
-    region_gen_set: List[PauliString]
-    region_flip_op_stab_flip_map: Mapping[int, Set[int]]
+    stab_flip_ops: list[PauliString]
+    region_flip_ops: list[PauliString]
+    stab_gen_set: list[PauliString]
+    region_gen_set: list[PauliString]
+    region_flip_op_stab_flip_map: Mapping[int, set[int]]
 
 
 def _flip_operators(
     web_generating_set: Iterable[PauliString],
     restriction_func=lambda x: x,
-) -> Tuple[List[PauliString], List[PauliString]]:
+) -> tuple[list[PauliString], list[PauliString]]:
     """
     Calculates flip operators for the given collection of webs, which is presumed to be a minimal generating set for
     some space under the given restriction function (defaults to identity).

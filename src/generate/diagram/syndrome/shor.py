@@ -1,10 +1,8 @@
-from typing import List
-
 from faulttools import Pauli, PauliString
 from faulttools.diagram import Diagram, NodeType
 
 
-def generate_shor_extraction(stabilisers: List[PauliString], qubits: int, repeat: int = 1) -> Diagram:
+def generate_shor_extraction(stabilisers: list[PauliString], qubits: int, repeat: int = 1) -> Diagram:
     """
     Generates a ZX diagram measuring the given stabilisers one-by-one using Shor-style syndrome extraction. Diagrams are
     post-selected on all-zero extraction measurements.

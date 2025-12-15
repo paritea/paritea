@@ -1,5 +1,4 @@
 from copy import deepcopy
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -16,13 +15,13 @@ from .red_green import to_red_green_form
 
 def _compute(
     diagram: Diagram, *, stabilisers: bool, detecting_regions: bool
-) -> Tuple[Optional[List[PauliString]], Optional[List[PauliString]]]:
+) -> tuple[list[PauliString] | None, list[PauliString] | None]:
     """
     Performs full stabiliser and detecting region computation, depending on the given flags. Enabling both flags in one
     call is preferred to enabling them in separate calls as they may share basic computations.
     """
 
-    def to_pauli_string(prototype: Dict[Tuple[int, int], Pauli]) -> PauliString:
+    def to_pauli_string(prototype: dict[tuple[int, int], Pauli]) -> PauliString:
         return PauliString({diagram.edge_indices_from_endpoints(*edge)[0]: p for edge, p in prototype.items()})
 
     d = deepcopy(diagram)
@@ -68,7 +67,7 @@ def _compute(
     return stabs, regions
 
 
-def compute_stabilisers(diagram: Diagram) -> List[PauliString]:
+def compute_stabilisers(diagram: Diagram) -> list[PauliString]:
     """
     :return: A set of stabilising webs for the given diagram that forms a basis for the diagrams stabilisers when
         restricted to its boundary. A full basis for all stabilising webs is only obtained combining the return value
@@ -77,14 +76,14 @@ def compute_stabilisers(diagram: Diagram) -> List[PauliString]:
     return _compute(diagram, stabilisers=True, detecting_regions=False)[0]
 
 
-def compute_detecting_regions(diagram: Diagram) -> List[PauliString]:
+def compute_detecting_regions(diagram: Diagram) -> list[PauliString]:
     """
     :return: A basis for the detecting regions of the given diagram.
     """
     return _compute(diagram, stabilisers=False, detecting_regions=True)[1]
 
 
-def compute_pauli_webs(diagram: Diagram) -> Tuple[List[PauliString], List[PauliString]]:
+def compute_pauli_webs(diagram: Diagram) -> tuple[list[PauliString], list[PauliString]]:
     """
     See .compute_stabilisers and .compute_detecting_regions of this package.
     """

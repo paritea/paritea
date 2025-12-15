@@ -1,9 +1,7 @@
-from typing import List
-
 from faulttools import Pauli, PauliString
 
 
-def rotated_planar_surface_code_stabilisers(L: int) -> List[PauliString]:
+def rotated_planar_surface_code_stabilisers(L: int) -> list[PauliString]:
     """
     Generates the stabilisers (plaquettes) of an LxL rotated planar surface code, using row-major qubit indexing.
     """

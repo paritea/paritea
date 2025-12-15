@@ -1,5 +1,5 @@
 from fractions import Fraction
-from typing import Dict, Protocol, Tuple, Union
+from typing import Protocol
 
 from pyzx import EdgeType as PyZxEdgeType
 from pyzx import Graph
@@ -54,7 +54,7 @@ def from_pyzx_reversible(pyzx_graph: BaseGraph, *, convert_had_edges: bool = Fal
 
 def _from_pyzx(
     pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: bool = False
-) -> Union[Diagram, DiagramWithPyZXIndex]:
+) -> Diagram | DiagramWithPyZXIndex:
     if reversible:
         diagram: DiagramWithPyZXIndex = Diagram(additional_keys=["pyzx_index"])
     else:
@@ -107,7 +107,7 @@ def _from_pyzx(
     return diagram
 
 
-def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> Union[BaseGraph, Tuple[BaseGraph, Dict[int, int]]]:
+def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> BaseGraph | tuple[BaseGraph, dict[int, int]]:
     """
     Constructs a PyZX diagram from the given diagram instance, reassigning original node ids and positions. Does not
     convert original hadamard edges back.
@@ -117,7 +117,7 @@ def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> Union[BaseGraph, Tuple
 
     g = Graph(backend="simple")
 
-    mapping: Dict[int, int] = {}
+    mapping: dict[int, int] = {}
 
     for n in d.node_indices():
         if hasattr(d, "pyzx_index"):

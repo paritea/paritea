@@ -1,7 +1,8 @@
+from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from enum import StrEnum
 from fractions import Fraction
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Self, Set, Tuple, runtime_checkable
+from typing import Any, Protocol, Self, runtime_checkable
 
 import rustworkx as rx
 from recordclass import RecordClass
@@ -35,11 +36,11 @@ class Diagram(SupportsPositioning, Protocol):
     Node data must be an instance of NodeInfo.
     """
 
-    def __init__(self, *, additional_keys: Optional[Iterable[str]] = None):
+    def __init__(self, *, additional_keys: Iterable[str] | None = None):
         self._g = rx.PyGraph[_NodeInfo, None]()
-        self._x: Dict[int, int] = dict()
-        self._y: Dict[int, int] = dict()
-        self._io: Optional[Tuple[List[int], List[int]]] = None
+        self._x: dict[int, int] = dict()
+        self._y: dict[int, int] = dict()
+        self._io: tuple[list[int], list[int]] | None = None
         self._is_io_virtual: bool = True
         # Additional untyped keys for node index mappings
         self.additional_keys = set(additional_keys or [])
@@ -78,10 +79,10 @@ class Diagram(SupportsPositioning, Protocol):
     def add_node(
         self,
         t: NodeType,
-        phase: Optional[Fraction] = None,
-        x: Optional[int] = None,
-        y: Optional[int] = None,
-        **kwargs: Dict[str, Any],
+        phase: Fraction | None = None,
+        x: int | None = None,
+        y: int | None = None,
+        **kwargs: dict[str, Any],
     ) -> int:
         idx = self._g.add_node(_NodeInfo(t, phase or Fraction(0, 1)))
         if x is not None:
@@ -105,7 +106,7 @@ class Diagram(SupportsPositioning, Protocol):
     def add_edge(self, a: int, b: int) -> int:
         return self._g.add_edge(a, b, None)
 
-    def compose(self, other: Self, node_map: Mapping[int, int]) -> Dict[int, int]:
+    def compose(self, other: Self, node_map: Mapping[int, int]) -> dict[int, int]:
         """
         Add another diagram into this diagram.
 
@@ -149,7 +150,7 @@ class Diagram(SupportsPositioning, Protocol):
     def y(self, node_idx: int) -> int:
         return self._y.get(node_idx, -1)
 
-    def set_io(self, inputs: List[int], outputs: List[int], *, virtual: bool) -> Self:
+    def set_io(self, inputs: list[int], outputs: list[int], *, virtual: bool) -> Self:
         """
         Sets the boundary node indices regarded as inputs / outputs. Their order directly determines their index through
         isomorphic conversion to a states outputs, i.e. they are indexed as <...all-inputs><...all-outputs>.
@@ -173,13 +174,13 @@ class Diagram(SupportsPositioning, Protocol):
         self._is_io_virtual = virtual
         return self
 
-    def io(self) -> Tuple[List[int], List[int]]:
+    def io(self) -> tuple[list[int], list[int]]:
         if self._io is None:
             raise ValueError("IO is not set!")
 
         return self._io
 
-    def io_sorted(self) -> List[int]:
+    def io_sorted(self) -> list[int]:
         if self._io is None:
             return sorted(self.boundary_nodes())
 
@@ -197,7 +198,7 @@ class Diagram(SupportsPositioning, Protocol):
 
         self.set_io(new_inputs, new_outputs, virtual=True)
 
-    def realize_io(self) -> Tuple[List[int], List[int]]:
+    def realize_io(self) -> tuple[list[int], list[int]]:
         if not self.is_io_virtual():
             return self.io()
 
@@ -224,8 +225,8 @@ class Diagram(SupportsPositioning, Protocol):
     def boundary_nodes(self) -> rx.NodeIndices:
         return self._g.filter_nodes(lambda ni: ni.type == NodeType.B)
 
-    def boundary_edges(self) -> Set[int]:
-        boundary_edges: List[int] = []
+    def boundary_edges(self) -> set[int]:
+        boundary_edges: list[int] = []
         for b in self.boundary_nodes():
             boundary_edges += self._g.incident_edges(b)
         return set(boundary_edges)

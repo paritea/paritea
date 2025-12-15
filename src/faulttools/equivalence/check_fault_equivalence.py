@@ -1,4 +1,4 @@
-from typing import List, Mapping
+from collections.abc import Mapping
 
 import numpy as np
 from galois import GF2
@@ -35,7 +35,7 @@ class AugmentedStabilisers:
         return compiled_faults + compiled_faults[:, self._indices] @ self._rref
 
 
-def _stabilisers(stabilisers: List[PauliString], boundary_idx_map: Mapping[int, int]) -> Stabilisers:
+def _stabilisers(stabilisers: list[PauliString], boundary_idx_map: Mapping[int, int]) -> Stabilisers:
     num_boundaries = len(boundary_idx_map)
     np_stabilisers = np.zeros((len(stabilisers), num_boundaries * 2), dtype=int)
     for i, stab in enumerate(stabilisers):
@@ -54,8 +54,8 @@ def _compile_atomic_faults(
     stabilisers: AugmentedStabilisers,
     boundaries_to_idx: Mapping[int, int],
     detector_to_idx: Mapping[int, int],
-) -> List[GF2]:
-    normalised_faults: List[GF2] = []
+) -> list[GF2]:
+    normalised_faults: list[GF2] = []
     for f in noise.atomic_faults():
         if f.is_trivial():
             continue
@@ -72,7 +72,7 @@ def _is_fault_equivalence(
     noise_2: NoiseModel,
     num_detectors_1: int,
     num_detectors_2: int,
-    stabilisers: List[PauliString],
+    stabilisers: list[PauliString],
     *,
     quiet: bool = True,
 ) -> bool:

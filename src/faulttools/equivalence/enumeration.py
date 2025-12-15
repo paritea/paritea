@@ -1,6 +1,5 @@
 import itertools
 import time
-from typing import List, Optional
 
 from galois import GF2
 from tqdm.auto import tqdm
@@ -18,14 +17,14 @@ def _format_sig(sig: int, boundaries: int, sinks: int) -> str:
 
 
 def _smallest_size_iteration(
-    g1_sig_nf: List[GF2],
-    g2_sig_nf: List[GF2],
+    g1_sig_nf: list[GF2],
+    g2_sig_nf: list[GF2],
     g1_sinks: int,
     g2_boundaries: int,
     g2_sinks: int,
     *,
     quiet: bool = True,
-) -> Optional[int]:
+) -> int | None:
     """
     Takes fault signatures of g1,g2 in normal form (stabilisers factored out) where the sink containment information is
     provided in the last `..._sinks` elements of the signature.

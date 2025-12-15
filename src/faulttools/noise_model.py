@@ -1,4 +1,5 @@
-from typing import Iterable, List, Mapping, NamedTuple, Optional, Set, Tuple, Union
+from collections.abc import Iterable, Mapping
+from typing import NamedTuple
 
 from galois import GF2
 
@@ -17,7 +18,7 @@ class Fault(NamedTuple):
     """
 
     edge_flips: PauliString
-    detector_flips: Set[int]
+    detector_flips: set[int]
 
     @staticmethod
     def edge_flip(edge_idx: int, flip: Pauli) -> "Fault":
@@ -54,18 +55,18 @@ class Fault(NamedTuple):
 
 class NoiseModel:
     _diagram: Diagram
-    _atomic_weights: List[Tuple[Fault, int]]
+    _atomic_weights: list[tuple[Fault, int]]
 
     @staticmethod
     def edge_flip_noise(
         diagram: Diagram,
-        w_x: Optional[int] = None,
-        w_y: Optional[int] = None,
-        w_z: Optional[int] = None,
-        idealised_edges: Optional[List[int]] = None,
+        w_x: int | None = None,
+        w_y: int | None = None,
+        w_z: int | None = None,
+        idealised_edges: list[int] | None = None,
     ) -> "NoiseModel":
         idealised_edges = idealised_edges or []
-        atomic_weights: List[Tuple[Fault, int]] = []
+        atomic_weights: list[tuple[Fault, int]] = []
         for edge_idx in diagram.edge_indices():
             if edge_idx in idealised_edges:
                 continue
@@ -76,7 +77,7 @@ class NoiseModel:
 
         return NoiseModel(diagram=diagram, atomic_weights=atomic_weights)
 
-    def __init__(self, diagram: Diagram, atomic_weights: List[Tuple[Fault, int]]) -> None:
+    def __init__(self, diagram: Diagram, atomic_weights: list[tuple[Fault, int]]) -> None:
         self._diagram = diagram
         self._atomic_weights = atomic_weights
 
@@ -86,11 +87,11 @@ class NoiseModel:
     def atomic_faults(self) -> Iterable[Fault]:
         return map(lambda x: x[0], self._atomic_weights)
 
-    def atomic_weights(self) -> List[Tuple[Fault, int]]:
+    def atomic_weights(self) -> list[tuple[Fault, int]]:
         return self._atomic_weights
 
 
-type NoiseModelParam = Union[NoiseModel, DiagramParam]
+type NoiseModelParam = NoiseModel | DiagramParam
 
 
 def to_noise_model(obj: NoiseModelParam) -> NoiseModel:

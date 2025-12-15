@@ -1,5 +1,5 @@
+from collections.abc import Iterable, Mapping
 from enum import StrEnum
-from typing import Iterable, Mapping, Optional, Union
 
 import frozendict as fd
 from galois import GF2
@@ -54,7 +54,7 @@ class PauliString(fd.frozendict[int, Pauli]):
     def unary(edge: int, pauli: Pauli) -> "PauliString":
         return PauliString({edge: pauli})
 
-    def __new__(cls, o: Optional[Union[dict, str]] = None):
+    def __new__(cls, o: dict | str | None = None):
         if o is None:
             return super().__new__(cls)
         elif isinstance(o, str):

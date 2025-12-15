@@ -1,6 +1,5 @@
 import random
 from fractions import Fraction
-from typing import Optional
 
 import pyzx as zx
 from pyzx.graph.graph_s import GraphS
@@ -26,7 +25,7 @@ def _connect_spiders(graph: GraphS, v1, v2, *, hadamard=False):
         graph.add_edge((v1, v2), zx.EdgeType.SIMPLE)
 
 
-def clifford(qubits: Optional[int] = None, spiders: Optional[int] = None) -> GraphS:
+def clifford(qubits: int | None = None, spiders: int | None = None) -> GraphS:
     """Generate a random clifford ZX-diagram, possibly non-unitary."""
     if qubits is None:
         qubits = random.randint(2, 5)
