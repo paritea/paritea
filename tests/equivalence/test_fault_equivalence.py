@@ -48,7 +48,7 @@ def test_no_leg_spider_fuse(fan_out):
     g1 = zx.Graph()
     bz, z = g1.add_vertex(zx.VertexType.Z), g1.add_vertex(zx.VertexType.Z)
     g1.add_edge((bz, z))
-    for i in range(fan_out):
+    for _ in range(fan_out):
         g1.add_edge((z, g1.add_vertex(zx.VertexType.BOUNDARY)))
 
     g2 = g1.clone()

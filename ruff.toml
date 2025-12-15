@@ -2,7 +2,8 @@ line-length = 120
 
 [lint]
 ignore = [
-    "E741" # Ambiguous variable names, false positive on I for identity matrix
+    "E741", # Ambiguous variable names, false positive on I for identity matrix
+    "B905", # `zip()` without an explicit `strict=` parameter
 ]
 
 select = [
@@ -10,5 +11,6 @@ select = [
     "E", # pycodestyle Errors
     "W", # pycodestyle Warnings
     "I", # isort
+    "B", # flake8-Bugbear
     "TID", # flake8-tidy-imports
 ]

@@ -45,8 +45,8 @@ class Diagram(SupportsPositioning, Protocol):
         self.additional_keys = set(additional_keys or [])
         for key in self.additional_keys:
             setattr(self, f"_{key}", dict())
-            setattr(self, f"{key}", lambda idx: getattr(self, f"_{key}").get(idx))
-            setattr(self, f"set_{key}", lambda idx, arg: getattr(self, f"_{key}").update({idx: arg}) or self)
+            setattr(self, f"{key}", lambda idx, _key=key: getattr(self, f"_{_key}").get(idx))
+            setattr(self, f"set_{key}", lambda idx, arg, _key=key: getattr(self, f"_{_key}").update({idx: arg}) or self)
         self._rebind_methods()
 
     def _rebind_methods(self):
