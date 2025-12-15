@@ -4,6 +4,7 @@ line-length = 120
 ignore = [
     "E741", # Ambiguous variable names, false positive on I for identity matrix
     "B905", # `zip()` without an explicit `strict=` parameter
+    "TRY003", # Avoid specifying long messages outside the exception class
 ]
 
 select = [
@@ -17,5 +18,6 @@ select = [
     "FBT", # flake8-boolean-trap
     "SLF",  # flake8-self
     "TID", # flake8-tidy-imports
+    "TRY", # tryceratops
     "UP",  # pyupgrade
 ]

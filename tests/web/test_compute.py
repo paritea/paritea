@@ -108,11 +108,11 @@ def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, list[PauliString]
             assert np.array_equal(web_space_basis.row_reduce(), exp_web_space_basis.row_reduce()), (
                 "Web spaces are not equal"
             )
-        except AssertionError as e:
+        except AssertionError:
             web_io.write_stabilising(stabs, d, file_name_suffix="_actual")
             web_io.write_detecting(regions, d, file_name_suffix="_actual")
 
-            raise e
+            raise
 
     return _assert
 

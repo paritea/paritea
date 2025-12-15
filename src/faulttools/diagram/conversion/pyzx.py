@@ -63,7 +63,7 @@ def _from_pyzx(
     vertex_to_id = {}
     for v in pyzx_graph.vertices():
         if not isinstance(v, int):
-            raise ValueError(f"Unsupported PyZX vertex instance: {type(v)}")
+            raise TypeError(f"Unsupported PyZX vertex instance: {type(v)}")
 
         v_type = pyzx_graph.type(v)
         if v_type not in pyzx_v_type_to_node_type:
