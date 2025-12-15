@@ -85,7 +85,7 @@ class NoiseModel:
         return self._diagram
 
     def atomic_faults(self) -> Iterable[Fault]:
-        return map(lambda x: x[0], self._atomic_weights)
+        return (x[0] for x in self._atomic_weights)
 
     def atomic_weights(self) -> list[tuple[Fault, int]]:
         return self._atomic_weights
@@ -102,4 +102,4 @@ def to_noise_model(obj: NoiseModelParam) -> NoiseModel:
 
 
 def noise_model_params(*param_names: str):
-    return canonicalize_input(**{name: to_noise_model for name in param_names})
+    return canonicalize_input(**dict.fromkeys(param_names, to_noise_model))

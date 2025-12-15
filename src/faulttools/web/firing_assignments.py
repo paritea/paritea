@@ -30,8 +30,8 @@ def determine_ordering(d: Diagram) -> GraphOrdering:
     internal_spiders = list(set(d.node_indices()).difference(boundaries).difference(z_boundaries.keys()))
     pi_2_spiders = list(filter(lambda _v: d.phase(_v).denominator == 2, internal_spiders))
 
-    graph_to_ordering: dict[int, int] = dict()
-    ordering_to_graph: dict[int, int] = dict()
+    graph_to_ordering: dict[int, int] = {}
+    ordering_to_graph: dict[int, int] = {}
     idx = 0
     for boundary in z_boundaries.keys():
         graph_to_ordering[boundary] = idx

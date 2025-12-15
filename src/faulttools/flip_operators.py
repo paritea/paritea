@@ -59,7 +59,7 @@ def build_flip_operators(d: Diagram) -> FlipOperators:
     boundary_edges = d.boundary_edges()
     # To establish stabilisers (i.e. input-output relationships), we need to ensure that every boundary node has exactly
     # one connected boundary edge.
-    assert all([len(d.neighbors(b)) == 1 and d.type(d.neighbors(b)[0]) != NodeType.B for b in d.boundary_nodes()]), (
+    assert all(len(d.neighbors(b)) == 1 and d.type(d.neighbors(b)[0]) != NodeType.B for b in d.boundary_nodes()), (
         "The diagram must allocate boundary nodes and edges one-to-one!"
     )
 

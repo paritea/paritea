@@ -38,14 +38,14 @@ class Diagram(SupportsPositioning, Protocol):
 
     def __init__(self, *, additional_keys: Iterable[str] | None = None):
         self._g = rx.PyGraph[_NodeInfo, None]()
-        self._x: dict[int, int] = dict()
-        self._y: dict[int, int] = dict()
+        self._x: dict[int, int] = {}
+        self._y: dict[int, int] = {}
         self._io: tuple[list[int], list[int]] | None = None
         self._is_io_virtual: bool = True
         # Additional untyped keys for node index mappings
         self.additional_keys = set(additional_keys or [])
         for key in self.additional_keys:
-            setattr(self, f"_{key}", dict())
+            setattr(self, f"_{key}", {})
             setattr(self, f"{key}", lambda idx, _key=key: getattr(self, f"_{_key}").get(idx))
             setattr(self, f"set_{key}", lambda idx, arg, _key=key: getattr(self, f"_{_key}").update({idx: arg}) or self)
         self._rebind_methods()

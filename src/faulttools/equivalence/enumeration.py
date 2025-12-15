@@ -38,7 +38,7 @@ def _smallest_size_iteration(
     :returns: the size of such a combination or `None` if no such combination exists.
     """
     g1_lookup = {0: 0}  # The trivial signature requires zero signatures to generate
-    g2_lookup = dict()
+    g2_lookup = {}
 
     if len(g2_sig_nf) == 0:
         if not quiet:

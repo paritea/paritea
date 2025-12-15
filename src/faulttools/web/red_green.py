@@ -66,7 +66,7 @@ class AdditionalNodes:
         web[upair(l, hadamard.origin)] = web.get(upair(l, w1), Pauli.I)
         web[upair(hadamard.origin, r)] = web.get(upair(r, w3), Pauli.I)
         if hadamard.origin not in adj:
-            adj[hadamard.origin] = dict()
+            adj[hadamard.origin] = {}
         adj[l][hadamard.origin] = True
         adj[hadamard.origin][l] = True
         adj[hadamard.origin][r] = True
@@ -86,7 +86,7 @@ class AdditionalNodes:
         del adj[r][w3]
 
     def remove_from(self, d: Diagram, web: dict[tuple[int, int], Pauli]) -> None:
-        adj = {n1: {n2: True for n2 in d.neighbors(n1)} for n1 in d.node_indices()}
+        adj = {n1: dict.fromkeys(d.neighbors(n1), True) for n1 in d.node_indices()}
         for id_node in self.extra_id_nodes:
             self._remove_extra_id_node(adj, web, id_node)
         for hadamard in self.expanded_hadamards:

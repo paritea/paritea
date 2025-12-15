@@ -44,7 +44,7 @@ def _compute(
             if len(nonzero_indices) > 0:
                 pivot_cols.append(nonzero_indices[0])
         stab_sols = [sol_row_basis[i].tolist() for i in pivot_cols]
-        web_prototypes = list(map(lambda v: convert_firing_assignment_to_web_prototype(d, ordering, v), stab_sols))
+        web_prototypes = [convert_firing_assignment_to_web_prototype(d, ordering, v) for v in stab_sols]
         for web_prototype in web_prototypes:
             additional_nodes.remove_from(d, web_prototype)
         stabs = list(map(to_pauli_string, web_prototypes))
@@ -59,7 +59,7 @@ def _compute(
             region_sols = []
         else:
             region_sols = (boundary_nullspace_vectors @ sol_row_basis).tolist()
-        web_prototypes = list(map(lambda v: convert_firing_assignment_to_web_prototype(d, ordering, v), region_sols))
+        web_prototypes = [convert_firing_assignment_to_web_prototype(d, ordering, v) for v in region_sols]
         for web_prototype in web_prototypes:
             additional_nodes.remove_from(d, web_prototype)
         regions = list(map(to_pauli_string, web_prototypes))
