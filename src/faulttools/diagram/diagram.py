@@ -73,7 +73,7 @@ class Diagram(SupportsPositioning, Protocol):
         memo[id(self)] = result
         for k, v in self.__dict__.items():
             setattr(result, k, deepcopy(v, memo))
-        result._rebind_methods()
+        result._rebind_methods()  # noqa: SLF001
         return result
 
     def add_node(
@@ -106,7 +106,7 @@ class Diagram(SupportsPositioning, Protocol):
     def add_edge(self, a: int, b: int) -> int:
         return self._g.add_edge(a, b, None)
 
-    def compose(self, other: Self, node_map: Mapping[int, int]) -> dict[int, int]:
+    def compose(self, other: "Diagram", node_map: Mapping[int, int]) -> dict[int, int]:
         """
         Add another diagram into this diagram.
 
@@ -119,10 +119,10 @@ class Diagram(SupportsPositioning, Protocol):
             been combined.
         """
 
-        new_node_ids = self._g.compose(other._g, {i: (o, None) for i, o in node_map.items()})
+        new_node_ids = self._g.compose(other._g, {i: (o, None) for i, o in node_map.items()})  # noqa: SLF001
         for other_node, new_this_node in new_node_ids.items():
-            self._x[new_this_node] = other._x[other_node]
-            self._y[new_this_node] = other._y[other_node]
+            self._x[new_this_node] = other._x[other_node]  # noqa: SLF001
+            self._y[new_this_node] = other._y[other_node]  # noqa: SLF001
             for key in self.additional_keys.intersection(other.additional_keys):
                 getattr(self, f"_{key}")[new_this_node] = getattr(other, f"_{key}")[other_node]
 

@@ -11,9 +11,11 @@ select = [
     "E", # pycodestyle Errors
     "W", # pycodestyle Warnings
     "I", # isort
+
     "B", # flake8-Bugbear
     "C4",  # flake8-comprehensions
     "FBT", # flake8-boolean-trap
+    "SLF",  # flake8-self
     "TID", # flake8-tidy-imports
     "UP",  # pyupgrade
 ]
