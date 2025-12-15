@@ -16,8 +16,12 @@ select = [
     "B", # flake8-Bugbear
     "C4",  # flake8-comprehensions
     "FBT", # flake8-boolean-trap
-    "SLF",  # flake8-self
+    "INP", # flake8-no-pep420
+    "SLF", # flake8-self
     "TID", # flake8-tidy-imports
     "TRY", # tryceratops
     "UP",  # pyupgrade
 ]
+
+[lint.per-file-ignores]
+"tests/**" = ["INP001"] # Do not require tests to be packages
