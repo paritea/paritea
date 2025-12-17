@@ -21,7 +21,9 @@ def to_diagram(obj: DiagramParam) -> Diagram:
 
 
 __all__ = [
+    "DiagramParam",
     "from_pyzx",
     "from_pyzx_reversible",
+    "to_diagram",
     "to_pyzx",
 ]

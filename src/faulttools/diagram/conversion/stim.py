@@ -1,26 +1,24 @@
 import math
-from typing import List, Tuple
 
 import stim
 
 from faulttools import Pauli
-from faulttools.diagram import NodeType, Diagram
+from faulttools.diagram import Diagram, NodeType
 from faulttools.noise import Fault, NoiseModel
 
 
-def from_stim(circuit: stim.Circuit) -> Tuple[Diagram, NoiseModel]:
+def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
     n = circuit.num_qubits
     d = Diagram()
     row_offset = 0
     # Everything starts in |0> state
-    current_qubit_nodes: List[int | None] = []
-    for idx in range(n):
-        current_qubit_nodes.append(d.add_node(NodeType.X, x=row_offset, y=idx))
+    current_qubit_nodes: list[int | None] = [d.add_node(NodeType.X, x=row_offset, y=idx) for idx in range(n)]
+
     initial_nodes = current_qubit_nodes.copy()
     row_offset += 1
 
-    atomic_faults: List[Tuple[Fault, float]] = []
-    scheduled_pauli_faults_per_qubit: List[List[Tuple[Pauli, float]]] = [[] for _ in range(n)]
+    atomic_faults: list[tuple[Fault, float]] = []
+    scheduled_pauli_faults_per_qubit: list[list[tuple[Pauli, float]]] = [[] for _ in range(n)]
 
     def flush_faults_on_qubit(q: int, edge: int) -> None:
         for fault, prob in scheduled_pauli_faults_per_qubit[q]:
