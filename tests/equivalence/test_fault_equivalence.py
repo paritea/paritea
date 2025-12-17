@@ -1,8 +1,6 @@
 from fractions import Fraction
-from typing import List, Tuple
 
 import pytest
-
 import pyzx as zx
 
 from faulttools.diagram.conversion import from_pyzx
@@ -49,7 +47,7 @@ def test_no_leg_spider_fuse(fan_out):
     g1 = zx.Graph()
     bz, z = g1.add_vertex(zx.VertexType.Z), g1.add_vertex(zx.VertexType.Z)
     g1.add_edge((bz, z))
-    for i in range(fan_out):
+    for _ in range(fan_out):
         g1.add_edge((z, g1.add_vertex(zx.VertexType.BOUNDARY)))
 
     g2 = g1.clone()
@@ -83,7 +81,7 @@ def test_collapse_ring(ring_size):
         assert not is_fault_equivalence(g1, g2, quiet=False)
 
 
-def _add_cat_state(g: zx.graph.base.BaseGraph, size: int, qubit: int = 0, row: int = 0) -> Tuple[int, List[int]]:
+def _add_cat_state(g: zx.graph.base.BaseGraph, size: int, qubit: int = 0, row: int = 0) -> tuple[int, list[int]]:
     z = g.add_vertex(zx.VertexType.Z, qubit=qubit, row=row)
     boundaries = [g.add_vertex(zx.VertexType.BOUNDARY, qubit=qubit + i, row=row + 1) for i in range(size)]
     g.add_edges([(z, b) for b in boundaries])
@@ -91,7 +89,7 @@ def _add_cat_state(g: zx.graph.base.BaseGraph, size: int, qubit: int = 0, row: i
     return z, boundaries
 
 
-def _add_cz_layer(g: zx.graph.base.BaseGraph, boundaries: List[int]) -> List[int]:
+def _add_cz_layer(g: zx.graph.base.BaseGraph, boundaries: list[int]) -> list[int]:
     """
     Adds a layer of CZ gates to the graph, by converting the given boundaries to Z-spiders.
     Let n = boundaries / 2, then boundaries[i] will be connected to boundaries[i+n].
@@ -172,7 +170,9 @@ def test_cnot_fuse():
 
 def test_cnot_target_fuse_flagged():
     """
-    Fusing a series of CNOT gates on the target qubits is a fault equivalent rewrite provided that additional flag qubits are employed.
+    Fusing a series of CNOT gates on the target qubits is a fault equivalent rewrite provided that additional flag
+    qubits are employed.
+
     Based on https://arxiv.org/pdf/2410.17240, https://doi.org/10.22331/q-2018-02-08-53 and external contribution.
     """
     c1 = zx.Circuit(4)

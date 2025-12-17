@@ -28,7 +28,7 @@ bench = [
 ]
 
 dev = [
-    "ruff==0.14.7", # Pinned to ensure everyone uses the same rules
+    "ruff==0.14.9", # Pinned to ensure everyone uses the same rules
 ]
 
 test = [

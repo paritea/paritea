@@ -1,9 +1,9 @@
-from pyzx.pauliweb import PauliWeb
 import pyzx as zx
+from pyzx.pauliweb import PauliWeb
 
-from faulttools import PauliString
-from faulttools.diagram import Diagram
-from faulttools.diagram.conversion import to_pyzx
+from .diagram import Diagram
+from .diagram.conversion import to_pyzx
+from .pauli import PauliString
 
 
 def draw(d: Diagram, *, web: PauliString | None = None) -> None:
