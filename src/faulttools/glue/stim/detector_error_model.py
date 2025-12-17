@@ -1,15 +1,13 @@
-from typing import List, Dict, Tuple
-
 import stim
 
-from faulttools import PauliString, build_flip_operators, FlipOperators
+from faulttools import FlipOperators, PauliString, build_flip_operators
 from faulttools.noise import NoiseModel
 from faulttools.pushout import push_out
 
 
 def _change_basis_for_logicals(
-    flip_ops: FlipOperators, logicals: List[PauliString]
-) -> Tuple[FlipOperators, Dict[int, int]]:
+    flip_ops: FlipOperators, logicals: list[PauliString]
+) -> tuple[FlipOperators, dict[int, int]]:
     if len(logicals) > len(flip_ops.region_gen_set):
         raise ValueError("Too many logicals given!")
 
@@ -18,7 +16,7 @@ def _change_basis_for_logicals(
     region_gen_set = flip_ops.region_gen_set.copy()
     region_flip_ops = flip_ops.region_flip_ops.copy()
 
-    region_idx_to_logical_map: Dict[int, int] = {}
+    region_idx_to_logical_map: dict[int, int] = {}
     for i_l, logical in enumerate(logicals):
         flip_indices = [i for i, region in enumerate(region_gen_set) if not region.commutes(logical)]
         if len(flip_indices) == 0:
@@ -44,7 +42,7 @@ def _change_basis_for_logicals(
     ), region_idx_to_logical_map
 
 
-def export_to_stim_dem(nm: NoiseModel, *, logicals: List[PauliString]) -> stim.DetectorErrorModel:
+def export_to_stim_dem(nm: NoiseModel, *, logicals: list[PauliString]) -> stim.DetectorErrorModel:
     d = nm.diagram()
     flip_ops, region_idx_to_logical_map = _change_basis_for_logicals(build_flip_operators(d), logicals)
 
@@ -57,7 +55,6 @@ def export_to_stim_dem(nm: NoiseModel, *, logicals: List[PauliString]) -> stim.D
 
         dem_str += f"error({p}) "
         for detector in fault.detector_flips:
-
             if detector in region_idx_to_logical_map:
                 dem_str += f"L{region_idx_to_logical_map[detector]} "
             else:
