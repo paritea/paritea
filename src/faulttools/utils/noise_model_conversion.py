@@ -1,7 +1,6 @@
-from faulttools.diagram.conversion import DiagramParam, to_diagram
+from faulttools.noise import NoiseModel
 from faulttools.util import canonicalize_input
-
-from .model import NoiseModel
+from faulttools.utils import DiagramParam, to_diagram
 
 type NoiseModelParam = NoiseModel | DiagramParam
 

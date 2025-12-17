@@ -1,5 +1,5 @@
 from faulttools import build_flip_operators, generate, push_out
-from faulttools.diagram.conversion import from_pyzx
+from faulttools.glue.pyzx import from_pyzx
 from faulttools.noise import NoiseModel
 
 

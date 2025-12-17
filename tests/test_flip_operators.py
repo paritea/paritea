@@ -2,7 +2,7 @@ import pytest
 from pyzx import Graph, VertexType
 
 from faulttools import build_flip_operators
-from faulttools.diagram.conversion import from_pyzx
+from faulttools.glue.pyzx import from_pyzx
 
 
 def test_asserts_no_connected_boundaries():

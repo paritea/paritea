@@ -3,8 +3,8 @@ from fractions import Fraction
 import pytest
 import pyzx as zx
 
-from faulttools.diagram.conversion import from_pyzx
 from faulttools.equivalence import is_fault_equivalence
+from faulttools.glue.pyzx import from_pyzx
 
 
 @pytest.mark.skip(reason="Identity wires are currently not supported")
