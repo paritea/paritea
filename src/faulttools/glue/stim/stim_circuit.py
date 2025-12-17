@@ -11,24 +11,37 @@ from faulttools.pauli import Pauli
 @dataclass(init=True, kw_only=True)
 class _DiagramBuildingState:
     n_qubits: int
+    d: Diagram
     current_qubit_nodes: list[int | None]
     row_offset: int
 
+    def is_initialized(self, qubit: int) -> bool:
+        return self.current_qubit_nodes[qubit] is not None
 
-def _h(d: Diagram, state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[tuple[int, int]]:
+    def ensure_initialized(self, *qubits: int) -> None:
+        for qubit in qubits:
+            if self.is_initialized(qubit):
+                return
+            # Everything starts in |0> state in stim
+            self.current_qubit_nodes[qubit] = self.d.add_node(NodeType.X, x=self.row_offset - 1, y=qubit)
+
+
+def _h(state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[tuple[int, int]]:
     updated_qubits = []
     for tar in instr.targets_copy():
         assert tar.is_qubit_target and not tar.is_inverted_result_target
-        h = d.add_node(NodeType.H, x=state.row_offset, y=tar.qubit_value)
-        e = d.add_edge(state.current_qubit_nodes[tar.qubit_value], h)
-        state.current_qubit_nodes[tar.qubit_value] = h
-        updated_qubits.append((tar.qubit_value, e))
+        q = tar.qubit_value
+        state.ensure_initialized(q)
+        h = state.d.add_node(NodeType.H, x=state.row_offset, y=q)
+        e = state.d.add_edge(state.current_qubit_nodes[q], h)
+        state.current_qubit_nodes[q] = h
+        updated_qubits.append((q, e))
     state.row_offset += 1
 
     return updated_qubits
 
 
-def _cnot(d: Diagram, state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[tuple[int, int]]:
+def _cnot(state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[tuple[int, int]]:
     updated_qubits = []
     for group in instr.target_groups():
         assert len(group) == 2
@@ -37,9 +50,10 @@ def _cnot(d: Diagram, state: _DiagramBuildingState, instr: stim.CircuitInstructi
 
         q_control = group[0].qubit_value
         q_target = group[1].qubit_value
-        control = d.add_node(NodeType.Z, x=state.row_offset, y=q_control)
-        target = d.add_node(NodeType.X, x=state.row_offset, y=q_target)
-        e_control, e_target, _ = d.add_edges(
+        state.ensure_initialized(q_control, q_target)
+        control = state.d.add_node(NodeType.Z, x=state.row_offset, y=q_control)
+        target = state.d.add_node(NodeType.X, x=state.row_offset, y=q_target)
+        e_control, e_target, _ = state.d.add_edges(
             [
                 (state.current_qubit_nodes[q_control], control),
                 (state.current_qubit_nodes[q_target], target),
@@ -56,16 +70,12 @@ def _cnot(d: Diagram, state: _DiagramBuildingState, instr: stim.CircuitInstructi
 
 
 def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
-    d = Diagram()
     state = _DiagramBuildingState(
         n_qubits=circuit.num_qubits,
-        row_offset=0,
-        current_qubit_nodes=[],
+        d=Diagram(),
+        row_offset=1,
+        current_qubit_nodes=[None for _ in range(circuit.num_qubits)],
     )
-    # Everything starts in |0> state
-    state.current_qubit_nodes = [d.add_node(NodeType.X, x=0, y=idx) for idx in range(state.n_qubits)]
-    initial_nodes = state.current_qubit_nodes.copy()
-    state.row_offset += 1
 
     atomic_faults: list[tuple[Fault, float]] = []
     scheduled_pauli_faults_per_qubit: list[list[tuple[Pauli, float]]] = [[] for _ in range(state.n_qubits)]
@@ -79,21 +89,36 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
         match instr.name:
             # Regular gates
             case "H":
-                for qubit, e in _h(d, state, instr):
+                for qubit, e in _h(state, instr):
                     flush_faults_on_qubit(qubit, e)
             case "CX" | "CNOT" | "ZCX":
-                for qubit, e in _cnot(d, state, instr):
+                for qubit, e in _cnot(state, instr):
                     flush_faults_on_qubit(qubit, e)
             # Measurements / Resets
-            case "R" | "RZ" | "MR" | "MRZ" | "M" | "MZ":
+            case "R" | "RZ":
                 for tar in instr.targets_copy():
                     assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    # Silent measurement # TODO this is postselected
-                    m = d.add_node(NodeType.X, x=state.row_offset, y=tar.qubit_value)
-                    e = d.add_edge(state.current_qubit_nodes[tar.qubit_value], m)
-                    flush_faults_on_qubit(tar.qubit_value, e)
-                    r = d.add_node(NodeType.X, x=state.row_offset + 1, y=tar.qubit_value)
-                    state.current_qubit_nodes[tar.qubit_value] = r
+                    q = tar.qubit_value
+                    if state.is_initialized(q):
+                        # Silent measurement
+                        m = state.d.add_node(NodeType.X, x=state.row_offset, y=q)
+                        e = state.d.add_edge(state.current_qubit_nodes[q], m)
+                        flush_faults_on_qubit(q, e)
+                    r = state.d.add_node(NodeType.X, x=state.row_offset + 1, y=q)
+                    state.current_qubit_nodes[q] = r
+
+                state.row_offset += 2
+            case "MR" | "MRZ" | "M" | "MZ":
+                for tar in instr.targets_copy():
+                    assert tar.is_qubit_target and not tar.is_inverted_result_target
+                    # Silent measurement
+                    q = tar.qubit_value
+                    state.ensure_initialized(q)
+                    m = state.d.add_node(NodeType.X, x=state.row_offset, y=q)
+                    e = state.d.add_edge(state.current_qubit_nodes[q], m)
+                    flush_faults_on_qubit(q, e)
+                    r = state.d.add_node(NodeType.X, x=state.row_offset + 1, y=q)
+                    state.current_qubit_nodes[q] = r
 
                 state.row_offset += 2
             # Error mechanisms
@@ -144,21 +169,25 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
             case _:
                 raise NotImplementedError(f"The instruction {instr.name} is not supported.")
 
-    # Output boundaries; remove unused qubit world lines
-    for idx in range(state.n_qubits):
-        if state.current_qubit_nodes[idx] == initial_nodes[idx]:
-            d.remove_node(initial_nodes[idx])
-            state.current_qubit_nodes[idx] = None
-        else:
-            b = d.add_node(NodeType.B, x=state.row_offset, y=idx)
-            d.add_edge(state.current_qubit_nodes[idx], b)
-            state.current_qubit_nodes[idx] = b
-    state.row_offset += 1
-    d.set_io(
-        [], [b for b in state.current_qubit_nodes if b is not None], virtual=False
-    )  # TODO throw when a qubit is used but not measured at the end
+    # Remove unused qubit world lines and latest measurements
+    down_shift = 0
+    for qubit in range(state.n_qubits):
+        cur_node = state.current_qubit_nodes[qubit]
+        if cur_node is None:
+            for node in state.d.node_indices():
+                if state.d.y(node) >= qubit - down_shift:  # Assume everything is aligned with a qubit world line
+                    state.d.set_y(node, state.d.y(node) - 1)
+            down_shift += 1
+            continue
+
+        if len(state.d.neighbors(cur_node)) != 0:  # Overapproximation to detect whether last op was a measurement
+            raise RuntimeError(f"Last operation on used qubit {qubit} was not detected to be a measurement!")
+        state.d.remove_node(cur_node)
+
+    # All stim diagrams we support are closed
+    state.d.set_io([], [], virtual=False)
 
     # Build noise model
-    noise = NoiseModel(d, atomic_faults)
+    noise = NoiseModel(state.d, atomic_faults)
 
-    return d, noise
+    return state.d, noise
