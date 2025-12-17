@@ -2,9 +2,9 @@ import math
 
 import stim
 
-from faulttools import Pauli
 from faulttools.diagram import Diagram, NodeType
 from faulttools.noise import Fault, NoiseModel
+from faulttools.pauli import Pauli
 
 
 def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
