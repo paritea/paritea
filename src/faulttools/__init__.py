@@ -1,4 +1,15 @@
-from .pauli import Pauli as Pauli, PauliString as PauliString
-from .flip_operators import FlipOperators as FlipOperators, build_flip_operators as build_flip_operators
-from .pushout import push_out as push_out
-from .export import export_to_stim_dem as export_to_stim_dem
+from .drawing import draw
+from .flip_operators import FlipOperators, build_flip_operators
+from .pauli import Pauli, PauliString
+from .pushout import pushout
+from .export import export_to_stim_dem
+
+__all__ = [
+    "FlipOperators",
+    "Pauli",
+    "PauliString",
+    "build_flip_operators",
+    "draw",
+    "pushout",
+    "export_to_stim_dem",
+]

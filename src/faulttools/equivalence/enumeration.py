@@ -1,11 +1,10 @@
 import itertools
-from tqdm.auto import tqdm
 import time
-from typing import List, Optional
 
 from galois import GF2
+from tqdm.auto import tqdm
 
-from ..noise_model import Fault
+from faulttools.noise import Fault
 
 
 def _format_sig(sig: int, boundaries: int, sinks: int) -> str:
@@ -18,13 +17,14 @@ def _format_sig(sig: int, boundaries: int, sinks: int) -> str:
 
 
 def _smallest_size_iteration(
-    g1_sig_nf: List[GF2],
-    g2_sig_nf: List[GF2],
+    g1_sig_nf: list[GF2],
+    g2_sig_nf: list[GF2],
     g1_sinks: int,
     g2_boundaries: int,
     g2_sinks: int,
+    *,
     quiet: bool = True,
-) -> Optional[int]:
+) -> int | None:
     """
     Takes fault signatures of g1,g2 in normal form (stabilisers factored out) where the sink containment information is
     provided in the last `..._sinks` elements of the signature.
@@ -38,7 +38,7 @@ def _smallest_size_iteration(
     :returns: the size of such a combination or `None` if no such combination exists.
     """
     g1_lookup = {0: 0}  # The trivial signature requires zero signatures to generate
-    g2_lookup = dict()
+    g2_lookup = {}
 
     if len(g2_sig_nf) == 0:
         if not quiet:
@@ -106,7 +106,8 @@ def _smallest_size_iteration(
             if combined_sig >> g2_sinks not in g1_lookup:
                 if not quiet:
                     tqdm.write(
-                        f"{_format_sig(combined_sig, g2_boundaries, g2_sinks)} has no equivalent in g1, or it was not yet generated and thus has higher weight!"
+                        f"{_format_sig(combined_sig, g2_boundaries, g2_sinks)} has no equivalent in g1, or it was not "
+                        f"yet generated and thus has higher weight!"
                     )
                 return max_size  # No equivalent error with equal or lower weight found
         if not quiet:
@@ -121,7 +122,8 @@ def _smallest_size_iteration(
         else:
             if not quiet:
                 tqdm.write(
-                    f"Discovered {num_new_signatures} new signatures this iteration (so far: {num_total_signatures}, max signatures: {num_max_signatures})!"
+                    f"Discovered {num_new_signatures} new signatures this iteration (so far: {num_total_signatures}, "
+                    f"max signatures: {num_max_signatures})!"
                 )
 
     return None

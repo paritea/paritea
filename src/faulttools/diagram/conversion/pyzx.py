@@ -1,10 +1,12 @@
 from fractions import Fraction
-from typing import Protocol, Union, Tuple, Dict
+from typing import Protocol
 
+from pyzx import EdgeType as PyZxEdgeType
+from pyzx import Graph
+from pyzx import VertexType as PyZxVertexType
 from pyzx.graph.base import BaseGraph
-from pyzx import VertexType as PyZxVertexType, EdgeType as PyZxEdgeType, Graph
 
-from ..diagram import Diagram, NodeType
+from faulttools.diagram import Diagram, NodeType
 
 pyzx_v_type_to_node_type = {
     PyZxVertexType.BOUNDARY: NodeType.B,
@@ -30,7 +32,7 @@ class DiagramWithPyZXIndex(Diagram, SupportsPyZXIndex, Protocol):
     pass
 
 
-def from_pyzx(pyzx_graph: BaseGraph, convert_had_edges: bool = False) -> Diagram:
+def from_pyzx(pyzx_graph: BaseGraph, *, convert_had_edges: bool = False) -> Diagram:
     """
     Note: To obtain a graph that is convertible using 'to_pyzx' see 'from_pyzx_reversible'.
 
@@ -38,21 +40,21 @@ def from_pyzx(pyzx_graph: BaseGraph, convert_had_edges: bool = False) -> Diagram
     :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
     :return: The converted diagram.
     """
-    return _from_pyzx(pyzx_graph, convert_had_edges, reversible=False)
+    return _from_pyzx(pyzx_graph, convert_had_edges=convert_had_edges, reversible=False)
 
 
-def from_pyzx_reversible(pyzx_graph: BaseGraph, convert_had_edges: bool = False) -> DiagramWithPyZXIndex:
+def from_pyzx_reversible(pyzx_graph: BaseGraph, *, convert_had_edges: bool = False) -> DiagramWithPyZXIndex:
     """
     :param pyzx_graph: The PyZX graph to convert to a diagram.
     :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
     :return: The converted diagram.
     """
-    return _from_pyzx(pyzx_graph, convert_had_edges, reversible=True)
+    return _from_pyzx(pyzx_graph, convert_had_edges=convert_had_edges, reversible=True)
 
 
 def _from_pyzx(
-    pyzx_graph: BaseGraph, convert_had_edges: bool = False, reversible: bool = False
-) -> Union[Diagram, DiagramWithPyZXIndex]:
+    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: bool = False
+) -> Diagram | DiagramWithPyZXIndex:
     if reversible:
         diagram: DiagramWithPyZXIndex = Diagram(additional_keys=["pyzx_index"])
     else:
@@ -61,7 +63,7 @@ def _from_pyzx(
     vertex_to_id = {}
     for v in pyzx_graph.vertices():
         if not isinstance(v, int):
-            raise ValueError(f"Unsupported PyZX vertex instance: {type(v)}")
+            raise TypeError(f"Unsupported PyZX vertex instance: {type(v)}")
 
         v_type = pyzx_graph.type(v)
         if v_type not in pyzx_v_type_to_node_type:
@@ -89,7 +91,8 @@ def _from_pyzx(
                 diagram.add_edge(h, vertex_to_id[target])
             else:
                 raise ValueError(
-                    f"Unsupported PyZX edge type: {e_type.name}. Try explicitly converting the PyZX diagram and passing convert_had_edges=True."
+                    f"Unsupported PyZX edge type: {e_type.name}. Try explicitly converting the PyZX diagram and passing"
+                    f" convert_had_edges=True."
                 )
         else:
             raise ValueError(f"Unsupported PyZX edge type: {e_type.name}")
@@ -104,7 +107,7 @@ def _from_pyzx(
     return diagram
 
 
-def to_pyzx(d: Diagram, with_mapping: bool = False) -> Union[BaseGraph, Tuple[BaseGraph, Dict[int, int]]]:
+def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> BaseGraph | tuple[BaseGraph, dict[int, int]]:
     """
     Constructs a PyZX diagram from the given diagram instance, reassigning original node ids and positions. Does not
     convert original hadamard edges back.
@@ -114,7 +117,7 @@ def to_pyzx(d: Diagram, with_mapping: bool = False) -> Union[BaseGraph, Tuple[Ba
 
     g = Graph(backend="simple")
 
-    mapping: Dict[int, int] = {}
+    mapping: dict[int, int] = {}
 
     for n in d.node_indices():
         if hasattr(d, "pyzx_index"):

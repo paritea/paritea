@@ -1,13 +1,12 @@
-from typing import Union
-
-from .pyzx import from_pyzx as from_pyzx, from_pyzx_reversible as from_pyzx_reversible, to_pyzx as to_pyzx
-from .stim import from_stim as from_stim
-from .. import Diagram
-
 import pyzx as zx
 import stim
 
-type DiagramParam = Union[Diagram, zx.graph.base.BaseGraph]
+from faulttools.diagram import Diagram
+
+from .pyzx import from_pyzx, from_pyzx_reversible, to_pyzx
+from .stim import from_stim
+
+type DiagramParam = Diagram | zx.graph.base.BaseGraph
 
 
 def to_diagram(obj: DiagramParam) -> Diagram:
@@ -19,3 +18,12 @@ def to_diagram(obj: DiagramParam) -> Diagram:
         return from_stim(obj)[0]
     else:
         raise TypeError(f"Cannot automatically convert type {type(obj)} to {Diagram.__name__}")
+
+
+__all__ = [
+    "DiagramParam",
+    "from_pyzx",
+    "from_pyzx_reversible",
+    "to_diagram",
+    "to_pyzx",
+]

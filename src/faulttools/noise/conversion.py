@@ -1,10 +1,9 @@
-from typing import Union
+from faulttools.diagram.conversion import DiagramParam, to_diagram
+from faulttools.util import canonicalize_input
 
-from ..diagram.conversion import to_diagram, DiagramParam
 from .model import NoiseModel
-from ..util import canonicalize_input
 
-type NoiseModelParam = Union[NoiseModel, DiagramParam]
+type NoiseModelParam = NoiseModel | DiagramParam
 
 
 def to_noise_model(obj: NoiseModelParam) -> NoiseModel:
@@ -15,4 +14,4 @@ def to_noise_model(obj: NoiseModelParam) -> NoiseModel:
 
 
 def noise_model_params(*param_names: str):
-    return canonicalize_input(**{name: to_noise_model for name in param_names})
+    return canonicalize_input(**dict.fromkeys(param_names, to_noise_model))
