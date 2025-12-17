@@ -4,8 +4,9 @@ import numpy as np
 from galois import GF2
 
 from faulttools import build_flip_operators, pushout
-from faulttools.noise import NoiseModel, NoiseModelParam, noise_model_params
+from faulttools.noise import NoiseModel
 from faulttools.pauli import Pauli, PauliString
+from faulttools.utils import NoiseModelParam, noise_model_params
 
 from .enumeration import _smallest_size_iteration
 

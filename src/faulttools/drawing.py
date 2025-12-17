@@ -1,8 +1,9 @@
 import pyzx as zx
 from pyzx.pauliweb import PauliWeb
 
+from faulttools.glue.pyzx import to_pyzx
+
 from .diagram import Diagram
-from .diagram.conversion import to_pyzx
 from .pauli import PauliString
 
 
