@@ -30,3 +30,5 @@ def test_commutes():
     assert PauliString("IZZI").commutes(PauliString("XIZY"))
     assert not PauliString("IZZI").commutes(PauliString("IXII"))
     assert not PauliString("IZZI").commutes(PauliString("IZYI"))
+    assert PauliString("IZZI").commutes(PauliString("IYXX"))
+    assert not PauliString("YZZI").commutes(PauliString("XXXX"))
