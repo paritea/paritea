@@ -1,3 +1,4 @@
+import itertools
 import math
 from dataclasses import dataclass
 
@@ -5,7 +6,7 @@ import stim
 
 from faulttools.diagram import Diagram, NodeType
 from faulttools.noise import Fault, NoiseModel
-from faulttools.pauli import Pauli
+from faulttools.pauli import Pauli, PauliString
 
 
 @dataclass(init=True, kw_only=True)
@@ -78,22 +79,39 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
     )
 
     atomic_faults: list[tuple[Fault, float]] = []
-    scheduled_pauli_faults_per_qubit: list[list[tuple[Pauli, float]]] = [[] for _ in range(state.n_qubits)]
+    fault_prot_queue: list[tuple[set, dict[int, Pauli], float]] = []
 
-    def flush_faults_on_qubit(q: int, edge: int) -> None:
-        for fault, prob in scheduled_pauli_faults_per_qubit[q]:
-            atomic_faults.append((Fault.edge_flip(edge, fault), prob))
-        scheduled_pauli_faults_per_qubit[q] = []
+    def queue_for_edge_replacement(fault_prot: dict[int, Pauli], prob: float):
+        fault_prot_queue.append((set(fault_prot.keys()), fault_prot, prob))
+
+    def flush_edge_for_qubit(qubit: int, edge: int) -> None:
+        nonlocal fault_prot_queue
+        flushed_indices = []
+        for i, prot in enumerate(fault_prot_queue):
+            qubits, fault_prot, prob = prot
+            if qubit not in qubits:
+                continue
+
+            fault_prot[edge] = fault_prot.pop(qubit)
+            qubits.remove(qubit)
+            if len(qubits) != 0:
+                continue
+
+            atomic_faults.append((Fault(PauliString(fault_prot)), prob))
+            flushed_indices.append(i)
+
+        if len(flushed_indices) > 0:
+            fault_prot_queue = [prot for i, prot in enumerate(fault_prot_queue) if i not in flushed_indices]
 
     for instr in circuit:
         match instr.name:
             # Regular gates
             case "H":
-                for qubit, e in _h(state, instr):
-                    flush_faults_on_qubit(qubit, e)
+                for q, e in _h(state, instr):
+                    flush_edge_for_qubit(q, e)
             case "CX" | "CNOT" | "ZCX":
-                for qubit, e in _cnot(state, instr):
-                    flush_faults_on_qubit(qubit, e)
+                for q, e in _cnot(state, instr):
+                    flush_edge_for_qubit(q, e)
             # Measurements / Resets
             case "R" | "RZ":
                 for tar in instr.targets_copy():
@@ -103,7 +121,7 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
                         # Silent measurement
                         m = state.d.add_node(NodeType.X, x=state.row_offset, y=q)
                         e = state.d.add_edge(state.current_qubit_nodes[q], m)
-                        flush_faults_on_qubit(q, e)
+                        flush_edge_for_qubit(q, e)
                     r = state.d.add_node(NodeType.X, x=state.row_offset + 1, y=q)
                     state.current_qubit_nodes[q] = r
 
@@ -116,7 +134,7 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
                     state.ensure_initialized(q)
                     m = state.d.add_node(NodeType.X, x=state.row_offset, y=q)
                     e = state.d.add_edge(state.current_qubit_nodes[q], m)
-                    flush_faults_on_qubit(q, e)
+                    flush_edge_for_qubit(q, e)
                     r = state.d.add_node(NodeType.X, x=state.row_offset + 1, y=q)
                     state.current_qubit_nodes[q] = r
 
@@ -127,19 +145,19 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
                 assert len(args) == 1
                 for tar in instr.targets_copy():
                     assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    scheduled_pauli_faults_per_qubit[tar.qubit_value].append((Pauli.X, args[0]))
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.X}, args[0])
             case "Y_ERROR":
                 args = instr.gate_args_copy()
                 assert len(args) == 1
                 for tar in instr.targets_copy():
                     assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    scheduled_pauli_faults_per_qubit[tar.qubit_value].append((Pauli.Y, args[0]))
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.Y}, args[0])
             case "Z_ERROR":
                 args = instr.gate_args_copy()
                 assert len(args) == 1
                 for tar in instr.targets_copy():
                     assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    scheduled_pauli_faults_per_qubit[tar.qubit_value].append((Pauli.Z, args[0]))
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.Z}, args[0])
             case "DEPOLARIZE1":
                 args = instr.gate_args_copy()
                 assert len(args) == 1
@@ -148,11 +166,28 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
                     p = args[0]
                     if p > 0.75:
                         raise RuntimeError("Cannot approximate single-qubit depolarizing channel with p > 0.75!")
-                    # Apply the magic formula
+                    # Apply the magic formula to decorrelate depolarization, see https://algassert.com/post/2001
                     independent_p = 0.5 - 0.5 * math.sqrt(1 - 4 / 3 * p)
-                    scheduled_pauli_faults_per_qubit[tar.qubit_value].append((Pauli.X, independent_p))
-                    scheduled_pauli_faults_per_qubit[tar.qubit_value].append((Pauli.Y, independent_p))
-                    scheduled_pauli_faults_per_qubit[tar.qubit_value].append((Pauli.Z, independent_p))
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.X}, independent_p)
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.Y}, independent_p)
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.Z}, independent_p)
+            case "DEPOLARIZE2":
+                args = instr.gate_args_copy()
+                assert len(args) == 1
+                for group in instr.target_groups():
+                    assert len(group) == 2
+                    for tar in group:
+                        assert tar.is_qubit_target and not tar.is_inverted_result_target
+                    p = args[0]
+                    if p > 15 / 16:
+                        raise RuntimeError("Cannot approximate double-qubit depolarizing channel with p > 15/16!")
+                    # Apply the magic formula to decorrelate depolarization, see https://algassert.com/post/2001
+                    independent_p = 0.5 - 0.5 * math.pow((1 - (16 * p) / 15), 0.125)
+
+                    for p1, p2 in itertools.product([Pauli.I, Pauli.X, Pauli.Y, Pauli.Z], repeat=2):
+                        if p1 == Pauli.I and p2 == Pauli.I:
+                            continue
+                        queue_for_edge_replacement({group[0].qubit_value: p1, group[1].qubit_value: p2}, independent_p)
             # Flow generator indicators
             case "DETECTOR":
                 pass
@@ -171,17 +206,17 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
 
     # Remove unused qubit world lines and latest measurements
     down_shift = 0
-    for qubit in range(state.n_qubits):
-        cur_node = state.current_qubit_nodes[qubit]
+    for q in range(state.n_qubits):
+        cur_node = state.current_qubit_nodes[q]
         if cur_node is None:
             for node in state.d.node_indices():
-                if state.d.y(node) >= qubit - down_shift:  # Assume everything is aligned with a qubit world line
+                if state.d.y(node) >= q - down_shift:  # Assume everything is aligned with a qubit world line
                     state.d.set_y(node, state.d.y(node) - 1)
             down_shift += 1
             continue
 
         if len(state.d.neighbors(cur_node)) != 0:  # Overapproximation to detect whether last op was a measurement
-            raise RuntimeError(f"Last operation on used qubit {qubit} was not detected to be a measurement!")
+            raise RuntimeError(f"Last operation on used qubit {q} was not detected to be a measurement!")
         state.d.remove_node(cur_node)
 
     # All stim diagrams we support are closed
