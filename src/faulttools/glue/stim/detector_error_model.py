@@ -47,6 +47,7 @@ def export_to_stim_dem(nm: NoiseModel, *, logicals: list[PauliString]) -> stim.D
     flip_ops, region_idx_to_logical_map = _change_basis_for_logicals(build_flip_operators(d), logicals)
 
     pushed_out = push_out(nm, flip_ops)
+    pushed_out.compress(lambda x, y: x * (1 - y) + (1 - x) * y)
 
     dem_str = ""
     for fault, p in pushed_out.atomic_weights():
