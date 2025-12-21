@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import NamedTuple
 
 from galois import GF2
@@ -18,11 +18,11 @@ class Fault(NamedTuple):
     """
 
     edge_flips: PauliString
-    detector_flips: set[int]
+    detector_flips: frozenset[int] = frozenset()
 
     @staticmethod
     def edge_flip(edge_idx: int, flip: Pauli) -> "Fault":
-        return Fault(PauliString.unary(edge_idx, flip), set())
+        return Fault(PauliString.unary(edge_idx, flip), frozenset())
 
     def is_trivial(self) -> bool:
         return len(self.detector_flips) == 0 and self.edge_flips.is_trivial()
@@ -89,6 +89,16 @@ class NoiseModel:
 
     def atomic_weights(self) -> list[tuple[Fault, int]]:
         return self._atomic_weights
+
+    def compress(self, reweight_func: Callable[[int, int], int]) -> None:
+        faults: dict[Fault, int] = {}
+        for fault, v in self._atomic_weights:
+            if fault.is_trivial():
+                continue
+
+            existing_v = faults.get(fault)
+            faults[fault] = v if existing_v is None else reweight_func(existing_v, v)
+        self._atomic_weights = list(faults.items())
 
 
 type NoiseModelParam = NoiseModel | DiagramParam
