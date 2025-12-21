@@ -77,7 +77,7 @@ class PauliString(fd.frozendict[int, Pauli]):
         return PauliString({idx: self[idx] for idx in set(indices).intersection(self.keys())})
 
     def commutes(self, other: "PauliString") -> bool:
-        return all(self[k].commutes(other[k]) for k in self.keys() & other.keys())
+        return sum(not self[k].commutes(other[k]) for k in self.keys() & other.keys()) % 2 == 0
 
     def is_trivial(self) -> bool:
         return all(self[p] == Pauli.I for p in self)
