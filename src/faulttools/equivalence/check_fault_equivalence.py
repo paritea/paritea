@@ -3,7 +3,7 @@ from collections.abc import Mapping
 import numpy as np
 from galois import GF2
 
-from faulttools import build_flip_operators, pushout
+from faulttools import build_flip_operators, push_out
 from faulttools.noise import NoiseModel
 from faulttools.pauli import Pauli, PauliString
 from faulttools.utils import NoiseModelParam, noise_model_params
@@ -157,10 +157,10 @@ def is_fault_equivalence(
     :param quiet: Whether to silence additional informative output
     """
     flip_ops_1 = build_flip_operators(noise_1.diagram())
-    pushed_out_noise_1 = pushout(noise_1, flip_ops_1)
+    pushed_out_noise_1 = push_out(noise_1, flip_ops_1)
 
     flip_ops_2 = build_flip_operators(noise_2.diagram())
-    pushed_out_noise_2 = pushout(noise_2, flip_ops_2)
+    pushed_out_noise_2 = push_out(noise_2, flip_ops_2)
 
     return _is_fault_equivalence(
         noise_1=pushed_out_noise_1,
