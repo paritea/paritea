@@ -1,5 +1,5 @@
 from fractions import Fraction
-from typing import Protocol
+from typing import Literal, Protocol, overload
 
 from pyzx import EdgeType as PyZxEdgeType
 from pyzx import Graph
@@ -32,29 +32,23 @@ class DiagramWithPyZXIndex(Diagram, SupportsPyZXIndex, Protocol):
     pass
 
 
-def from_pyzx(pyzx_graph: BaseGraph, *, convert_had_edges: bool = False) -> Diagram:
-    """
-    Note: To obtain a graph that is convertible using 'to_pyzx' see 'from_pyzx_reversible'.
-
-    :param pyzx_graph: The PyZX graph to convert to a diagram.
-    :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
-    :return: The converted diagram.
-    """
-    return _from_pyzx(pyzx_graph, convert_had_edges=convert_had_edges, reversible=False)
-
-
-def from_pyzx_reversible(pyzx_graph: BaseGraph, *, convert_had_edges: bool = False) -> DiagramWithPyZXIndex:
-    """
-    :param pyzx_graph: The PyZX graph to convert to a diagram.
-    :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
-    :return: The converted diagram.
-    """
-    return _from_pyzx(pyzx_graph, convert_had_edges=convert_had_edges, reversible=True)
-
-
-def _from_pyzx(
+@overload
+def from_pyzx(
+    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: Literal[False] = False
+) -> Diagram: ...
+@overload
+def from_pyzx(
+    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: Literal[True]
+) -> DiagramWithPyZXIndex: ...
+def from_pyzx(
     pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: bool = False
 ) -> Diagram | DiagramWithPyZXIndex:
+    """
+    :param pyzx_graph: The PyZX graph to convert to a diagram.
+    :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
+    :param reversible: Whether to include PyZX node indices as auxiliary node data in the diagram.
+    :return: The converted diagram.
+    """
     if reversible:
         diagram: DiagramWithPyZXIndex = Diagram(additional_keys=["pyzx_index"])
     else:
@@ -107,6 +101,10 @@ def _from_pyzx(
     return diagram
 
 
+@overload
+def to_pyzx(d: Diagram, *, with_mapping: Literal[False] = False) -> BaseGraph: ...
+@overload
+def to_pyzx(d: Diagram, *, with_mapping: Literal[True]) -> tuple[BaseGraph, dict[int, int]]: ...
 def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> BaseGraph | tuple[BaseGraph, dict[int, int]]:
     """
     Constructs a PyZX diagram from the given diagram instance, reassigning original node ids and positions. Does not
