@@ -4,9 +4,7 @@ from typing import NamedTuple
 from galois import GF2
 
 from faulttools.diagram import Diagram
-from faulttools.diagram.conversion import DiagramParam, to_diagram
 from faulttools.pauli import Pauli, PauliString
-from faulttools.util import canonicalize_input
 
 
 class Fault(NamedTuple):
@@ -99,17 +97,3 @@ class NoiseModel:
             existing_v = faults.get(fault)
             faults[fault] = v if existing_v is None else reweight_func(existing_v, v)
         self._atomic_weights = list(faults.items())
-
-
-type NoiseModelParam = NoiseModel | DiagramParam
-
-
-def to_noise_model(obj: NoiseModelParam) -> NoiseModel:
-    if isinstance(obj, NoiseModel):
-        return obj
-    else:
-        return NoiseModel.edge_flip_noise(to_diagram(obj))
-
-
-def noise_model_params(*param_names: str):
-    return canonicalize_input(**dict.fromkeys(param_names, to_noise_model))

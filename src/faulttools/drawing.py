@@ -2,7 +2,7 @@ import pyzx as zx
 from pyzx.pauliweb import PauliWeb
 
 from .diagram import Diagram
-from .diagram.conversion import to_pyzx
+from .glue.pyzx import to_pyzx
 from .pauli import PauliString
 
 

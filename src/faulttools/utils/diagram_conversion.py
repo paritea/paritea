@@ -1,8 +1,7 @@
 import pyzx as zx
 
 from faulttools.diagram import Diagram
-
-from .pyzx import from_pyzx, from_pyzx_reversible, to_pyzx
+from faulttools.glue.pyzx import from_pyzx
 
 type DiagramParam = Diagram | zx.graph.base.BaseGraph
 
@@ -14,10 +13,3 @@ def to_diagram(obj: DiagramParam) -> Diagram:
         return from_pyzx(obj)
     else:
         raise TypeError(f"Cannot automatically convert type {type(obj)} to {Diagram.__name__}")
-
-
-__all__ = [
-    "from_pyzx",
-    "from_pyzx_reversible",
-    "to_pyzx",
-]

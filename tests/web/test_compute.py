@@ -8,7 +8,7 @@ from pyzx import Graph, VertexType
 
 from faulttools import Pauli, PauliString, generate
 from faulttools.diagram import Diagram
-from faulttools.diagram.conversion import from_pyzx
+from faulttools.glue.pyzx import from_pyzx
 from faulttools.web import compute_pauli_webs
 
 SerializedPauliString = Mapping[str, Pauli]
