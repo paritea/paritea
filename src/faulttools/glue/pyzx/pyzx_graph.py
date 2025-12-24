@@ -97,6 +97,8 @@ def from_pyzx(
             outputs=[vertex_to_id[o] for o in pyzx_graph.outputs()],
             virtual=False,
         )
+    else:
+        diagram.infer_io_from_boundaries()
 
     return diagram
 
