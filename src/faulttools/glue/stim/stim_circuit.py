@@ -70,7 +70,9 @@ def _cnot(state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[
     return updated_qubits
 
 
-def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
+def from_stim(
+    circuit: stim.Circuit,
+) -> tuple[Diagram, NoiseModel, list[int], dict[int, PauliString], list[PauliString]]:
     state = _DiagramBuildingState(
         n_qubits=circuit.num_qubits,
         d=Diagram(),
@@ -102,6 +104,10 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
 
         if len(flushed_indices) > 0:
             fault_prot_queue = [prot for i, prot in enumerate(fault_prot_queue) if i not in flushed_indices]
+
+    measurement_nodes: list[int] = []
+    detectors: list[list[int]] = []
+    observables: dict[int, list[int]] = {}
 
     for instr in circuit:
         match instr.name:
@@ -135,6 +141,7 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
                     m = state.d.add_node(NodeType.X, x=state.row_offset, y=q)
                     e = state.d.add_edge(state.current_qubit_nodes[q], m)
                     flush_edge_for_qubit(q, e)
+                    measurement_nodes.append(m)
                     r = state.d.add_node(NodeType.X, x=state.row_offset + 1, y=q)
                     state.current_qubit_nodes[q] = r
 
@@ -190,9 +197,20 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
                         queue_for_edge_replacement({group[0].qubit_value: p1, group[1].qubit_value: p2}, independent_p)
             # Flow generator indicators
             case "DETECTOR":
-                pass
+                detector = []
+                for tar in instr.targets_copy():
+                    assert tar.is_measurement_record_target and not tar.is_inverted_result_target
+                    detector.append(measurement_nodes[tar.value])
+                detectors.append(detector)
             case "OBSERVABLE_INCLUDE":
-                pass
+                args = instr.gate_args_copy()
+                assert len(args) == 1
+                obs_idx = int(args[0])
+                if obs_idx not in observables:
+                    observables[obs_idx] = []
+                for tar in instr.targets_copy():
+                    assert tar.is_measurement_record_target and not tar.is_inverted_result_target
+                    observables[obs_idx].append(measurement_nodes[tar.value])
             # Irrelevant instructions
             case "TICK" | "QUBIT_COORDS":
                 continue
@@ -225,4 +243,16 @@ def from_stim(circuit: stim.Circuit) -> tuple[Diagram, NoiseModel]:
     # Build noise model
     noise = NoiseModel(state.d, atomic_faults)
 
-    return state.d, noise
+    # Build anticommutation Pauli strings for observables and detectors
+    def build_pauli_string(measurement_record: list[int]) -> PauliString:
+        return PauliString(
+            {
+                state.d.incident_edges(meas_node)[0]: Pauli.Z if state.d.type(meas_node) == NodeType.Z else Pauli.X
+                for meas_node in measurement_record
+            }
+        )
+
+    anticommutation_observables = {i: build_pauli_string(observable) for i, observable in observables.items()}
+    anticommutation_detectors = [build_pauli_string(detector) for detector in detectors]
+
+    return state.d, noise, measurement_nodes, anticommutation_observables, anticommutation_detectors
