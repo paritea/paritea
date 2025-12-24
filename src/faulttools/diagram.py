@@ -180,9 +180,13 @@ class Diagram(SupportsPositioning, Protocol):
 
         return self._io
 
+    def infer_io_from_boundaries(self) -> None:
+        self._io = ([], sorted(self.boundary_nodes()))
+        self._is_io_virtual = False
+
     def io_sorted(self) -> list[int]:
         if self._io is None:
-            return sorted(self.boundary_nodes())
+            self.infer_io_from_boundaries()
 
         return self._io[0] + self._io[1]
 
