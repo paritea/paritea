@@ -1,9 +1,8 @@
 import pyzx as zx
 from pyzx.pauliweb import PauliWeb
 
-from faulttools.glue.pyzx import to_pyzx
-
 from .diagram import Diagram
+from .glue.pyzx import to_pyzx
 from .pauli import PauliString
 
 
@@ -22,4 +21,4 @@ def draw(d: Diagram, *, web: PauliString | None = None) -> None:
             w.add_edge(edge_idx_to_pyzx_s_t[e], p)
         return w
 
-    zx.draw(g, pauli_web=to_pyzx_web(web) if web is not None else None)
+    zx.draw(g, labels=True, pauli_web=to_pyzx_web(web) if web is not None else None)
