@@ -2,14 +2,14 @@ from faulttools.noise import NoiseModel
 from faulttools.util import canonicalize_input
 from faulttools.utils import DiagramParam, to_diagram
 
-type NoiseModelParam = NoiseModel | DiagramParam
+type NoiseModelParam[T] = NoiseModel[T] | DiagramParam
 
 
-def to_noise_model(obj: NoiseModelParam) -> NoiseModel:
+def to_noise_model[T](obj: NoiseModelParam[T]) -> NoiseModel[T]:
     if isinstance(obj, NoiseModel):
         return obj
     else:
-        return NoiseModel.edge_flip_noise(to_diagram(obj))
+        return NoiseModel.weighted_edge_flip_noise(to_diagram(obj))
 
 
 def noise_model_params(*param_names: str):
