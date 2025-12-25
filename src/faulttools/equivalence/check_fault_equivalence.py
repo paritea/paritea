@@ -51,7 +51,7 @@ def _stabilisers(stabilisers: list[PauliString], boundary_idx_map: Mapping[int, 
 
 
 def _compile_atomic_faults(
-    noise: NoiseModel,
+    noise: NoiseModel[int],
     stabilisers: AugmentedStabilisers,
     boundaries_to_idx: Mapping[int, int],
     detector_to_idx: Mapping[int, int],
