@@ -51,49 +51,50 @@ class Fault(NamedTuple):
         return Fault.compiled_to_int(self.compile(edge_idx_map, detector_idx_map))
 
 
-class NoiseModel:
+class NoiseModel[T]:
     _diagram: Diagram
-    _atomic_weights: list[tuple[Fault, int]]
+    _atomic_faults: list[tuple[Fault, T]]
 
     @staticmethod
-    def edge_flip_noise(
+    def weighted_edge_flip_noise(
         diagram: Diagram,
         w_x: int | None = None,
         w_y: int | None = None,
         w_z: int | None = None,
         idealised_edges: list[int] | None = None,
-    ) -> "NoiseModel":
+    ) -> "NoiseModel[int]":
         idealised_edges = idealised_edges or []
-        atomic_weights: list[tuple[Fault, int]] = []
+        atomic_faults: list[tuple[Fault, int]] = []
         for edge_idx in diagram.edge_indices():
             if edge_idx in idealised_edges:
                 continue
 
-            atomic_weights.append((Fault.edge_flip(edge_idx, Pauli.X), w_x or 1))
-            atomic_weights.append((Fault.edge_flip(edge_idx, Pauli.Y), w_y or 1))
-            atomic_weights.append((Fault.edge_flip(edge_idx, Pauli.Z), w_z or 1))
+            atomic_faults.append((Fault.edge_flip(edge_idx, Pauli.X), w_x or 1))
+            atomic_faults.append((Fault.edge_flip(edge_idx, Pauli.Y), w_y or 1))
+            atomic_faults.append((Fault.edge_flip(edge_idx, Pauli.Z), w_z or 1))
 
-        return NoiseModel(diagram=diagram, atomic_weights=atomic_weights)
+        return NoiseModel(diagram=diagram, atomic_faults=atomic_faults)
 
-    def __init__(self, diagram: Diagram, atomic_weights: list[tuple[Fault, int]]) -> None:
+    def __init__(self, diagram: Diagram, atomic_faults: list[tuple[Fault, T]]) -> None:
         self._diagram = diagram
-        self._atomic_weights = atomic_weights
+        self._atomic_faults = atomic_faults
 
+    @property
     def diagram(self) -> Diagram:
         return self._diagram
 
     def atomic_faults(self) -> Iterable[Fault]:
-        return (x[0] for x in self._atomic_weights)
+        return (x[0] for x in self._atomic_faults)
 
-    def atomic_weights(self) -> list[tuple[Fault, int]]:
-        return self._atomic_weights
+    def atomic_faults_with_weight(self) -> list[tuple[Fault, T]]:
+        return self._atomic_faults
 
-    def compress(self, reweight_func: Callable[[int, int], int]) -> None:
-        faults: dict[Fault, int] = {}
-        for fault, v in self._atomic_weights:
+    def compress(self, reweight_func: Callable[[T, T], T]) -> None:
+        faults: dict[Fault, T] = {}
+        for fault, v in self._atomic_faults:
             if fault.is_trivial():
                 continue
 
             existing_v = faults.get(fault)
             faults[fault] = v if existing_v is None else reweight_func(existing_v, v)
-        self._atomic_weights = list(faults.items())
+        self._atomic_faults = list(faults.items())

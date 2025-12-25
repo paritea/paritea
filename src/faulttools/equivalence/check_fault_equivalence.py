@@ -69,8 +69,8 @@ def _compile_atomic_faults(
 
 
 def _is_fault_equivalence(
-    noise_1: NoiseModel,
-    noise_2: NoiseModel,
+    noise_1: NoiseModel[int],
+    noise_2: NoiseModel[int],
     num_detectors_1: int,
     num_detectors_2: int,
     stabilisers: list[PauliString],
@@ -91,15 +91,15 @@ def _is_fault_equivalence(
     :param stabilisers: A stabiliser basis for the diagrams attached to noise_1 and noise_2
     :param quiet: Whether to silence additional informative output
     """
-    atomic_weights_1 = {t[1] for t in noise_1.atomic_weights()}
-    atomic_weights_2 = {t[1] for t in noise_2.atomic_weights()}
+    atomic_weights_1 = {w for _, w in noise_1.atomic_faults_with_weight()}
+    atomic_weights_2 = {w for _, w in noise_2.atomic_faults_with_weight()}
     if atomic_weights_1 != {1} or atomic_weights_2 != {1}:
         raise ValueError(
-            f"Both given noise models must be equally and normally weighted."
+            f"Both given noise models must be equally and normally weighted. "
             f"Weight sets detected: {atomic_weights_1} and {atomic_weights_2}"
         )
 
-    d1, d2 = noise_1.diagram(), noise_2.diagram()
+    d1, d2 = noise_1.diagram, noise_2.diagram
     d1_edge_idx_map = {d1.incident_edges(b)[0]: i for i, b in enumerate(d1.io_sorted())}
     d1_detector_idx_map = {i: i for i in range(num_detectors_1)}
     d2_edge_idx_map = {d2.incident_edges(b)[0]: i for i, b in enumerate(d2.io_sorted())}
@@ -139,8 +139,8 @@ def _is_fault_equivalence(
 
 @noise_model_params("noise_1", "noise_2")
 def is_fault_equivalence(
-    noise_1: NoiseModelParam,
-    noise_2: NoiseModelParam,
+    noise_1: NoiseModelParam[int],
+    noise_2: NoiseModelParam[int],
     *,
     quiet: bool = True,
 ) -> bool:
@@ -156,10 +156,10 @@ def is_fault_equivalence(
     :param noise_2: Second noise model to check
     :param quiet: Whether to silence additional informative output
     """
-    flip_ops_1 = build_flip_operators(noise_1.diagram())
+    flip_ops_1 = build_flip_operators(noise_1.diagram)
     pushed_out_noise_1 = push_out(noise_1, flip_ops_1)
 
-    flip_ops_2 = build_flip_operators(noise_2.diagram())
+    flip_ops_2 = build_flip_operators(noise_2.diagram)
     pushed_out_noise_2 = push_out(noise_2, flip_ops_2)
 
     return _is_fault_equivalence(
