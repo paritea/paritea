@@ -57,8 +57,9 @@ def push_out_for_measurement_detectors[T](
 ) -> tuple[NoiseModel[T], set[int], set[int]]:
     d = nm.diagram
     flip_ops = _flip_ops_for_detecting_operators(build_flip_operators(d), measurement_nodes, logicals + detectors)
+    new_nm = push_out(nm, flip_ops)
 
-    return push_out(nm, flip_ops), set(range(len(logicals))), set(range(len(logicals), len(logicals) + len(detectors)))
+    return new_nm, set(range(len(logicals))), set(range(len(logicals), len(logicals) + len(detectors)))
 
 
 def export_to_stim_dem(
