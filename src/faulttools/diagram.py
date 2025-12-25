@@ -1,11 +1,11 @@
+from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from enum import StrEnum
 from fractions import Fraction
-from typing import List, Set, Dict, Optional, Any, Iterable, Protocol, Self, Mapping, runtime_checkable, Tuple, Sequence
-
-from recordclass import RecordClass
+from typing import Any, Protocol, Self, runtime_checkable, Sequence
 
 import rustworkx as rx
+from recordclass import RecordClass
 
 
 class NodeType(StrEnum):
@@ -36,18 +36,18 @@ class Diagram(SupportsPositioning, Protocol):
     Node data must be an instance of NodeInfo.
     """
 
-    def __init__(self, *, additional_keys: Optional[Iterable[str]] = None):
+    def __init__(self, *, additional_keys: Iterable[str] | None = None):
         self._g = rx.PyGraph[_NodeInfo, None]()
-        self._x: Dict[int, int] = dict()
-        self._y: Dict[int, int] = dict()
-        self._io: Optional[Tuple[List[int], List[int]]] = None
+        self._x: dict[int, int] = {}
+        self._y: dict[int, int] = {}
+        self._io: tuple[list[int], list[int]] | None = None
         self._is_io_virtual: bool = True
         # Additional untyped keys for node index mappings
         self.additional_keys = set(additional_keys or [])
         for key in self.additional_keys:
-            setattr(self, f"_{key}", dict())
-            setattr(self, f"{key}", lambda idx: getattr(self, f"_{key}").get(idx))
-            setattr(self, f"set_{key}", lambda idx, arg: getattr(self, f"_{key}").update({idx: arg}) or self)
+            setattr(self, f"_{key}", {})
+            setattr(self, f"{key}", lambda idx, _key=key: getattr(self, f"_{_key}").get(idx))
+            setattr(self, f"set_{key}", lambda idx, arg, _key=key: getattr(self, f"_{_key}").update({idx: arg}) or self)
         self._rebind_methods()
 
     def _rebind_methods(self):
@@ -73,16 +73,16 @@ class Diagram(SupportsPositioning, Protocol):
         memo[id(self)] = result
         for k, v in self.__dict__.items():
             setattr(result, k, deepcopy(v, memo))
-        result._rebind_methods()
+        result._rebind_methods()  # noqa: SLF001
         return result
 
     def add_node(
         self,
         t: NodeType,
-        phase: Optional[Fraction] = None,
-        x: Optional[int] = None,
-        y: Optional[int] = None,
-        **kwargs: Dict[str, Any],
+        phase: Fraction | None = None,
+        x: int | None = None,
+        y: int | None = None,
+        **kwargs: dict[str, Any],
     ) -> int:
         idx = self._g.add_node(_NodeInfo(t, phase or Fraction(0, 1)))
         if x is not None:
@@ -126,7 +126,7 @@ class Diagram(SupportsPositioning, Protocol):
 
         return other, node_map
 
-    def compose(self, other: Self, node_map: Mapping[int, int]) -> Dict[int, int]:
+    def compose(self, other: "Diagram", node_map: Mapping[int, int]) -> dict[int, int]:
         """
         Add another diagram into this diagram.
 
@@ -139,10 +139,10 @@ class Diagram(SupportsPositioning, Protocol):
             been combined.
         """
 
-        new_node_ids = self._g.compose(other._g, {i: (o, None) for i, o in node_map.items()})
+        new_node_ids = self._g.compose(other._g, {i: (o, None) for i, o in node_map.items()})  # noqa: SLF001
         for other_node, new_this_node in new_node_ids.items():
-            self._x[new_this_node] = other._x[other_node]
-            self._y[new_this_node] = other._y[other_node]
+            self._x[new_this_node] = other._x[other_node]  # noqa: SLF001
+            self._y[new_this_node] = other._y[other_node]  # noqa: SLF001
             for key in self.additional_keys.intersection(other.additional_keys):
                 getattr(self, f"_{key}")[new_this_node] = getattr(other, f"_{key}")[other_node]
 
@@ -170,7 +170,7 @@ class Diagram(SupportsPositioning, Protocol):
     def y(self, node_idx: int) -> int:
         return self._y.get(node_idx, -1)
 
-    def set_io(self, inputs: List[int], outputs: List[int], *, virtual: bool) -> Self:
+    def set_io(self, inputs: list[int], outputs: list[int], *, virtual: bool) -> Self:
         """
         Sets the boundary node indices regarded as inputs / outputs. Their order directly determines their index through
         isomorphic conversion to a states outputs, i.e. they are indexed as <...all-inputs><...all-outputs>.
@@ -194,15 +194,19 @@ class Diagram(SupportsPositioning, Protocol):
         self._is_io_virtual = virtual
         return self
 
-    def io(self) -> Tuple[List[int], List[int]]:
+    def io(self) -> tuple[list[int], list[int]]:
         if self._io is None:
             raise ValueError("IO is not set!")
 
         return self._io
 
-    def io_sorted(self) -> List[int]:
+    def infer_io_from_boundaries(self) -> None:
+        self._io = ([], sorted(self.boundary_nodes()))
+        self._is_io_virtual = False
+
+    def io_sorted(self) -> list[int]:
         if self._io is None:
-            return sorted(self.boundary_nodes())
+            self.infer_io_from_boundaries()
 
         return self._io[0] + self._io[1]
 
@@ -218,7 +222,7 @@ class Diagram(SupportsPositioning, Protocol):
 
         self.set_io(new_inputs, new_outputs, virtual=True)
 
-    def realize_io(self) -> Tuple[List[int], List[int]]:
+    def realize_io(self) -> tuple[list[int], list[int]]:
         if not self.is_io_virtual():
             return self.io()
 
@@ -245,8 +249,8 @@ class Diagram(SupportsPositioning, Protocol):
     def boundary_nodes(self) -> rx.NodeIndices:
         return self._g.filter_nodes(lambda ni: ni.type == NodeType.B)
 
-    def boundary_edges(self) -> Set[int]:
-        boundary_edges: List[int] = []
+    def boundary_edges(self) -> set[int]:
+        boundary_edges: list[int] = []
         for b in self.boundary_nodes():
             boundary_edges += self._g.incident_edges(b)
         return set(boundary_edges)

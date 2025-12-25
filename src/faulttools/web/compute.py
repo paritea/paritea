@@ -1,22 +1,21 @@
-from typing import Optional, Tuple, Dict, List
+from copy import deepcopy
 
 import numpy as np
 
-from .red_green import to_red_green_form
-from .firing_assignments import (
-    determine_ordering,
-    create_firing_verification,
-    convert_firing_assignment_to_web_prototype,
-)
-from ..diagram import Diagram
-from ..pauli import PauliString, Pauli
+from faulttools.diagram import Diagram
+from faulttools.pauli import Pauli, PauliString
 
-from copy import deepcopy
+from .firing_assignments import (
+    convert_firing_assignment_to_web_prototype,
+    create_firing_verification,
+    determine_ordering,
+)
+from .red_green import to_red_green_form
 
 
 def _compute(
     diagram: Diagram, *, stabilisers: bool, detecting_regions: bool
-) -> Tuple[Optional[List[PauliString]], Optional[List[PauliString]]]:
+) -> tuple[list[PauliString] | None, list[PauliString] | None]:
     """
     Performs full stabiliser and detecting region computation, depending on the given flags. Enabling both flags in one
     call is preferred to enabling them in separate calls as they may share basic computations.
@@ -25,7 +24,7 @@ def _compute(
     if diagram.is_io_virtual():
         raise ValueError("This function does not accept diagrams with virtual IO!")
 
-    def to_pauli_string(prototype: Dict[Tuple[int, int], Pauli]) -> PauliString:
+    def to_pauli_string(prototype: dict[tuple[int, int], Pauli]) -> PauliString:
         return PauliString({diagram.edge_indices_from_endpoints(*edge)[0]: p for edge, p in prototype.items()})
 
     d = deepcopy(diagram)
@@ -48,7 +47,7 @@ def _compute(
             if len(nonzero_indices) > 0:
                 pivot_cols.append(nonzero_indices[0])
         stab_sols = [sol_row_basis[i].tolist() for i in pivot_cols]
-        web_prototypes = list(map(lambda v: convert_firing_assignment_to_web_prototype(d, ordering, v), stab_sols))
+        web_prototypes = [convert_firing_assignment_to_web_prototype(d, ordering, v) for v in stab_sols]
         for web_prototype in web_prototypes:
             additional_nodes.remove_from(d, web_prototype)
         stabs = list(map(to_pauli_string, web_prototypes))
@@ -63,7 +62,7 @@ def _compute(
             region_sols = []
         else:
             region_sols = (boundary_nullspace_vectors @ sol_row_basis).tolist()
-        web_prototypes = list(map(lambda v: convert_firing_assignment_to_web_prototype(d, ordering, v), region_sols))
+        web_prototypes = [convert_firing_assignment_to_web_prototype(d, ordering, v) for v in region_sols]
         for web_prototype in web_prototypes:
             additional_nodes.remove_from(d, web_prototype)
         regions = list(map(to_pauli_string, web_prototypes))
@@ -71,23 +70,23 @@ def _compute(
     return stabs, regions
 
 
-def compute_stabilisers(diagram: Diagram) -> List[PauliString]:
+def compute_stabilisers(diagram: Diagram) -> list[PauliString]:
     """
     :return: A set of stabilising webs for the given diagram that forms a basis for the diagrams stabilisers when
-        restricted to its boundary. A full basis for all stabilising webs is only obtained combining the return value with a
-        basis for the diagrams detecting regions.
+        restricted to its boundary. A full basis for all stabilising webs is only obtained combining the return value
+        with a basis for the diagrams detecting regions.
     """
     return _compute(diagram, stabilisers=True, detecting_regions=False)[0]
 
 
-def compute_detecting_regions(diagram: Diagram) -> List[PauliString]:
+def compute_detecting_regions(diagram: Diagram) -> list[PauliString]:
     """
     :return: A basis for the detecting regions of the given diagram.
     """
     return _compute(diagram, stabilisers=False, detecting_regions=True)[1]
 
 
-def compute_pauli_webs(diagram: Diagram) -> Tuple[List[PauliString], List[PauliString]]:
+def compute_pauli_webs(diagram: Diagram) -> tuple[list[PauliString], list[PauliString]]:
     """
     See .compute_stabilisers and .compute_detecting_regions of this package.
     """

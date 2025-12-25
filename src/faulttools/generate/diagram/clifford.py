@@ -1,9 +1,7 @@
+import random
 from fractions import Fraction
-from typing import Optional
 
 import pyzx as zx
-import random
-
 from pyzx.graph.graph_s import GraphS
 
 
@@ -19,7 +17,7 @@ def _add_random_spider(graph, spider_type, qubit=None):
     return graph.add_vertex(ty=vtype, phase=phase, qubit=qubit, row=0.5)
 
 
-def _connect_spiders(graph: GraphS, v1, v2, hadamard=False):
+def _connect_spiders(graph: GraphS, v1, v2, *, hadamard=False):
     if hadamard:
         h = graph.add_vertex(zx.VertexType.H_BOX)
         graph.add_edges([(v1, h), (h, v2)])
@@ -27,7 +25,7 @@ def _connect_spiders(graph: GraphS, v1, v2, hadamard=False):
         graph.add_edge((v1, v2), zx.EdgeType.SIMPLE)
 
 
-def clifford(qubits: Optional[int] = None, spiders: Optional[int] = None) -> GraphS:
+def clifford(qubits: int | None = None, spiders: int | None = None) -> GraphS:
     """Generate a random clifford ZX-diagram, possibly non-unitary."""
     if qubits is None:
         qubits = random.randint(2, 5)
@@ -51,9 +49,9 @@ def clifford(qubits: Optional[int] = None, spiders: Optional[int] = None) -> Gra
         _connect_spiders(g, output_zs[i], outputs[i])
 
     # Create internal Clifford spiders
-    internal_spiders = []
-    for _ in range(spiders):
-        internal_spiders.append(_add_random_spider(g, random.choice(["Z", "X"]), qubit=random.randint(0, qubits - 1)))
+    internal_spiders = [
+        _add_random_spider(g, random.choice(["Z", "X"]), qubit=random.randint(0, qubits - 1)) for _ in range(spiders)
+    ]
 
     # Connect some spiders randomly
     all_spiders = input_zs + internal_spiders + output_zs

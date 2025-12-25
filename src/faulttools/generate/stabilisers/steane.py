@@ -1,9 +1,7 @@
-from typing import List
-
 from faulttools import PauliString
 
 
-def steane_code_stabilisers() -> List[PauliString]:
+def steane_code_stabilisers() -> list[PauliString]:
     """
     The stabilisers of the 7-qubit CSS Steane code.
     """

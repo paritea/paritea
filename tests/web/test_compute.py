@@ -1,53 +1,51 @@
 import json
-from typing import List, Callable, Mapping
+from collections.abc import Callable, Mapping
 
 import numpy as np
 import pytest
 from galois import GF2
 from pyzx import Graph, VertexType
 
-import generate.diagram.syndrome
-import generate.stabilisers
-from faulttools import PauliString, Pauli
+from faulttools import Pauli, PauliString, generate
 from faulttools.diagram import Diagram
-from faulttools.diagram.conversion import from_pyzx
+from faulttools.glue.pyzx import from_pyzx
 from faulttools.web import compute_pauli_webs
 
 SerializedPauliString = Mapping[str, Pauli]
 
 
-def _serialize(webs: List[PauliString], d: Diagram) -> List[SerializedPauliString]:
+def _serialize(webs: list[PauliString], d: Diagram) -> list[SerializedPauliString]:
     return [{d.get_edge_endpoints_by_index(idx): p for idx, p in web.items()} for web in webs]
 
 
-def _deserialize(webs: List[SerializedPauliString], d: Diagram) -> List[PauliString]:
+def _deserialize(webs: list[SerializedPauliString], d: Diagram) -> list[PauliString]:
     return [PauliString({d.edge_indices_from_endpoints(*nodes)[0]: p for nodes, p in web.items()}) for web in webs]
 
 
 class WebFileIO:
     filename_template: str
 
-    def write_stabilising(self, webs: List[PauliString], d: Diagram, file_name_suffix: str = "") -> None:
+    def write_stabilising(self, webs: list[PauliString], d: Diagram, file_name_suffix: str = "") -> None:
         self._write(_serialize(webs, d), ext="stabilising", file_name_suffix=file_name_suffix)
 
-    def write_detecting(self, webs: List[PauliString], d: Diagram, file_name_suffix: str = "") -> None:
+    def write_detecting(self, webs: list[PauliString], d: Diagram, file_name_suffix: str = "") -> None:
         self._write(_serialize(webs, d), ext="detecting", file_name_suffix=file_name_suffix)
 
-    def _write(self, webs: List[SerializedPauliString], ext: str, file_name_suffix: str) -> None:
+    def _write(self, webs: list[SerializedPauliString], ext: str, file_name_suffix: str) -> None:
         with open(f"{self.filename_template}{file_name_suffix}.{ext}", "w") as f:
             json.dump(
                 [{f"({e[0]},{e[1]})": p for e, p in web.items()} for web in webs],
                 f,
             )
 
-    def read_stabilising(self, d: Diagram) -> List[PauliString]:
+    def read_stabilising(self, d: Diagram) -> list[PauliString]:
         return _deserialize(self._read(ext="stabilising"), d)
 
-    def read_detecting(self, d: Diagram) -> List[PauliString]:
+    def read_detecting(self, d: Diagram) -> list[PauliString]:
         return _deserialize(self._read(ext="detecting"), d)
 
-    def _read(self, ext: str) -> List[SerializedPauliString]:
-        with open(f"{self.filename_template}.{ext}", "r") as f:
+    def _read(self, ext: str) -> list[SerializedPauliString]:
+        with open(f"{self.filename_template}.{ext}") as f:
             return [
                 PauliString({tuple(map(int, str(e)[1:-1].split(","))): Pauli(p) for e, p in ps.items()})
                 for ps in json.load(f)
@@ -64,8 +62,8 @@ def web_io(request) -> WebFileIO:
 
 
 @pytest.fixture
-def generate_web_files(web_io: WebFileIO) -> Callable[[Diagram, List[PauliString], List[PauliString]], None]:
-    def _generate(d: Diagram, stabs: List[PauliString], regions: List[PauliString]) -> None:
+def generate_web_files(web_io: WebFileIO) -> Callable[[Diagram, list[PauliString], list[PauliString]], None]:
+    def _generate(d: Diagram, stabs: list[PauliString], regions: list[PauliString]) -> None:
         web_io.write_stabilising(stabs, d)
         web_io.write_detecting(regions, d)
 
@@ -73,8 +71,8 @@ def generate_web_files(web_io: WebFileIO) -> Callable[[Diagram, List[PauliString
 
 
 @pytest.fixture
-def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, List[PauliString], List[PauliString]], None]:
-    def _assert(d: Diagram, stabs: List[PauliString], regions: List[PauliString]) -> None:
+def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, list[PauliString], list[PauliString]], None]:
+    def _assert(d: Diagram, stabs: list[PauliString], regions: list[PauliString]) -> None:
         edge_idx_map = {e: i for i, e in enumerate(d.edge_indices())}
 
         compiled_stabs = GF2([web.compile(edge_idx_map) for web in stabs])
@@ -108,11 +106,11 @@ def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, List[PauliString]
             assert np.array_equal(web_space_basis.row_reduce(), exp_web_space_basis.row_reduce()), (
                 "Web spaces are not equal"
             )
-        except AssertionError as e:
+        except AssertionError:
             web_io.write_stabilising(stabs, d, file_name_suffix="_actual")
             web_io.write_detecting(regions, d, file_name_suffix="_actual")
 
-            raise e
+            raise
 
     return _assert
 
@@ -130,7 +128,7 @@ def test_identity_webs(assert_pauli_webs):
 
 
 def test_zweb_webs(assert_pauli_webs):
-    d = from_pyzx(generate.diagram.zweb(2, 2))
+    d = from_pyzx(generate.zweb(2, 2))
     stabs, regions = compute_pauli_webs(d)
 
     assert_pauli_webs(d, stabs, regions)
@@ -138,8 +136,8 @@ def test_zweb_webs(assert_pauli_webs):
 
 @pytest.mark.parametrize("code_size,repeat", [(3, 1), (5, 1), (5, 3)])
 def test_rotated_surface_code_shor(code_size, repeat, assert_pauli_webs):
-    d = generate.diagram.syndrome.generate_shor_extraction(
-        generate.stabilisers.rotated_planar_surface_code_stabilisers(code_size),
+    d = generate.shor_extraction(
+        generate.rotated_planar_surface_code_stabilisers(code_size),
         qubits=code_size**2,
         repeat=repeat,
     )

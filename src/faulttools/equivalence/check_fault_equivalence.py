@@ -1,12 +1,14 @@
-from typing import List, Mapping
+from collections.abc import Mapping
 
 import numpy as np
 from galois import GF2
 
-from .. import NoiseModel, pushout, build_flip_operators
+from faulttools import build_flip_operators, push_out
+from faulttools.noise import NoiseModel
+from faulttools.pauli import Pauli, PauliString
+from faulttools.utils import NoiseModelParam, noise_model_params
+
 from .enumeration import _smallest_size_iteration
-from ..noise_model import noise_model_params, NoiseModelParam
-from ..pauli import Pauli, PauliString
 
 
 class Stabilisers:
@@ -34,7 +36,7 @@ class AugmentedStabilisers:
         return compiled_faults + compiled_faults[:, self._indices] @ self._rref
 
 
-def _stabilisers(stabilisers: List[PauliString], boundary_idx_map: Mapping[int, int]) -> Stabilisers:
+def _stabilisers(stabilisers: list[PauliString], boundary_idx_map: Mapping[int, int]) -> Stabilisers:
     num_boundaries = len(boundary_idx_map)
     np_stabilisers = np.zeros((len(stabilisers), num_boundaries * 2), dtype=int)
     for i, stab in enumerate(stabilisers):
@@ -49,12 +51,12 @@ def _stabilisers(stabilisers: List[PauliString], boundary_idx_map: Mapping[int, 
 
 
 def _compile_atomic_faults(
-    noise: NoiseModel,
+    noise: NoiseModel[int],
     stabilisers: AugmentedStabilisers,
     boundaries_to_idx: Mapping[int, int],
     detector_to_idx: Mapping[int, int],
-) -> List[GF2]:
-    normalised_faults: List[GF2] = []
+) -> list[GF2]:
+    normalised_faults: list[GF2] = []
     for f in noise.atomic_faults():
         if f.is_trivial():
             continue
@@ -67,11 +69,12 @@ def _compile_atomic_faults(
 
 
 def _is_fault_equivalence(
-    noise_1: NoiseModel,
-    noise_2: NoiseModel,
+    noise_1: NoiseModel[int],
+    noise_2: NoiseModel[int],
     num_detectors_1: int,
     num_detectors_2: int,
-    stabilisers: List[PauliString],
+    stabilisers: list[PauliString],
+    *,
     quiet: bool = True,
 ) -> bool:
     """
@@ -88,15 +91,15 @@ def _is_fault_equivalence(
     :param stabilisers: A stabiliser basis for the diagrams attached to noise_1 and noise_2
     :param quiet: Whether to silence additional informative output
     """
-    atomic_weights_1 = {t[1] for t in noise_1.atomic_weights()}
-    atomic_weights_2 = {t[1] for t in noise_2.atomic_weights()}
+    atomic_weights_1 = {w for _, w in noise_1.atomic_faults_with_weight()}
+    atomic_weights_2 = {w for _, w in noise_2.atomic_faults_with_weight()}
     if atomic_weights_1 != {1} or atomic_weights_2 != {1}:
         raise ValueError(
-            f"Both given noise models must be equally and normally weighted."
+            f"Both given noise models must be equally and normally weighted. "
             f"Weight sets detected: {atomic_weights_1} and {atomic_weights_2}"
         )
 
-    d1, d2 = noise_1.diagram(), noise_2.diagram()
+    d1, d2 = noise_1.diagram, noise_2.diagram
     d1_edge_idx_map = {d1.incident_edges(b)[0]: i for i, b in enumerate(d1.io_sorted())}
     d1_detector_idx_map = {i: i for i in range(num_detectors_1)}
     d2_edge_idx_map = {d2.incident_edges(b)[0]: i for i, b in enumerate(d2.io_sorted())}
@@ -136,8 +139,9 @@ def _is_fault_equivalence(
 
 @noise_model_params("noise_1", "noise_2")
 def is_fault_equivalence(
-    noise_1: NoiseModelParam,
-    noise_2: NoiseModelParam,
+    noise_1: NoiseModelParam[int],
+    noise_2: NoiseModelParam[int],
+    *,
     quiet: bool = True,
 ) -> bool:
     """
@@ -152,11 +156,11 @@ def is_fault_equivalence(
     :param noise_2: Second noise model to check
     :param quiet: Whether to silence additional informative output
     """
-    flip_ops_1 = build_flip_operators(noise_1.diagram())
-    pushed_out_noise_1 = pushout(noise_1, flip_ops_1)
+    flip_ops_1 = build_flip_operators(noise_1.diagram)
+    pushed_out_noise_1 = push_out(noise_1, flip_ops_1)
 
-    flip_ops_2 = build_flip_operators(noise_2.diagram())
-    pushed_out_noise_2 = pushout(noise_2, flip_ops_2)
+    flip_ops_2 = build_flip_operators(noise_2.diagram)
+    pushed_out_noise_2 = push_out(noise_2, flip_ops_2)
 
     return _is_fault_equivalence(
         noise_1=pushed_out_noise_1,

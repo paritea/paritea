@@ -2,5 +2,33 @@ line-length = 120
 
 [lint]
 ignore = [
-    "E741" # Ambiguous variable names, false positive on I for identity matrix
+    "E741", # Ambiguous variable names, false positive on I for identity matrix
+    "B905", # `zip()` without an explicit `strict=` parameter
+    "S101", # Use of `assert` detected | migrated step-by-step
+    "S311", # Standard pseudo-random generators are not suitable for cryptographic purposes | only for generating diagrams
+    "TRY003", # Avoid specifying long messages outside the exception class
 ]
+
+select = [
+    "F", # pyflakes
+    "E", # pycodestyle Errors
+    "W", # pycodestyle Warnings
+    "I", # isort
+
+    "B", # flake8-Bugbear
+    "C4",  # flake8-comprehensions
+    "FBT", # flake8-boolean-trap
+    "INP", # flake8-no-pep420
+    "PERF", # Perflint
+    "RUF", # Ruff-specific
+    "S",   # flake8-bandit (Security)
+    "SIM", # flake8-simplify
+    "SLF", # flake8-self
+    "SLOT", # flake8-slots
+    "TID", # flake8-tidy-imports
+    "TRY", # tryceratops
+    "UP",  # pyupgrade
+]
+
+[lint.per-file-ignores]
+"tests/**" = ["INP001"] # Do not require tests to be packages

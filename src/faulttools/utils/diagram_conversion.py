@@ -1,11 +1,9 @@
-from typing import Union
-
-from .pyzx import from_pyzx as from_pyzx, from_pyzx_reversible as from_pyzx_reversible, to_pyzx as to_pyzx
-from .. import Diagram
-
 import pyzx as zx
 
-type DiagramParam = Union[Diagram, zx.graph.base.BaseGraph]
+from faulttools.diagram import Diagram
+from faulttools.glue.pyzx import from_pyzx
+
+type DiagramParam = Diagram | zx.graph.base.BaseGraph
 
 
 def to_diagram(obj: DiagramParam) -> Diagram:

@@ -1,13 +1,13 @@
 from faulttools import PauliString
 from faulttools.flip_operators import FlipOperators
-from faulttools.noise_model import NoiseModel, Fault
+from faulttools.noise import Fault, NoiseModel
 
 
-def pushout(model: NoiseModel, flip_ops: FlipOperators) -> NoiseModel:
-    assert model.diagram() is flip_ops.diagram
+def push_out[T](model: NoiseModel[T], flip_ops: FlipOperators) -> NoiseModel[T]:
+    assert model.diagram is flip_ops.diagram
 
     new_faults = []
-    for atomic_fault, atomic_weight in model.atomic_weights():
+    for atomic_fault, weight in model.atomic_faults_with_weight():
         atomic_fault_flips = atomic_fault.edge_flips
         # Obtain web flip description of original atomic fault
         flipped_regions = {
@@ -33,6 +33,6 @@ def pushout(model: NoiseModel, flip_ops: FlipOperators) -> NoiseModel:
             new_fault_edge_flips *= flip_ops.stab_flip_ops[extra_stab]
 
         new_fault = Fault(new_fault_edge_flips, atomic_fault.detector_flips.union(flipped_regions))
-        new_faults.append((new_fault, atomic_weight))
+        new_faults.append((new_fault, weight))
 
-    return NoiseModel(model.diagram(), new_faults)
+    return NoiseModel(model.diagram, new_faults)

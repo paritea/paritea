@@ -1,25 +1,25 @@
 import dataclasses
-from typing import List, Iterable, Tuple, Mapping, Set
+from collections.abc import Iterable, Mapping
 
-from .diagram import Diagram, NodeType
-from .pauli import PauliString, Pauli
+from .diagram import Diagram
+from .pauli import Pauli, PauliString
 from .web import compute_pauli_webs
 
 
 @dataclasses.dataclass(init=True, frozen=True)
 class FlipOperators:
     diagram: Diagram
-    stab_flip_ops: List[PauliString]
-    region_flip_ops: List[PauliString]
-    stab_gen_set: List[PauliString]
-    region_gen_set: List[PauliString]
-    region_flip_op_stab_flip_map: Mapping[int, Set[int]]
+    stab_flip_ops: list[PauliString]
+    region_flip_ops: list[PauliString]
+    stab_gen_set: list[PauliString]
+    region_gen_set: list[PauliString]
+    region_flip_op_stab_flip_map: Mapping[int, set[int]]
 
 
 def _flip_operators(
     web_generating_set: Iterable[PauliString],
     restriction_func=lambda x: x,
-) -> Tuple[List[PauliString], List[PauliString]]:
+) -> tuple[list[PauliString], list[PauliString]]:
     """
     Calculates flip operators for the given collection of webs, which is presumed to be a minimal generating set for
     some space under the given restriction function (defaults to identity).
@@ -56,16 +56,12 @@ def build_flip_operators(d: Diagram) -> FlipOperators:
     """
     Builds flip operators, obtaining new generating sets for the stabilising and detecting webs of the diagram.
     """
-    boundary_edges = d.boundary_edges()
-    # To establish stabilisers (i.e. input-output relationships), we need to ensure that every boundary node has exactly
-    # one connected boundary edge.
-    assert all([len(d.neighbors(b)) == 1 and d.type(d.neighbors(b)[0]) != NodeType.B for b in d.boundary_nodes()]), (
-        "The diagram must allocate boundary nodes and edges one-to-one!"
-    )
+    if d.is_io_virtual():
+        raise ValueError("Diagram must have real IO to build flip operators!")
 
     stabs, regions = compute_pauli_webs(d)
 
-    stab_flip_ops, stab_gen_set = _flip_operators(stabs, lambda w: w.restrict(boundary_edges))
+    stab_flip_ops, stab_gen_set = _flip_operators(stabs, lambda w: w.restrict(d.boundary_edges()))
     region_flip_ops, region_gen_set = _flip_operators(regions)
 
     region_flip_op_stab_flip_map = {

@@ -1,5 +1,5 @@
+from collections.abc import Iterable, Mapping
 from enum import StrEnum
-from typing import Union, Optional, Iterable, Mapping
 
 import frozendict as fd
 from galois import GF2
@@ -54,7 +54,7 @@ class PauliString(fd.frozendict[int, Pauli]):
     def unary(edge: int, pauli: Pauli) -> "PauliString":
         return PauliString({edge: pauli})
 
-    def __new__(cls, o: Optional[Union[dict, str]] = None):
+    def __new__(cls, o: dict | str | None = None):
         if o is None:
             return super().__new__(cls)
         elif isinstance(o, str):
@@ -77,17 +77,10 @@ class PauliString(fd.frozendict[int, Pauli]):
         return PauliString({idx: self[idx] for idx in set(indices).intersection(self.keys())})
 
     def commutes(self, other: "PauliString") -> bool:
-        for k in self.keys() & other.keys():
-            if not self[k].commutes(other[k]):
-                return False
-
-        return True
+        return sum(not self[k].commutes(other[k]) for k in self.keys() & other.keys()) % 2 == 0
 
     def is_trivial(self) -> bool:
-        for p in self:
-            if self[p] != Pauli.I:
-                return False
-        return True
+        return all(self[p] == Pauli.I for p in self)
 
     def compile(self, idx_map: Mapping[int, int]) -> GF2:
         num_indices = len(idx_map)
