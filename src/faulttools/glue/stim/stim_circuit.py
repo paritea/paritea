@@ -72,7 +72,7 @@ def _cnot(state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[
 
 def from_stim(
     circuit: stim.Circuit,
-) -> tuple[Diagram, NoiseModel, list[int], dict[int, PauliString], list[PauliString]]:
+) -> tuple[Diagram, NoiseModel[float], list[int], dict[int, PauliString], list[PauliString]]:
     state = _DiagramBuildingState(
         n_qubits=circuit.num_qubits,
         d=Diagram(),

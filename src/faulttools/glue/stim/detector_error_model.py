@@ -52,29 +52,34 @@ def _flip_ops_for_detecting_operators(
     )
 
 
-def export_to_stim_dem(
-    nm: NoiseModel, *, measurement_nodes: list[int], logicals: list[PauliString], detectors: list[PauliString]
-) -> tuple[stim.DetectorErrorModel, FlipOperators]:
-    d = nm.diagram()
+def push_out_for_measurement_detectors[T](
+    nm: NoiseModel[T], *, measurement_nodes: list[int], logicals: list[PauliString], detectors: list[PauliString]
+) -> tuple[NoiseModel[T], set[int], set[int]]:
+    d = nm.diagram
     flip_ops = _flip_ops_for_detecting_operators(build_flip_operators(d), measurement_nodes, logicals + detectors)
 
-    pushed_out = push_out(nm, flip_ops)
-    pushed_out.compress(lambda x, y: x * (1 - y) + (1 - x) * y)
+    return push_out(nm, flip_ops), set(range(len(logicals))), set(range(len(logicals), len(logicals) + len(detectors)))
 
+
+def export_to_stim_dem(
+    nm: NoiseModel[float], *, logical_regions: set[int], detector_regions: set[int]
+) -> stim.DetectorErrorModel:
     dem_str = ""
-    for fault, p in pushed_out.atomic_weights():
+    for fault, p in nm.atomic_faults_with_weight():
         if len(fault.detector_flips) == 0:
             continue
 
         dem_part = ""
         for detector in fault.detector_flips:
-            if detector < len(logicals):
+            if detector in logical_regions:
                 dem_part += f"L{detector} "
-            else:
+            elif detector in detector_regions:
                 dem_part += f"D{detector} "
+            else:
+                raise ValueError(f"Region {detector} is neither known as a logical nor as a detector")
 
         if dem_part != "":
             dem_str += f"error({p}) {dem_part}\n"
     dem = stim.DetectorErrorModel(dem_str)
 
-    return dem, flip_ops
+    return dem
