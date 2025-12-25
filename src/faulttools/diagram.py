@@ -1,8 +1,8 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from copy import deepcopy
 from enum import StrEnum
 from fractions import Fraction
-from typing import Any, Protocol, Self, runtime_checkable, Sequence
+from typing import Any, Protocol, Self, runtime_checkable
 
 import rustworkx as rx
 from recordclass import RecordClass
@@ -106,7 +106,7 @@ class Diagram(SupportsPositioning, Protocol):
     def add_edge(self, a: int, b: int) -> int:
         return self._g.add_edge(a, b, None)
 
-    def subgraph(self, nodes: Sequence[int], *, preserve_data: bool = True) -> Tuple["Diagram", rx.NodeMap]:
+    def subgraph(self, nodes: Sequence[int], *, preserve_data: bool = True) -> tuple["Diagram", rx.NodeMap]:
         other = Diagram(additional_keys=self.additional_keys.copy() if preserve_data else None)
         other_g, node_map = self._g.subgraph_with_nodemap(nodes)
         other._g = other_g

@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from copy import deepcopy
-from typing import List, Tuple, Sequence, Dict
 
 from galois import GF2
 
@@ -9,8 +9,8 @@ from faulttools.web import compute_pauli_webs
 
 
 def webs_through_cuts(
-    diagram: Diagram, subgraph_instructions: List[Tuple[Sequence[int], List[int], List[int]]]
-) -> Tuple[List[PauliString], List[PauliString]]:
+    diagram: Diagram, subgraph_instructions: list[tuple[Sequence[int], list[int], list[int]]]
+) -> tuple[list[PauliString], list[PauliString]]:
     """
     Currently assumes that all subgraphs glue [i.outputs, i+1.inputs], and that the diagram does not contain trivial
     edges.
@@ -27,7 +27,7 @@ def webs_through_cuts(
 
     d = deepcopy(diagram)
 
-    subgraphs: List[Tuple[Diagram, dict[int, int]]] = []
+    subgraphs: list[tuple[Diagram, dict[int, int]]] = []
     remaining_nodes = set(d.node_indices())
     for i, instr in enumerate(subgraph_instructions):
         nodes, input_edges, output_edges = instr
@@ -74,7 +74,7 @@ def webs_through_cuts(
             virtual=True,
         )
 
-        edge_map: Dict[int, int] = {}
+        edge_map: dict[int, int] = {}
         for se in subgraph.edge_indices():
             s, t = subgraph.get_edge_endpoints_by_index(se)
             edge_map[se] = d.edge_indices_from_endpoints(node_map[s], node_map[t])[0]
@@ -89,7 +89,7 @@ def webs_through_cuts(
     if len([n for n in remaining_nodes if d.type(n) != NodeType.B]) > 0:
         raise ValueError("Not all nodes were allocated!")
 
-    webs: List[Tuple[List[PauliString], List[PauliString]]] = []
+    webs: list[tuple[list[PauliString], list[PauliString]]] = []
     for subgraph, edge_map in subgraphs:
         stabilisers, regions = compute_pauli_webs(subgraph)
         new_stabilisers = [PauliString({edge_map[e]: p for e, p in s.items()}) for s in stabilisers]
