@@ -1,8 +1,10 @@
 import itertools
-import math
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 import stim
+import sympy
+from sympy import Expr, Symbol, symbols
 
 from faulttools.diagram import Diagram, NodeType
 from faulttools.noise import Fault, NoiseModel
@@ -72,7 +74,7 @@ def _cnot(state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[
 
 def from_stim(
     circuit: stim.Circuit,
-) -> tuple[Diagram, NoiseModel[float], list[int], dict[int, PauliString], list[PauliString]]:
+) -> tuple[Diagram, NoiseModel[Expr], Iterable[Symbol], list[int], dict[int, PauliString], list[PauliString]]:
     state = _DiagramBuildingState(
         n_qubits=circuit.num_qubits,
         d=Diagram(),
@@ -80,10 +82,11 @@ def from_stim(
         current_qubit_nodes=[None for _ in range(circuit.num_qubits)],
     )
 
-    atomic_faults: list[tuple[Fault, float]] = []
-    fault_prot_queue: list[tuple[set, dict[int, Pauli], float]] = []
+    p: Symbol = symbols("p")
+    atomic_faults: list[tuple[Fault, Expr]] = []
+    fault_prot_queue: list[tuple[set, dict[int, Pauli], Expr]] = []
 
-    def queue_for_edge_replacement(fault_prot: dict[int, Pauli], prob: float):
+    def queue_for_edge_replacement(fault_prot: dict[int, Pauli], prob: Expr):
         fault_prot_queue.append((set(fault_prot.keys()), fault_prot, prob))
 
     def flush_edge_for_qubit(qubit: int, edge: int) -> None:
@@ -152,29 +155,28 @@ def from_stim(
                 assert len(args) == 1
                 for tar in instr.targets_copy():
                     assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    queue_for_edge_replacement({tar.qubit_value: Pauli.X}, args[0])
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.X}, p)
             case "Y_ERROR":
                 args = instr.gate_args_copy()
                 assert len(args) == 1
                 for tar in instr.targets_copy():
                     assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    queue_for_edge_replacement({tar.qubit_value: Pauli.Y}, args[0])
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.Y}, p)
             case "Z_ERROR":
                 args = instr.gate_args_copy()
                 assert len(args) == 1
                 for tar in instr.targets_copy():
                     assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    queue_for_edge_replacement({tar.qubit_value: Pauli.Z}, args[0])
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.Z}, p)
             case "DEPOLARIZE1":
                 args = instr.gate_args_copy()
                 assert len(args) == 1
                 for tar in instr.targets_copy():
                     assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    p = args[0]
-                    if p > 0.75:
-                        raise RuntimeError("Cannot approximate single-qubit depolarizing channel with p > 0.75!")
+                    # if p > 0.75:
+                    #    raise RuntimeError("Cannot approximate single-qubit depolarizing channel with p > 0.75!")
                     # Apply the magic formula to decorrelate depolarization, see https://algassert.com/post/2001
-                    independent_p = 0.5 - 0.5 * math.sqrt(1 - 4 / 3 * p)
+                    independent_p = 0.5 - 0.5 * sympy.sqrt(1 - 4 / 3 * p)
                     queue_for_edge_replacement({tar.qubit_value: Pauli.X}, independent_p)
                     queue_for_edge_replacement({tar.qubit_value: Pauli.Y}, independent_p)
                     queue_for_edge_replacement({tar.qubit_value: Pauli.Z}, independent_p)
@@ -185,11 +187,10 @@ def from_stim(
                     assert len(group) == 2
                     for tar in group:
                         assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    p = args[0]
-                    if p > 15 / 16:
-                        raise RuntimeError("Cannot approximate double-qubit depolarizing channel with p > 15/16!")
+                    # if p > 15 / 16:
+                    #    raise RuntimeError("Cannot approximate double-qubit depolarizing channel with p > 15/16!")
                     # Apply the magic formula to decorrelate depolarization, see https://algassert.com/post/2001
-                    independent_p = 0.5 - 0.5 * math.pow((1 - (16 * p) / 15), 0.125)
+                    independent_p = 0.5 - 0.5 * sympy.sqrt(sympy.sqrt(sympy.sqrt(1 - (16 * p) / 15)))
 
                     for p1, p2 in itertools.product([Pauli.I, Pauli.X, Pauli.Y, Pauli.Z], repeat=2):
                         if p1 == Pauli.I and p2 == Pauli.I:
@@ -255,4 +256,4 @@ def from_stim(
     anticommutation_observables = {i: build_pauli_string(observable) for i, observable in observables.items()}
     anticommutation_detectors = [build_pauli_string(detector) for detector in detectors]
 
-    return state.d, noise, measurement_nodes, anticommutation_observables, anticommutation_detectors
+    return state.d, noise, [p], measurement_nodes, anticommutation_observables, anticommutation_detectors
