@@ -11,5 +11,5 @@ def test_dagger_form():
     dagger_noise_model = push_out(noise_model, flip_ops)
 
     boundary_edges = d.boundary_edges()
-    assert len(noise_model.atomic_faults_with_weight()) == len(dagger_noise_model.atomic_faults_with_weight())
+    assert noise_model.num_faults() == dagger_noise_model.num_faults()
     assert all(set(f.edge_flips.keys()).issubset(boundary_edges) for f in dagger_noise_model.atomic_faults())
