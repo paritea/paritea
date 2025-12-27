@@ -91,8 +91,8 @@ def _is_fault_equivalence(
     :param stabilisers: A stabiliser basis for the diagrams attached to noise_1 and noise_2
     :param quiet: Whether to silence additional informative output
     """
-    atomic_weights_1 = {w for _, w in noise_1.atomic_faults_with_weight()}
-    atomic_weights_2 = {w for _, w in noise_2.atomic_faults_with_weight()}
+    atomic_weights_1 = {w for _, w in noise_1.atomic_faults_with_values_unpacked()}
+    atomic_weights_2 = {w for _, w in noise_2.atomic_faults_with_values_unpacked()}
     if atomic_weights_1 != {1} or atomic_weights_2 != {1}:
         raise ValueError(
             f"Both given noise models must be equally and normally weighted. "
