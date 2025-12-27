@@ -6,9 +6,8 @@ from faulttools.noise import Fault, NoiseModel
 def push_out[T](model: NoiseModel[T], flip_ops: FlipOperators) -> NoiseModel[T]:
     assert model.diagram is flip_ops.diagram
 
-    new_faults = []
-    for atomic_fault, weight in model.atomic_faults_with_weight():
-        atomic_fault_flips = atomic_fault.edge_flips
+    def _transform(fault: Fault) -> Fault:
+        atomic_fault_flips = fault.edge_flips
         # Obtain web flip description of original atomic fault
         flipped_regions = {
             i
@@ -32,7 +31,6 @@ def push_out[T](model: NoiseModel[T], flip_ops: FlipOperators) -> NoiseModel[T]:
         for extra_stab in curr_flipped_stabs.difference(orig_flipped_stabs):
             new_fault_edge_flips *= flip_ops.stab_flip_ops[extra_stab]
 
-        new_fault = Fault(new_fault_edge_flips, atomic_fault.detector_flips.union(flipped_regions))
-        new_faults.append((new_fault, weight))
+        return Fault(new_fault_edge_flips, fault.detector_flips.union(flipped_regions))
 
-    return NoiseModel(model.diagram, new_faults)
+    return model.transform_faults(_transform)
