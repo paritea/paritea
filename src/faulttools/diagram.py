@@ -181,8 +181,8 @@ class Diagram(SupportsPositioning, Protocol):
                 f"Real IO may not contain duplicate node indices. Unique I/O #:"
                 f" {len(set(inputs))}/{len(set(outputs))}, Given I/O # : {len(inputs)}/{len(outputs)}"
             )
+        boundaries = set(self.boundary_nodes())
         if not virtual:
-            boundaries = set(self.boundary_nodes())
             unique_io = set(inputs).union(set(outputs))
             if unique_io != boundaries:
                 raise ValueError(
@@ -190,6 +190,8 @@ class Diagram(SupportsPositioning, Protocol):
                     f"Surplus IO: {unique_io.difference(boundaries)}. "
                     f"Unaccounted boundaries: {boundaries.difference(unique_io)}"
                 )
+        elif len(boundaries) > 0:
+            raise ValueError("Graph may not contain any boundaries when setting virtual IO!")
 
         self._io = (inputs, outputs)
         self._is_io_virtual = virtual
