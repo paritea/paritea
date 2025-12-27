@@ -10,7 +10,7 @@ from faulttools.diagram import Diagram, NodeType
 from faulttools.web import compute_pauli_webs
 
 
-@dataclasses.dataclass(init=True)
+@dataclasses.dataclass(init=True, repr=False)
 class _SubgraphTracker:
     inc_edges: dict[int, "_SubgraphTracker | None"] = field(default_factory=dict)
 
