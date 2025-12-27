@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from faulttools import PauliString
 from faulttools.flip_operators import FlipOperators
 from faulttools.noise import Fault, NoiseModel
@@ -6,7 +8,8 @@ from faulttools.noise import Fault, NoiseModel
 def push_out[T](model: NoiseModel[T], flip_ops: FlipOperators) -> NoiseModel[T]:
     assert model.diagram is flip_ops.diagram
 
-    def _transform(fault: Fault) -> Fault:
+    new_faults: dict[Fault, list[T]] = defaultdict(list)
+    for fault, values in model.atomic_faults_with_values():
         atomic_fault_flips = fault.edge_flips
         # Obtain web flip description of original atomic fault
         flipped_regions = {
@@ -31,6 +34,7 @@ def push_out[T](model: NoiseModel[T], flip_ops: FlipOperators) -> NoiseModel[T]:
         for extra_stab in curr_flipped_stabs.difference(orig_flipped_stabs):
             new_fault_edge_flips *= flip_ops.stab_flip_ops[extra_stab]
 
-        return Fault(new_fault_edge_flips, fault.detector_flips.union(flipped_regions))
+        new_fault = Fault(new_fault_edge_flips, fault.detector_flips.union(flipped_regions))
+        new_faults[new_fault].extend(values)
 
-    return model.transform_faults(_transform)
+    return NoiseModel(model.diagram, new_faults)

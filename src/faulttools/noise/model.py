@@ -91,7 +91,10 @@ class NoiseModel[T]:
     def atomic_faults(self) -> Iterable[Fault]:
         return self._atomic_faults.keys()
 
-    def atomic_faults_with_weight(self) -> Iterable[tuple[Fault, T]]:
+    def atomic_faults_with_values(self) -> Iterable[tuple[Fault, list[T]]]:
+        return self._atomic_faults.items()
+
+    def atomic_faults_with_values_unpacked(self) -> Iterable[tuple[Fault, T]]:
         for fault, values in self._atomic_faults.items():
             for value in values:
                 yield fault, value
