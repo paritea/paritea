@@ -15,32 +15,33 @@ class _SubgraphTracker:
     inc_edges: dict[int, "_SubgraphTracker | None"] = field(default_factory=dict)
 
 
-def auto_partition(d: Diagram, node_sets: list[list[int]]) -> tuple[list[PauliString], list[PauliString]]:
+def auto_partition(d: Diagram, *, partitions: list[list[int]]) -> tuple[list[PauliString], list[PauliString]]:
     if d.is_io_virtual():
         raise ValueError("This function can only process diagrams with real IO!")
-    if len(node_sets) == 0:
-        raise ValueError("No node sets given!")
+
+    if len(partitions) == 0:
+        raise ValueError("No partitions given!")
 
     allocated_nodes: set[int] = set()
     cut_edges: dict[int, _SubgraphTracker] = {}
     subgraphs: list[tuple[Diagram, dict[int, int]]] = []
     sg_trackers: list[_SubgraphTracker] = []
-    for node_set in node_sets:
-        if not allocated_nodes.isdisjoint(node_set):
+    for part in partitions:
+        if not allocated_nodes.isdisjoint(part):
             raise RuntimeError(
-                f"Not all node sets are disjoint! Duplicate nodes at least: {allocated_nodes.intersection(node_set)}"
+                f"Not all partitions are disjoint! Duplicate nodes at least: {allocated_nodes.intersection(part)}"
             )
-        allocated_nodes.update(node_set)
+        allocated_nodes.update(part)
 
-        subgraph, node_map = d.subgraph(node_set, preserve_data=False)
+        subgraph, node_map = d.subgraph(part, preserve_data=False)
         tracker = _SubgraphTracker()
         sg_trackers.append(tracker)
 
         io_nodes = []
-        for node in node_set:
+        for node in part:
             for e, adj in d.incident_edge_index_map(node).items():
                 _, other, _ = adj
-                if other in node_set:
+                if other in part:
                     continue
 
                 io_nodes.append(node)
