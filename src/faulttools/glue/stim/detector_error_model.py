@@ -66,7 +66,7 @@ def export_to_stim_dem(
     nm: NoiseModel[float], *, logical_regions: set[int], detector_regions: set[int]
 ) -> stim.DetectorErrorModel:
     dem_str = ""
-    for fault, p in nm.atomic_faults_with_weight():
+    for fault, p in nm.atomic_faults_with_values_unpacked():
         if len(fault.detector_flips) == 0:
             continue
 
