@@ -34,18 +34,23 @@ class DiagramWithPyZXIndex(Diagram, SupportsPyZXIndex, Protocol):
 
 @overload
 def from_pyzx(
-    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: Literal[False] = False
+    pyzx_graph: BaseGraph,
+    *,
+    convert_had_edges: bool = False,
+    positions: bool = False,
+    reversible: Literal[False] = False,
 ) -> Diagram: ...
 @overload
 def from_pyzx(
-    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: Literal[True]
+    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, positions: bool = False, reversible: Literal[True]
 ) -> DiagramWithPyZXIndex: ...
 def from_pyzx(
-    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: bool = False
+    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, positions: bool = False, reversible: bool = False
 ) -> Diagram | DiagramWithPyZXIndex:
     """
     :param pyzx_graph: The PyZX graph to convert to a diagram.
     :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
+    :param positions: Whether to include node position data in the diagram.
     :param reversible: Whether to include PyZX node indices as auxiliary node data in the diagram.
     :return: The converted diagram.
     """
@@ -68,8 +73,10 @@ def from_pyzx(
             raise ValueError(f"Unsupported PyZX vertex phase: {v_phase} for vertex {v}")
 
         node = diagram.add_node(pyzx_v_type_to_node_type[v_type], phase=v_phase)
+        if positions:
+            diagram.set_x(node, pyzx_graph.qubit(v)).set_y(node, pyzx_graph.row(v))
         if reversible:
-            diagram.set_x(node, pyzx_graph.qubit(v)).set_y(node, pyzx_graph.row(v)).set_pyzx_index(node, v)
+            diagram.set_pyzx_index(node, v)
         vertex_to_id[v] = node
 
     for edge in pyzx_graph.edges():
@@ -120,13 +127,22 @@ def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> BaseGraph | tuple[Base
     mapping: dict[int, int] = {}
 
     for n in d.node_indices():
-        if hasattr(d, "pyzx_index") and d.pyzx_index(n) is not None:
-            pyzx_id = d.pyzx_index(n)
-            g.add_vertex_indexed(pyzx_id)
+        if hasattr(d, "pyzx_index"):
+            if d.pyzx_index(n) is not None:
+                pyzx_id = d.pyzx_index(n)
+                g.add_vertex_indexed(pyzx_id)
+            else:
+                pyzx_id = g.add_vertex()
         else:
-            pyzx_id = g.add_vertex()
+            g.add_vertex_indexed(n)
+            pyzx_id = n
         mapping[n] = pyzx_id
+
         g.set_type(pyzx_id, node_type_to_pyzx_v_type[d.type(n)])
+        if d.type(n) == NodeType.H and d.phase(n) == 0:
+            g.set_phase(pyzx_id, 1)
+        else:
+            g.set_phase(pyzx_id, d.phase(n))
         g.set_qubit(pyzx_id, d.y(n))
         g.set_row(pyzx_id, d.x(n))
 
