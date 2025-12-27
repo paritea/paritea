@@ -1,5 +1,6 @@
 import itertools
 import math
+from collections import defaultdict
 from dataclasses import dataclass
 
 import stim
@@ -80,7 +81,7 @@ def from_stim(
         current_qubit_nodes=[None for _ in range(circuit.num_qubits)],
     )
 
-    atomic_faults: list[tuple[Fault, float]] = []
+    atomic_faults: dict[Fault, list[float]] = defaultdict(list)
     fault_prot_queue: list[tuple[set, dict[int, Pauli], float]] = []
 
     def queue_for_edge_replacement(fault_prot: dict[int, Pauli], prob: float):
@@ -99,7 +100,7 @@ def from_stim(
             if len(qubits) != 0:
                 continue
 
-            atomic_faults.append((Fault(PauliString(fault_prot)), prob))
+            atomic_faults[Fault(PauliString(fault_prot))].append(prob)
             flushed_indices.append(i)
 
         if len(flushed_indices) > 0:
