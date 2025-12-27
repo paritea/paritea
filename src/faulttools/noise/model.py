@@ -98,7 +98,7 @@ class NoiseModel[T]:
 
     def compress(self, reweight_func: Callable[[T, T], T]) -> None:
         for fault, values in self._atomic_faults.items():
-            if fault.is_trivial():
+            if len(values) == 0 or fault.is_trivial():
                 continue
 
             compressed = reduce(reweight_func, values)
