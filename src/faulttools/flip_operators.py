@@ -1,5 +1,5 @@
 import dataclasses
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 
 from .diagram import Diagram
 from .pauli import Pauli, PauliString
@@ -10,10 +10,8 @@ from .web import compute_pauli_webs
 class FlipOperators:
     diagram: Diagram
     stab_flip_ops: list[PauliString]
-    region_flip_ops: list[PauliString]
     stab_gen_set: list[PauliString]
     region_gen_set: list[PauliString]
-    region_flip_op_stab_flip_map: Mapping[int, set[int]]
 
 
 def _flip_operators(
@@ -62,11 +60,5 @@ def build_flip_operators(d: Diagram) -> FlipOperators:
     stabs, regions = compute_pauli_webs(d)
 
     stab_flip_ops, stab_gen_set = _flip_operators(stabs, lambda w: w.restrict(d.boundary_edges()))
-    region_flip_ops, region_gen_set = _flip_operators(regions)
 
-    region_flip_op_stab_flip_map = {
-        i: {j for j in range(len(stab_gen_set)) if not region_flip_ops[i].commutes(stab_gen_set[j])}
-        for i in range(len(region_flip_ops))
-    }
-
-    return FlipOperators(d, stab_flip_ops, region_flip_ops, stab_gen_set, region_gen_set, region_flip_op_stab_flip_map)
+    return FlipOperators(d, stab_flip_ops, stab_gen_set, regions)

@@ -40,21 +40,11 @@ def change_stabiliser_basis(flip_ops: FlipOperators) -> FlipOperators:
         stab_gen_set = flip_ops.stab_gen_set.copy()
         stab_flip_ops = flip_ops.stab_flip_ops.copy()
 
-    region_gen_set = flip_ops.region_gen_set.copy()
-    region_flip_ops = flip_ops.region_flip_ops.copy()
-
-    region_flip_op_stab_flip_map = {
-        i: {j for j in range(len(stab_gen_set)) if not region_flip_ops[i].commutes(stab_gen_set[j])}
-        for i in range(len(region_flip_ops))
-    }
-
     return FlipOperators(
         diagram=flip_ops.diagram,
         stab_flip_ops=stab_flip_ops,
-        region_flip_ops=region_flip_ops,
         stab_gen_set=stab_gen_set,
-        region_gen_set=region_gen_set,
-        region_flip_op_stab_flip_map=region_flip_op_stab_flip_map,
+        region_gen_set=flip_ops.region_gen_set.copy(),
     )
 
 
