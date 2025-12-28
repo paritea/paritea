@@ -6,33 +6,19 @@ from faulttools.noise import Fault, NoiseModel
 
 
 def push_out[T](model: NoiseModel[T], flip_ops: FlipOperators) -> NoiseModel[T]:
-    assert model.diagram is flip_ops.diagram
+    if model.diagram is not flip_ops.diagram:
+        raise AssertionError("The given noise model and flip operators must be for the same diagram!")
 
     new_faults: dict[Fault, list[T]] = defaultdict(list)
     for fault, values in model.atomic_faults_with_values():
-        atomic_fault_flips = fault.edge_flips
-        # Obtain web flip description of original atomic fault
         flipped_regions = {
-            i
-            for i in range(len(flip_ops.region_gen_set))
-            if not atomic_fault_flips.commutes(flip_ops.region_gen_set[i])
+            i for i in range(len(flip_ops.region_gen_set)) if not fault.edge_flips.commutes(flip_ops.region_gen_set[i])
         }
-        orig_flipped_stabs = {
-            i for i in range(len(flip_ops.stab_gen_set)) if not atomic_fault_flips.commutes(flip_ops.stab_gen_set[i])
-        }
-
-        # Compute which stabilisers a composed region flip operator would flip
-        curr_flipped_stabs = set()
-        for flipped_region in flipped_regions:
-            curr_flipped_stabs.symmetric_difference_update(flip_ops.region_flip_op_stab_flip_map[flipped_region])
 
         new_fault_edge_flips = PauliString()
-        # Add flips for missing stabilisers
-        for missing_stab in orig_flipped_stabs.difference(curr_flipped_stabs):
-            new_fault_edge_flips *= flip_ops.stab_flip_ops[missing_stab]
-        # Remove flips for extra stabilisers
-        for extra_stab in curr_flipped_stabs.difference(orig_flipped_stabs):
-            new_fault_edge_flips *= flip_ops.stab_flip_ops[extra_stab]
+        for stabiliser, flip_op in zip(flip_ops.stab_gen_set, flip_ops.stab_flip_ops):
+            if not fault.edge_flips.commutes(stabiliser):
+                new_fault_edge_flips *= flip_op
 
         new_fault = Fault(new_fault_edge_flips, fault.detector_flips.union(flipped_regions))
         new_faults[new_fault].extend(values)
