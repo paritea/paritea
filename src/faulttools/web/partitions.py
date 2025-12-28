@@ -15,6 +15,74 @@ class _SubgraphTracker:
     inc_edges: dict[int, "_SubgraphTracker | None"] = field(default_factory=dict)
 
 
+def _find_webs(sg: Diagram, edge_map: dict[int, int]) -> tuple[list[PauliString], list[PauliString]]:
+    st, re = compute_pauli_webs(sg)
+    new_st = [PauliString({edge_map[e]: p for e, p in s.items()}) for s in st]
+    new_re = [PauliString({edge_map[e]: p for e, p in r.items()}) for r in re]
+    return new_st, new_re
+
+
+def _zip_webs(
+    cur_stabs: list[PauliString],
+    next_stabs: list[PauliString],
+    zipped_edges: list[int],
+    new_boundaries: list[int],
+) -> tuple[list[PauliString], list[PauliString]]:
+    zip_idx_map = {e: i for i, e in enumerate(zipped_edges)}
+    zip_idx_map_2 = {e: i for i, e in enumerate(new_boundaries)}
+    cur_stabs_compiled = [s.restrict(zipped_edges).compile(zip_idx_map) for s in cur_stabs]
+    cur_stabs_compiled_2 = [s.restrict(new_boundaries).compile(zip_idx_map_2) for s in cur_stabs]
+
+    next_stabs_compiled = [s.restrict(zipped_edges).compile(zip_idx_map) for s in next_stabs]
+    next_stabs_compiled_2 = [s.restrict(new_boundaries).compile(zip_idx_map_2) for s in next_stabs]
+
+    if len(cur_stabs_compiled) == 0 and len(next_stabs_compiled) == 0:
+        return [], []
+
+    # Compute solutions; Add trivial exclusive null spaces
+    new_stabs = []
+    new_regions = []
+
+    all_compiled = GF2(cur_stabs_compiled + next_stabs_compiled).transpose()
+    solutions = all_compiled.null_space()  # Row-matrix of combination vectors for valid Pauli webs
+
+    all_compiled_2 = GF2(cur_stabs_compiled_2 + next_stabs_compiled_2)
+    comp_sols = solutions @ all_compiled_2
+    stacked = GF2(np.hstack([comp_sols, GF2.Identity(len(comp_sols))]))
+    T = stacked.row_reduce()[:, -len(comp_sols) :]
+
+    solutions_basis_changed = T @ solutions
+
+    # Add non-trivial shared null space solutions
+    for solution in solutions_basis_changed:
+        converted = solution.tolist()
+        cur_activations = converted[: len(cur_stabs)]
+        next_activations = converted[len(cur_stabs) :]
+
+        next_web: PauliString = PauliString()
+        for idx, activated in enumerate(cur_activations):
+            if activated:
+                next_web = next_web * cur_stabs[idx]
+        save_this = next_web.restrict(zipped_edges)
+        for idx, activated in enumerate(next_activations):
+            if activated:
+                next_web = next_web * next_stabs[idx]
+        next_web = next_web * save_this
+
+        if next_web.restrict(new_boundaries).is_trivial():
+            new_regions.append(next_web)
+        else:
+            new_stabs.append(next_web)
+
+    if len(new_stabs) != len(new_boundaries):
+        raise AssertionError(
+            f"Something went wrong, I got the wrong number of stabilisers to form a basis (got {len(new_stabs)}, "
+            f"need {len(new_boundaries)})!"
+        )
+
+    return new_stabs, new_regions
+
+
 def pauli_webs_through_partitions(
     d: Diagram, *, partitions: list[list[int]]
 ) -> tuple[list[PauliString], list[PauliString]]:
@@ -71,73 +139,7 @@ def pauli_webs_through_partitions(
     if len(unallocated_nodes) > 0:
         raise ValueError(f"Not all nodes were allocated: {unallocated_nodes}")
 
-    def _find_webs(sg: Diagram, edge_map: dict[int, int]) -> tuple[list[PauliString], list[PauliString]]:
-        st, re = compute_pauli_webs(sg)
-        new_st = [PauliString({edge_map[e]: p for e, p in s.items()}) for s in st]
-        new_re = [PauliString({edge_map[e]: p for e, p in r.items()}) for r in re]
-        return new_st, new_re
-
     webs = list(starmap(_find_webs, subgraphs))
-
-    def _zip_webs_with(
-        cur_stabs: list[PauliString],
-        next_stabs: list[PauliString],
-        zipped_edges: list[int],
-        new_boundaries: list[int],
-    ) -> tuple[list[PauliString], list[PauliString]]:
-        zip_idx_map = {e: i for i, e in enumerate(zipped_edges)}
-        zip_idx_map_2 = {e: i for i, e in enumerate(new_boundaries)}
-        cur_stabs_compiled = [s.restrict(zipped_edges).compile(zip_idx_map) for s in cur_stabs]
-        cur_stabs_compiled_2 = [s.restrict(new_boundaries).compile(zip_idx_map_2) for s in cur_stabs]
-
-        next_stabs_compiled = [s.restrict(zipped_edges).compile(zip_idx_map) for s in next_stabs]
-        next_stabs_compiled_2 = [s.restrict(new_boundaries).compile(zip_idx_map_2) for s in next_stabs]
-
-        if len(cur_stabs_compiled) == 0 and len(next_stabs_compiled) == 0:
-            return [], []
-
-        # Compute solutions; Add trivial exclusive null spaces
-        new_stabs = []
-        new_regions = []
-
-        all_compiled = GF2(cur_stabs_compiled + next_stabs_compiled).transpose()
-        solutions = all_compiled.null_space()  # Row-matrix of combination vectors for valid Pauli webs
-
-        all_compiled_2 = GF2(cur_stabs_compiled_2 + next_stabs_compiled_2)
-        comp_sols = solutions @ all_compiled_2
-        stacked = GF2(np.hstack([comp_sols, GF2.Identity(len(comp_sols))]))
-        T = stacked.row_reduce()[:, -len(comp_sols) :]
-
-        solutions_basis_changed = T @ solutions
-
-        # Add non-trivial shared null space solutions
-        for solution in solutions_basis_changed:
-            converted = solution.tolist()
-            cur_activations = converted[: len(cur_stabs)]
-            next_activations = converted[len(cur_stabs) :]
-
-            next_web: PauliString = PauliString()
-            for idx, activated in enumerate(cur_activations):
-                if activated:
-                    next_web = next_web * cur_stabs[idx]
-            save_this = next_web.restrict(zipped_edges)
-            for idx, activated in enumerate(next_activations):
-                if activated:
-                    next_web = next_web * next_stabs[idx]
-            next_web = next_web * save_this
-
-            if next_web.restrict(new_boundaries).is_trivial():
-                new_regions.append(next_web)
-            else:
-                new_stabs.append(next_web)
-
-        if len(new_stabs) != len(new_boundaries):
-            raise AssertionError(
-                f"Something went wrong, I got the wrong number of stabilisers to form a basis (got {len(new_stabs)}, "
-                f"need {len(new_boundaries)})!"
-            )
-
-        return new_stabs, new_regions
 
     cur_stabs, cur_regions = webs[0]
     main_tracker = sg_trackers[0]
@@ -157,7 +159,7 @@ def pauli_webs_through_partitions(
         main_tracker.inc_edges = new_inc_edges
 
         neighbor_stabs, neighbor_regions = webs[sg_trackers.index(neighbour)]
-        nex_stabs, nex_regions = _zip_webs_with(
+        nex_stabs, nex_regions = _zip_webs(
             cur_stabs, neighbor_stabs, edges_to_neighbor, list(main_tracker.inc_edges.keys())
         )
 
