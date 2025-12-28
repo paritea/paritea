@@ -34,18 +34,23 @@ class DiagramWithPyZXIndex(Diagram, SupportsPyZXIndex, Protocol):
 
 @overload
 def from_pyzx(
-    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: Literal[False] = False
+    pyzx_graph: BaseGraph,
+    *,
+    convert_had_edges: bool = False,
+    positions: bool = False,
+    reversible: Literal[False] = False,
 ) -> Diagram: ...
 @overload
 def from_pyzx(
-    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: Literal[True]
+    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, positions: bool = False, reversible: Literal[True]
 ) -> DiagramWithPyZXIndex: ...
 def from_pyzx(
-    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, reversible: bool = False
+    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, positions: bool = False, reversible: bool = False
 ) -> Diagram | DiagramWithPyZXIndex:
     """
     :param pyzx_graph: The PyZX graph to convert to a diagram.
     :param convert_had_edges: Whether to handle hadamard edges via conversion to H-Boxes (True) or throwing (False).
+    :param positions: Whether to include node position data in the diagram.
     :param reversible: Whether to include PyZX node indices as auxiliary node data in the diagram.
     :return: The converted diagram.
     """
@@ -68,8 +73,10 @@ def from_pyzx(
             raise ValueError(f"Unsupported PyZX vertex phase: {v_phase} for vertex {v}")
 
         node = diagram.add_node(pyzx_v_type_to_node_type[v_type], phase=v_phase)
+        if positions:
+            diagram.set_x(node, pyzx_graph.qubit(v)).set_y(node, pyzx_graph.row(v))
         if reversible:
-            diagram.set_x(node, pyzx_graph.qubit(v)).set_y(node, pyzx_graph.row(v)).set_pyzx_index(node, v)
+            diagram.set_pyzx_index(node, v)
         vertex_to_id[v] = node
 
     for edge in pyzx_graph.edges():
