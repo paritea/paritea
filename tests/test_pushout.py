@@ -29,19 +29,49 @@ def group_fault_values_by_flips[T](
     return result
 
 
+def change_stabiliser_basis(flip_ops: FlipOperators) -> FlipOperators:
+    if len(flip_ops.stab_gen_set) >= 2:
+        stab_gen_set = [flip_ops.stab_gen_set[0]]
+        stab_flip_ops = [flip_ops.stab_flip_ops[0]]
+        for op, flip_op in zip(flip_ops.stab_gen_set[1:], flip_ops.stab_flip_ops[1:]):
+            stab_gen_set.append(op * flip_ops.stab_gen_set[0])
+            stab_flip_ops.append(flip_op * flip_ops.stab_flip_ops[0])
+    else:
+        stab_gen_set = flip_ops.stab_gen_set.copy()
+        stab_flip_ops = flip_ops.stab_flip_ops.copy()
+
+    region_gen_set = flip_ops.region_gen_set.copy()
+    region_flip_ops = flip_ops.region_flip_ops.copy()
+
+    region_flip_op_stab_flip_map = {
+        i: {j for j in range(len(stab_gen_set)) if not region_flip_ops[i].commutes(stab_gen_set[j])}
+        for i in range(len(region_flip_ops))
+    }
+
+    return FlipOperators(
+        diagram=flip_ops.diagram,
+        stab_flip_ops=stab_flip_ops,
+        region_flip_ops=region_flip_ops,
+        stab_gen_set=stab_gen_set,
+        region_gen_set=region_gen_set,
+        region_flip_op_stab_flip_map=region_flip_op_stab_flip_map,
+    )
+
+
 def compare_noise_models[T](nm1: NoiseModel[T], nm2: NoiseModel[T], flip_ops: FlipOperators) -> None:
     assert nm1.diagram is nm2.diagram
+    assert nm1.diagram is flip_ops.diagram
+
+    changed_flip_ops = change_stabiliser_basis(flip_ops)
 
     boundary_edges = nm1.diagram.boundary_edges()
     assert nm1.num_faults() == nm2.num_faults()
     assert all(set(f.edge_flips.keys()).issubset(boundary_edges) for f in nm2.atomic_faults())
 
-    nm1_grouped = group_fault_values_by_flips(nm1, flip_ops)
-    nm2_grouped = group_fault_values_by_flips(nm2, flip_ops)
-    assert nm1_grouped.keys() == nm2_grouped.keys(), (
-        f"Fault keys are not the same! Symmetric diff: "
-        f"{set(nm1_grouped.keys()).symmetric_difference(nm2_grouped.keys())}"
-    )
+    nm1_grouped = group_fault_values_by_flips(nm1, changed_flip_ops)
+    nm2_grouped = group_fault_values_by_flips(nm2, changed_flip_ops)
+    keys_diff = set(nm1_grouped.keys()).symmetric_difference(nm2_grouped.keys())
+    assert len(keys_diff) == 0, f"Fault keys are not the same! Symmetric diff: {keys_diff}"
     for flips in nm1_grouped:
         assert nm1_grouped[flips] == nm2_grouped[flips], f"Value difference for fault flips {flips}!"
 
@@ -78,6 +108,3 @@ def test_shor_extraction_surface(size: int, repeat: int):
     pushed_out = push_out(noise_model, flip_ops)
 
     compare_noise_models(noise_model, pushed_out, flip_ops)
-
-
-# TODO test invariance under flip ops
