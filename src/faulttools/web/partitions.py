@@ -28,32 +28,32 @@ def _zip_webs(
     zipped_edges: list[int],
     new_boundaries: list[int],
 ) -> tuple[list[PauliString], list[PauliString]]:
+    # Prepare and compile stabilisers for both subdiagrams
     zip_idx_map = {e: i for i, e in enumerate(zipped_edges)}
-    zip_idx_map_2 = {e: i for i, e in enumerate(new_boundaries)}
+    boundary_idx_map = {e: i for i, e in enumerate(new_boundaries)}
     cur_stabs_compiled = [s.restrict(zipped_edges).compile(zip_idx_map) for s in cur_stabs]
-    cur_stabs_compiled_2 = [s.restrict(new_boundaries).compile(zip_idx_map_2) for s in cur_stabs]
+    cur_stabs_boundary_compiled = [s.restrict(new_boundaries).compile(boundary_idx_map) for s in cur_stabs]
 
     next_stabs_compiled = [s.restrict(zipped_edges).compile(zip_idx_map) for s in next_stabs]
-    next_stabs_compiled_2 = [s.restrict(new_boundaries).compile(zip_idx_map_2) for s in next_stabs]
+    next_stabs_boundary_compiled = [s.restrict(new_boundaries).compile(boundary_idx_map) for s in next_stabs]
 
     if len(cur_stabs_compiled) == 0 and len(next_stabs_compiled) == 0:
         return [], []
 
-    # Compute solutions; Add trivial exclusive null spaces
+    # Compute matchings over shared edges
+    all_compiled = GF2(cur_stabs_compiled + next_stabs_compiled).transpose()
+    solutions = all_compiled.null_space()  # Row-matrix of combination vectors for valid matches
+
+    # Compute a basis change to extract the maximum number of detecting regions possible
+    all_boundary_compiled = GF2(cur_stabs_boundary_compiled + next_stabs_boundary_compiled)
+    boundary_solutions = solutions @ all_boundary_compiled
+    stacked = GF2(np.hstack([boundary_solutions, GF2.Identity(len(boundary_solutions))]))
+    basis_change = stacked.row_reduce()[:, -len(boundary_solutions) :]
+    solutions_basis_changed = basis_change @ solutions
+
+    # Extract webs from matching information
     new_stabs = []
     new_regions = []
-
-    all_compiled = GF2(cur_stabs_compiled + next_stabs_compiled).transpose()
-    solutions = all_compiled.null_space()  # Row-matrix of combination vectors for valid Pauli webs
-
-    all_compiled_2 = GF2(cur_stabs_compiled_2 + next_stabs_compiled_2)
-    comp_sols = solutions @ all_compiled_2
-    stacked = GF2(np.hstack([comp_sols, GF2.Identity(len(comp_sols))]))
-    T = stacked.row_reduce()[:, -len(comp_sols) :]
-
-    solutions_basis_changed = T @ solutions
-
-    # Add non-trivial shared null space solutions
     for solution in solutions_basis_changed:
         converted = solution.tolist()
         cur_activations = converted[: len(cur_stabs)]
@@ -62,12 +62,12 @@ def _zip_webs(
         next_web: PauliString = PauliString()
         for idx, activated in enumerate(cur_activations):
             if activated:
-                next_web = next_web * cur_stabs[idx]
-        save_this = next_web.restrict(zipped_edges)
+                next_web *= cur_stabs[idx]
+        shared_edges = next_web.restrict(zipped_edges)
         for idx, activated in enumerate(next_activations):
             if activated:
-                next_web = next_web * next_stabs[idx]
-        next_web = next_web * save_this
+                next_web *= next_stabs[idx]
+        next_web *= shared_edges
 
         if next_web.restrict(new_boundaries).is_trivial():
             new_regions.append(next_web)
@@ -96,6 +96,7 @@ def pauli_webs_through_partitions(
     cut_edges: dict[int, _SubgraphTracker] = {}
     subgraphs: list[tuple[Diagram, dict[int, int]]] = []
     sg_trackers: list[_SubgraphTracker] = []
+    # Extract subgraphs from partitions and build partition neighbour tracking graph
     for part in partitions:
         if not allocated_nodes.isdisjoint(part):
             raise RuntimeError(
@@ -139,32 +140,26 @@ def pauli_webs_through_partitions(
     if len(unallocated_nodes) > 0:
         raise ValueError(f"Not all nodes were allocated: {unallocated_nodes}")
 
+    # Find webs for all subdiagrams
     webs = list(starmap(_find_webs, subgraphs))
 
+    # Zip all webs together
     cur_stabs, cur_regions = webs[0]
     main_tracker = sg_trackers[0]
     while any(main_tracker.inc_edges.values()):
         neighbour = next(n for n in main_tracker.inc_edges.values() if n is not None)
-        edges_to_neighbor = [e for e, t in main_tracker.inc_edges.items() if id(t) == id(neighbour)]
+        edges_to_neighbour = [e for e, t in main_tracker.inc_edges.items() if t is neighbour]
 
-        new_inc_edges = {}
-        for e in main_tracker.inc_edges:
-            if e in edges_to_neighbor:
-                continue
-            new_inc_edges[e] = main_tracker.inc_edges[e]
-        for e in neighbour.inc_edges:
-            if e in edges_to_neighbor:
-                continue
-            new_inc_edges[e] = neighbour.inc_edges[e]
-        main_tracker.inc_edges = new_inc_edges
+        main_tracker.inc_edges = {e: tr for e, tr in main_tracker.inc_edges.items() if e not in edges_to_neighbour}
+        main_tracker.inc_edges |= {e: tr for e, tr in neighbour.inc_edges.items() if e not in edges_to_neighbour}
 
-        neighbor_stabs, neighbor_regions = webs[sg_trackers.index(neighbour)]
+        neighbour_stabs, neighbour_regions = webs[sg_trackers.index(neighbour)]
         nex_stabs, nex_regions = _zip_webs(
-            cur_stabs, neighbor_stabs, edges_to_neighbor, list(main_tracker.inc_edges.keys())
+            cur_stabs, neighbour_stabs, edges_to_neighbour, list(main_tracker.inc_edges.keys())
         )
 
         cur_stabs = nex_stabs
-        cur_regions.extend(neighbor_regions)
+        cur_regions.extend(neighbour_regions)
         cur_regions.extend(nex_regions)
 
     return cur_stabs, cur_regions
