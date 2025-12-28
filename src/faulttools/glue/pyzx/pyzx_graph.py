@@ -133,7 +133,12 @@ def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> BaseGraph | tuple[Base
         else:
             pyzx_id = g.add_vertex()
         mapping[n] = pyzx_id
+
         g.set_type(pyzx_id, node_type_to_pyzx_v_type[d.type(n)])
+        if d.type(n) == NodeType.H and d.phase(n) == 0:
+            g.set_phase(pyzx_id, 1)
+        else:
+            g.set_phase(pyzx_id, d.phase(n))
         g.set_qubit(pyzx_id, d.y(n))
         g.set_row(pyzx_id, d.x(n))
 
