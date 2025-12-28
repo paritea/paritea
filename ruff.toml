@@ -4,7 +4,6 @@ line-length = 120
 ignore = [
     "E741", # Ambiguous variable names, false positive on I for identity matrix
     "B905", # `zip()` without an explicit `strict=` parameter
-    "S101", # Use of `assert` detected | migrated step-by-step
     "S311", # Standard pseudo-random generators are not suitable for cryptographic purposes | only for generating diagrams
     "TRY003", # Avoid specifying long messages outside the exception class
 ]
@@ -31,4 +30,7 @@ select = [
 ]
 
 [lint.per-file-ignores]
-"tests/**" = ["INP001"] # Do not require tests to be packages
+"tests/**" = [
+    "INP001", # Do not require tests to be packages
+    "S101", # Assertions in tests are fair
+]
