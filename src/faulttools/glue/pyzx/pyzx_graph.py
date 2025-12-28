@@ -128,10 +128,14 @@ def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> BaseGraph | tuple[Base
 
     for n in d.node_indices():
         if hasattr(d, "pyzx_index"):
-            pyzx_id = d.pyzx_index(n)
-            g.add_vertex_indexed(pyzx_id)
+            if d.pyzx_index(n) is not None:
+                pyzx_id = d.pyzx_index(n)
+                g.add_vertex_indexed(pyzx_id)
+            else:
+                pyzx_id = g.add_vertex()
         else:
-            pyzx_id = g.add_vertex()
+            g.add_vertex_indexed(n)
+            pyzx_id = n
         mapping[n] = pyzx_id
 
         g.set_type(pyzx_id, node_type_to_pyzx_v_type[d.type(n)])
