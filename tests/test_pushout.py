@@ -30,7 +30,7 @@ def group_fault_values_by_flips[T](
 
 
 def compare_noise_models[T](nm1: NoiseModel[T], nm2: NoiseModel[T], flip_ops: FlipOperators) -> None:
-    assert id(nm1.diagram) == id(nm2.diagram)
+    assert nm1.diagram is nm2.diagram
 
     boundary_edges = nm1.diagram.boundary_edges()
     assert nm1.num_faults() == nm2.num_faults()
