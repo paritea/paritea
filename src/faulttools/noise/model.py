@@ -107,13 +107,3 @@ class NoiseModel[T]:
             compressed = reduce(reweight_func, values)
             values.clear()
             values.append(compressed)
-
-    def transform_faults(self, fault_transform: Callable[[Fault], Fault]) -> "NoiseModel":
-        new_faults: dict[Fault, list[T]] = {}
-        for fault in self._atomic_faults:
-            new_fault = fault_transform(fault)
-            if new_fault not in new_faults:
-                new_faults[new_fault] = []
-            new_faults[new_fault].extend(self._atomic_faults[fault])
-
-        return NoiseModel(self._diagram, new_faults)
