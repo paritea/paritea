@@ -6,7 +6,8 @@ from faulttools.noise import Fault, NoiseModel
 
 
 def push_out[T](model: NoiseModel[T], flip_ops: FlipOperators) -> NoiseModel[T]:
-    assert model.diagram is flip_ops.diagram
+    if model.diagram is not flip_ops.diagram:
+        raise AssertionError("The given noise model and flip operators must be for the same diagram!")
 
     new_faults: dict[Fault, list[T]] = defaultdict(list)
     for fault, values in model.atomic_faults_with_values():
