@@ -15,7 +15,9 @@ class _SubgraphTracker:
     inc_edges: dict[int, "_SubgraphTracker | None"] = field(default_factory=dict)
 
 
-def auto_partition(d: Diagram, *, partitions: list[list[int]]) -> tuple[list[PauliString], list[PauliString]]:
+def pauli_webs_through_partitions(
+    d: Diagram, *, partitions: list[list[int]]
+) -> tuple[list[PauliString], list[PauliString]]:
     if d.is_io_virtual():
         raise ValueError("This function can only process diagrams with real IO!")
 
