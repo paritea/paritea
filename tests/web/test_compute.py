@@ -4,12 +4,12 @@ from collections.abc import Callable, Mapping
 import numpy as np
 import pytest
 from galois import GF2
-from pyzx import Graph, VertexType
 
 from faulttools import Pauli, PauliString, generate
-from faulttools.diagram import Diagram
+from faulttools.diagram import Diagram, NodeType
 from faulttools.glue.pyzx import from_pyzx
 from faulttools.web import compute_pauli_webs
+from faulttools.web.partitions import pauli_webs_through_partitions
 
 SerializedPauliString = Mapping[str, Pauli]
 
@@ -116,14 +116,17 @@ def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, list[PauliString]
 
 
 def test_identity_webs(assert_pauli_webs):
-    g = Graph()
-    b1 = g.add_vertex(VertexType.BOUNDARY)
-    b2 = g.add_vertex(VertexType.BOUNDARY)
-    n = g.add_vertex(VertexType.Z)
-    g.add_edges([(b1, n), (n, b2)])
-    d = from_pyzx(g)
+    d = Diagram()
+    b1 = d.add_node(NodeType.B)
+    b2 = d.add_node(NodeType.B)
+    n = d.add_node(NodeType.Z)
+    d.add_edge(b1, n)
+    d.add_edge(n, b2)
+    d.infer_io_from_boundaries()
 
     stabs, regions = compute_pauli_webs(d)
+    assert_pauli_webs(d, stabs, regions)
+    stabs, regions = pauli_webs_through_partitions(d, partitions=[[n]])
     assert_pauli_webs(d, stabs, regions)
 
 
@@ -136,11 +139,14 @@ def test_zweb_webs(assert_pauli_webs):
 
 @pytest.mark.parametrize("code_size,repeat", [(3, 1), (5, 1), (5, 3)])
 def test_rotated_surface_code_shor(code_size, repeat, assert_pauli_webs):
-    d = generate.shor_extraction(
+    d, partitions = generate.shor_extraction(
         generate.rotated_planar_surface_code_stabilisers(code_size),
         qubits=code_size**2,
         repeat=repeat,
+        partition=True,
     )
 
     stabs, regions = compute_pauli_webs(d)
+    assert_pauli_webs(d, stabs, regions)
+    stabs, regions = pauli_webs_through_partitions(d, partitions=partitions)
     assert_pauli_webs(d, stabs, regions)
