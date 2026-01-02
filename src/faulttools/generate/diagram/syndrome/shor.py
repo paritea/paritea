@@ -1,22 +1,56 @@
+from typing import Literal, overload
+
 from faulttools import Pauli, PauliString
 from faulttools.diagram import Diagram, NodeType
 
 
-def shor_extraction(stabilisers: list[PauliString], qubits: int, repeat: int = 1) -> Diagram:
+@overload
+def shor_extraction(
+    stabilisers: list[PauliString],
+    *,
+    qubits: int,
+    repeat: int = 1,
+    partition: Literal[False] = False,
+    granular: bool = False,
+) -> Diagram: ...
+@overload
+def shor_extraction(
+    stabilisers: list[PauliString],
+    *,
+    qubits: int,
+    repeat: int = 1,
+    partition: Literal[True],
+    granular: bool = False,
+) -> tuple[Diagram, list[list[int]]]: ...
+def shor_extraction(
+    stabilisers: list[PauliString],
+    *,
+    qubits: int,
+    repeat: int = 1,
+    partition: bool = False,
+    granular: bool = False,
+) -> Diagram | tuple[Diagram, list[list[int]]]:
     """
     Generates a ZX diagram measuring the given stabilisers one-by-one using Shor-style syndrome extraction. Diagrams are
     post-selected on all-zero extraction measurements.
 
-    Currently only supports measuring X and Z on single qubits. Uses an assumed fault-free cat state preparation.
+    Currently only supports measuring stabilisers made up of X and Z. Uses an assumed fault-free cat state preparation.
+
+    :param partition: Whether to return partitions for the diagram.
+    :param granular: Whether to take a partition to be an entire measurement round (False) or an individual stabiliser
+    measurement (True).
     """
 
     d = Diagram()
     row_offset = 0
     # Initial row of boundaries
     current_qubit_nodes = [d.add_node(NodeType.B, x=row_offset, y=i) for i in range(qubits)]
+    inputs = current_qubit_nodes.copy()
+    node_list: list[list[int]] = []
     row_offset += 1
 
     for _ in range(repeat):
+        new_nodes = []
         for stabiliser in stabilisers:
             stabiliser_diagram = Diagram()
             mapped = [-1 for _ in range(qubits)]
@@ -60,9 +94,24 @@ def shor_extraction(stabilisers: list[PauliString], qubits: int, repeat: int = 1
             # Append to overall diagram
             trans = d.compose(stabiliser_diagram, {b: n for b, n in zip(current_qubit_nodes, mapped) if n != -1})
             current_qubit_nodes = [trans[n] if n != -1 else current_qubit_nodes[i] for i, n in enumerate(mapped)]
+            if granular:
+                node_list.append(list(trans.values()))
+            else:
+                new_nodes.extend(trans.values())
+
+        if not granular:
+            node_list.append(new_nodes)
 
     # Add boundary nodes on the other side
     for i in range(qubits):
-        d.add_edge(current_qubit_nodes[i], d.add_node(NodeType.B, x=row_offset, y=i))
+        b = d.add_node(NodeType.B, x=row_offset, y=i)
+        d.add_edge(current_qubit_nodes[i], b)
+        current_qubit_nodes[i] = b
+
+    outputs = current_qubit_nodes.copy()
+    d.set_io(inputs, outputs, virtual=False)
+
+    if partition:
+        return d, node_list
 
     return d

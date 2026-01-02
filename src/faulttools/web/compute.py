@@ -21,6 +21,9 @@ def _compute(
     call is preferred to enabling them in separate calls as they may share basic computations.
     """
 
+    if diagram.is_io_virtual():
+        raise ValueError("This function does not accept diagrams with virtual IO!")
+
     def to_pauli_string(prototype: dict[tuple[int, int], Pauli]) -> PauliString:
         return PauliString({diagram.edge_indices_from_endpoints(*edge)[0]: p for edge, p in prototype.items()})
 
