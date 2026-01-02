@@ -10,8 +10,8 @@ def shor_extraction(
     *,
     qubits: int,
     repeat: int = 1,
-    granular: bool = False,
     partition: Literal[False] = False,
+    granular: bool = False,
 ) -> Diagram: ...
 @overload
 def shor_extraction(
@@ -19,22 +19,26 @@ def shor_extraction(
     *,
     qubits: int,
     repeat: int = 1,
-    granular: bool = False,
     partition: Literal[True],
+    granular: bool = False,
 ) -> tuple[Diagram, list[list[int]]]: ...
 def shor_extraction(
     stabilisers: list[PauliString],
     *,
     qubits: int,
     repeat: int = 1,
-    granular: bool = False,
     partition: bool = False,
+    granular: bool = False,
 ) -> Diagram | tuple[Diagram, list[list[int]]]:
     """
     Generates a ZX diagram measuring the given stabilisers one-by-one using Shor-style syndrome extraction. Diagrams are
     post-selected on all-zero extraction measurements.
 
-    Currently only supports measuring X and Z on single qubits. Uses an assumed fault-free cat state preparation.
+    Currently only supports measuring stabilisers made up of X and Z. Uses an assumed fault-free cat state preparation.
+
+    :param partition: Whether to return partitions for the diagram.
+    :param granular: Whether to take a partition to be an entire measurement round (False) or an individual stabiliser
+    measurement (True).
     """
 
     d = Diagram()
