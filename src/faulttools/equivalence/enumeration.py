@@ -44,7 +44,7 @@ def _normal_strategy(
         if not quiet:
             print("No signatures to match for g2!")
         return None
-    num_max_signatures = 2 ** (g2_boundaries // 2 + g2_sinks)
+    num_max_signatures = 2 ** (g2_boundaries + g2_sinks)
     num_total_signatures = 0
 
     if not quiet:
