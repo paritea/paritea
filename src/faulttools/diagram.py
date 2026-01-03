@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from copy import deepcopy
 from enum import StrEnum
 from fractions import Fraction
@@ -62,6 +62,7 @@ class Diagram(SupportsPositioning, Protocol):
         self.edge_indices_from_endpoints = self._g.edge_indices_from_endpoints
         self.get_edge_endpoints_by_index = self._g.get_edge_endpoints_by_index
         self.incident_edges = self._g.incident_edges
+        self.incident_edge_index_map = self._g.incident_edge_index_map
         self.has_parallel_edges = self._g.has_parallel_edges
         self.add_edges = self._g.add_edges_from_no_data
         self.remove_edge = self._g.remove_edge
@@ -105,6 +106,26 @@ class Diagram(SupportsPositioning, Protocol):
 
     def add_edge(self, a: int, b: int) -> int:
         return self._g.add_edge(a, b, None)
+
+    def subgraph(self, nodes: Sequence[int], *, preserve_data: bool = True) -> tuple["Diagram", rx.NodeMap]:
+        other = Diagram(additional_keys=self.additional_keys.copy() if preserve_data else None)
+        other_g, node_map = self._g.subgraph_with_nodemap(nodes)
+        other._g = other_g
+        other._rebind_methods()
+
+        if preserve_data:
+            for node in other.node_indices():
+                old_node = node_map[node]
+                if old_node in self._x:
+                    other._x[node] = self._x[old_node]
+                if old_node in self._y:
+                    other._y[node] = self._y[old_node]
+                for key in self.additional_keys:
+                    attr_map = getattr(self, f"_{key}")
+                    if old_node in attr_map:
+                        getattr(other, f"_{key}")[node] = attr_map[old_node]
+
+        return other, node_map
 
     def compose(self, other: "Diagram", node_map: Mapping[int, int]) -> dict[int, int]:
         """
@@ -155,13 +176,13 @@ class Diagram(SupportsPositioning, Protocol):
         Sets the boundary node indices regarded as inputs / outputs. Their order directly determines their index through
         isomorphic conversion to a states outputs, i.e. they are indexed as <...all-inputs><...all-outputs>.
         """
-        if len(set(inputs)) != len(inputs) or len(set(outputs)) != len(outputs):
+        if not virtual and (len(set(inputs)) != len(inputs) or len(set(outputs)) != len(outputs)):
             raise ValueError(
-                f"IO may not contain duplicate node indices. Unique I/O:"
-                f" {len(set(inputs))}/{len(set(outputs))}, Given I/O: {len(inputs)}/{len(outputs)}"
+                f"Real IO may not contain duplicate node indices. Unique I/O #:"
+                f" {len(set(inputs))}/{len(set(outputs))}, Given I/O # : {len(inputs)}/{len(outputs)}"
             )
+        boundaries = set(self.boundary_nodes())
         if not virtual:
-            boundaries = set(self.boundary_nodes())
             unique_io = set(inputs).union(set(outputs))
             if unique_io != boundaries:
                 raise ValueError(
@@ -169,6 +190,8 @@ class Diagram(SupportsPositioning, Protocol):
                     f"Surplus IO: {unique_io.difference(boundaries)}. "
                     f"Unaccounted boundaries: {boundaries.difference(unique_io)}"
                 )
+        elif len(boundaries) > 0:
+            raise ValueError("Graph may not contain any boundaries when setting virtual IO!")
 
         self._io = (inputs, outputs)
         self._is_io_virtual = virtual

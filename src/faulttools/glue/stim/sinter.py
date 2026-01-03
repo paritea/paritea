@@ -32,7 +32,8 @@ class DemSamplerDuckTypingAsDetectorSampler:
         self.dem_sampler = dem_sampler
 
     def sample(self, shots, separate_observables, **kwargs):
-        assert separate_observables
+        if not separate_observables:
+            raise ValueError("Can only sample with separate observables!")
         # Ignore observable separation since it is always active for a dem sampler
         det_data, obs_data, _ = self.dem_sampler.sample(shots, **kwargs)
 
