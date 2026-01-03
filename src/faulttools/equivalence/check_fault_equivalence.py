@@ -94,6 +94,13 @@ def _is_fault_equivalence(
     """
     atomic_weights_1 = {w for _, w in noise_1.atomic_faults_with_values_unpacked()}
     atomic_weights_2 = {w for _, w in noise_2.atomic_faults_with_values_unpacked()}
+    negative_weights_1 = {w for w in atomic_weights_1 if w < 0}
+    negative_weights_2 = {w for w in atomic_weights_2 if w < 0}
+    if len(negative_weights_1) > 0 or len(negative_weights_2) > 0:
+        raise ValueError(
+            "Cannot process noise models with negative weights, but the following negative weights were given: "
+            f"Noise model 1: {negative_weights_1}; Noise model 2: {negative_weights_2}."
+        )
     use_normally_weighted_strategy = atomic_weights_1 == {1} and atomic_weights_2 == {1}
     if not quiet:
         print(f"Using {'normal' if use_normally_weighted_strategy else 'regular'} strategy!")
