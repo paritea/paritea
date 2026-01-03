@@ -68,8 +68,6 @@ def _normal_strategy(
         g1_new_signatures = []
         for last_it_int, atomic_sig_nf_int in itertools.product(g1_last_new_signatures, g1_unique_sigs):
             combined_sig = last_it_int ^ atomic_sig_nf_int
-            if combined_sig & g1_sink_mask > 0:
-                continue  # Detectable g1 signatures will never be queried, save space here
 
             combined_sig_no_sinks = combined_sig >> g1_sinks
             if combined_sig_no_sinks not in g1_lookup:
