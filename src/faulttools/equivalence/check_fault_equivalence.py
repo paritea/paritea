@@ -116,14 +116,14 @@ def _is_fault_equivalence(
 
     if not quiet:
         print("Compiling atomic faults for d1...")
-    g1_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, len(d1_detector_idx_map))
+    g1_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, num_detectors_1)
     g1_sig_nf = _compile_atomic_faults(noise_1, g1_stabs, d1_edge_idx_map, d1_detector_idx_map)
     if not quiet:
         print(f"Retrieved {len(g1_sig_nf)} atomic faults for d1!")
 
     if not quiet:
         print("Compiling atomic faults for d2...")
-    g2_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, len(d2_detector_idx_map))
+    g2_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, num_detectors_2)
     g2_sig_nf = _compile_atomic_faults(noise_2, g2_stabs, d2_edge_idx_map, d2_detector_idx_map)
     if not quiet:
         print(f"Retrieved {len(g2_sig_nf)} atomic faults for d2!")
