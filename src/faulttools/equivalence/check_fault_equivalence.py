@@ -94,7 +94,7 @@ def _is_fault_equivalence(
     """
     atomic_weights_1 = {w for _, w in noise_1.atomic_faults_with_values_unpacked()}
     atomic_weights_2 = {w for _, w in noise_2.atomic_faults_with_values_unpacked()}
-    use_normally_weighted_strategy = atomic_weights_1 == {1} and atomic_weights_2 == {1} and False
+    use_normally_weighted_strategy = atomic_weights_1 == {1} and atomic_weights_2 == {1}
     if not quiet:
         print(f"Using {'normal' if use_normally_weighted_strategy else 'regular'} strategy!")
     strategy = _normal_strategy if use_normally_weighted_strategy else _regular_strategy
