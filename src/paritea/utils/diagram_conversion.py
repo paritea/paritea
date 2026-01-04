@@ -1,7 +1,7 @@
 import pyzx as zx
 
-from faulttools.diagram import Diagram
-from faulttools.glue.pyzx import from_pyzx
+from paritea.diagram import Diagram
+from paritea.glue.pyzx import from_pyzx
 
 type DiagramParam = Diagram | zx.graph.base.BaseGraph
 

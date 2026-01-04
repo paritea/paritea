@@ -4,8 +4,8 @@ from fractions import Fraction
 
 from pyzx.graph.base import upair
 
-from faulttools.diagram import Diagram, NodeType
-from faulttools.pauli import Pauli
+from paritea.diagram import Diagram, NodeType
+from paritea.pauli import Pauli
 
 
 @dataclass(init=True, frozen=True)
