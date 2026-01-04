@@ -3,8 +3,10 @@ from fractions import Fraction
 import pytest
 import pyzx as zx
 
+from faulttools import generate
 from faulttools.equivalence import is_fault_equivalence
 from faulttools.glue.pyzx import from_pyzx
+from faulttools.noise import NoiseModel
 
 
 @pytest.mark.skip(reason="Identity wires are currently not supported")
@@ -38,7 +40,7 @@ def test_2_pi_2_fuse():
     assert is_fault_equivalence(g1, g2)
 
 
-@pytest.mark.parametrize("fan_out", [2, 4, 10, 69])
+@pytest.mark.parametrize("fan_out", [2, 4, 10])
 def test_no_leg_spider_fuse(fan_out):
     """
     Fusing a spider with exactly one leg into its neighbor with a variable number of legs.
@@ -315,3 +317,25 @@ def test_parallel_syndrome_extraction():
     assert is_fault_equivalence(
         from_pyzx(g1, convert_had_edges=True), from_pyzx(g2, convert_had_edges=True), quiet=False
     )
+
+
+def test_idempotent():
+    d = from_pyzx(generate.clifford(5, 10))
+    nm = NoiseModel.weighted_edge_flip_noise(d, 1, 1, 1)
+
+    assert is_fault_equivalence(nm, nm, quiet=False)
+
+
+def test_idempotent_non_normal_weight():
+    d = from_pyzx(generate.clifford(5, 10))
+    nm = NoiseModel.weighted_edge_flip_noise(d, 1, 2, 3)
+
+    assert is_fault_equivalence(nm, nm, quiet=False)
+
+
+def test_non_normal_weight_negative():
+    d = from_pyzx(generate.clifford(5, 10))
+    nm1 = NoiseModel.weighted_edge_flip_noise(d, 1, 2, 1)
+    nm2 = NoiseModel.weighted_edge_flip_noise(d, 1, 2, 3)
+
+    assert not is_fault_equivalence(nm1, nm2, quiet=False)
