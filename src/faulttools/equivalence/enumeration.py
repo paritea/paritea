@@ -130,155 +130,160 @@ def _normal_strategy(
     return None
 
 
-def _regular_strategy(
-    g1_sigs: list[tuple[int, int]],
-    g2_sigs: list[tuple[int, int]],
-    g1_sinks: int,
-    g2_boundaries: int,
-    g2_sinks: int,
+def _next_gen_unfold(
+    w: int,
+    pq: dict[int, list[int]],
+    detectable_lookup: dict[int, int],
+    undetectable_lookup: dict[int, int],
+    atomic_lookup: dict[int, int],
+    *,
+    num_detectors: int,
+    quiet: bool = True,
+) -> set[int]:
+    detector_mask = (1 << num_detectors) - 1
+    queue = pq.pop(w, [])
+    sigs_pgb = tqdm(
+        desc="Sigs remaining: ",
+        initial=len(queue),
+        total=len(queue),
+        leave=False,
+        disable=quiet,
+        position=1,
+        unit="",
+    )
+    undetectables_generated = []
+    while len(queue) > 0:
+        new_queue = []
+        for sig in queue:
+            sigs_pgb.update(n=-1)
+            if sig & detector_mask > 0:
+                if sig in detectable_lookup and detectable_lookup[sig] <= w:
+                    continue  # This signature does not provide a weight improvement
+                detectable_lookup[sig] = w
+            else:
+                sig_no_sinks = sig >> num_detectors
+                if sig_no_sinks in undetectable_lookup and undetectable_lookup[sig_no_sinks] <= w:
+                    continue  # This signature does not provide a weight improvement
+                undetectable_lookup[sig_no_sinks] = w
+                undetectables_generated.append(sig_no_sinks)
+
+            if sig in atomic_lookup and atomic_lookup[sig] > w:
+                atomic_lookup[sig] = w
+
+            for atomic_sig, atomic_w in atomic_lookup.items():
+                comb_w = atomic_w + w
+                if comb_w == w:
+                    new_queue.append(atomic_sig ^ sig)
+                    sigs_pgb.update(n=1)
+                else:
+                    if comb_w not in pq:
+                        pq[comb_w] = []
+                    pq[comb_w].append(atomic_sig ^ sig)
+        queue = new_queue
+    sigs_pgb.close()
+
+    return set(undetectables_generated)
+
+
+def _next_gen_strategy(
+    nm1_sigs: list[tuple[int, int]],
+    nm2_sigs: list[tuple[int, int]],
+    d1_boundaries: int,
+    d1_detectors: int,
+    d2_boundaries: int,
+    d2_detectors: int,
     *,
     quiet: bool = True,
 ) -> int | None:
     """
-    Takes fault signatures of g1,g2 in normal form (stabilisers factored out) where the sink containment information is
-    provided in the last `..._sinks` elements of the signature.
+    Takes weighted fault signatures of nm1,nm2 in normalised form (stabilisers factored out), encoded as integers with
+    bits as `<z boundary flips><x boundary flips><detector flips>`.
 
-    Determines the smallest size of a combination `comb_sig` from elements of `g2_sig_nf` such that
+    Determines the smallest weight of a combination `comb_sig` from elements of `nm2_sigs` such that
 
-    - `comb_sig` does not enable any sinks and is thus not detectable AND EITHER
-    - `comb_sig` does not have an equivalent in `g1_sig_nf` (without sink information) OR
-    - the equivalent of `comb_sig` in `g1_sig_nf` has a greater size
+    - `comb_sig` does not flip any detectors is thus not detectable, AND EITHER
+    - `comb_sig` does not have an equivalent in `nm1_sigs` OR
+    - the equivalent of `comb_sig` in `nm1_sigs` has a greater weight.
 
-    :returns: the size of such a combination or `None` if no such combination exists.
+    Simultaneously checks the opposite direction with `nm2_sigs` and `nm1_sigs` swapped.
+
+    :returns: the weight of such a combination or `None` if it does not exist.
     """
-    # The trivial signature requires zero signatures to generate
-    g1_detectable_lookup = {}
-    g1_undetectable_lookup = {0: 0}
-    g2_lookup = {0: 0}
+    # The trivial signature always has weight 0
+    nm1_detectable_lookup = {}
+    nm1_undetectable_lookup = {0: 0}
+    nm2_detectable_lookup = {}
+    nm2_undetectable_lookup = {0: 0}
 
-    if len(g2_sigs) == 0:
-        if not quiet:
-            print("No signatures to match for g2!")
-        return None
-
-    g1_atomic_lookup: dict[int, int] = {}
-    for sig, v in g1_sigs:
-        if sig in g1_atomic_lookup and g1_atomic_lookup[sig] <= v:
+    nm1_lowest_atomic_lookup: dict[int, int] = {}
+    for sig, v in nm1_sigs:
+        if sig in nm1_lowest_atomic_lookup and nm1_lowest_atomic_lookup[sig] <= v:
             continue
-        g1_atomic_lookup[sig] = v
+        nm1_lowest_atomic_lookup[sig] = v
+    nm1_pq: dict[int, list[int]] = {}
+    for sig, v in nm1_lowest_atomic_lookup.items():
+        if v not in nm1_pq:
+            nm1_pq[v] = []
+        nm1_pq[v].append(sig)
 
-    g1_pq: dict[int, list[int]] = {}
-    for sig, v in g1_atomic_lookup.items():
-        if v not in g1_pq:
-            g1_pq[v] = []
-        g1_pq[v].append(sig)
-
-    g2_atomic_lookup: dict[int, int] = {}
-    for sig, v in g2_sigs:
-        if sig in g2_atomic_lookup and g2_atomic_lookup[sig] <= v:
+    nm2_lowest_atomic_lookup: dict[int, int] = {}
+    for sig, v in nm2_sigs:
+        if sig in nm2_lowest_atomic_lookup and nm2_lowest_atomic_lookup[sig] <= v:
             continue
-        g2_atomic_lookup[sig] = v
-    g2_pq: dict[int, list[int]] = {}
-    for sig, v in g2_atomic_lookup.items():
-        if v not in g2_pq:
-            g2_pq[v] = []
-        g2_pq[v].append(sig)
-
-    g1_sink_mask = (1 << g1_sinks) - 1
-    g2_sink_mask = (1 << g2_sinks) - 1
+        nm2_lowest_atomic_lookup[sig] = v
+    nm2_pq: dict[int, list[int]] = {}
+    for sig, v in nm2_lowest_atomic_lookup.items():
+        if v not in nm2_pq:
+            nm2_pq[v] = []
+        nm2_pq[v].append(sig)
 
     w = 0
-    t = tqdm(desc="Weight", initial=0, leave=False, disable=quiet, unit="", bar_format="{desc}: {n_fmt}", ncols=0)
-    while len(g2_pq) > 0:
+    w_pgb = tqdm(
+        desc="Current weight", initial=0, leave=False, disable=quiet, unit="", bar_format="{desc}: {n_fmt}", ncols=0
+    )
+    while len(nm1_pq) > 0 or len(nm2_pq) > 0:
         w += 1
-        t.update()
+        w_pgb.update()
 
-        queue = g1_pq.pop(w, [])
-        g1_stats_t = tqdm(
-            desc="G1 sigs remaining: ",
-            initial=len(queue),
-            total=len(queue),
-            leave=False,
-            disable=quiet,
-            position=1,
-            unit="",
+        nm1_undetectable = _next_gen_unfold(
+            w,
+            nm1_pq,
+            nm1_detectable_lookup,
+            nm1_undetectable_lookup,
+            nm1_lowest_atomic_lookup,
+            num_detectors=d1_detectors,
+            quiet=quiet,
         )
-        while len(queue) > 0:
-            new_queue = []
-            for sig in queue:
-                g1_stats_t.update(n=-1)
-                if sig & g1_sink_mask > 0:
-                    if sig in g1_detectable_lookup and g1_detectable_lookup[sig] <= w:
-                        continue  # This signature does not provide a weight improvement
-                    g1_detectable_lookup[sig] = w
-                else:
-                    sig_no_sinks = sig >> g1_sinks
-                    if sig_no_sinks in g1_undetectable_lookup and g1_undetectable_lookup[sig_no_sinks] <= w:
-                        continue  # This signature does not provide a weight improvement
-                    g1_undetectable_lookup[sig_no_sinks] = w
+        tqdm.write(f"Finished unfolding weight {w} in queue 1! Next items remaining: {len(nm1_pq.get(w + 1, []))}...")
 
-                if sig in g1_atomic_lookup and g1_atomic_lookup[sig] > w:
-                    g1_atomic_lookup[sig] = w
-
-                for atomic_sig, atomic_w in g1_atomic_lookup.items():
-                    comb_w = atomic_w + w
-                    if comb_w == w:
-                        new_queue.append(atomic_sig ^ sig)
-                        g1_stats_t.update(n=1)
-                    else:
-                        if comb_w not in g1_pq:
-                            g1_pq[comb_w] = []
-                        g1_pq[comb_w].append(atomic_sig ^ sig)
-            queue = new_queue
-        g1_stats_t.close()
-        tqdm.write(f"Finished unfolding weight {w} in queue 1! Next items remaining: {len(g1_pq.get(w + 1, []))}...")
-
-        queue = g2_pq.pop(w, [])
-        g2_stats_t = tqdm(
-            desc="G2 sigs remaining: ",
-            initial=len(queue),
-            total=len(queue),
-            leave=False,
-            disable=quiet,
-            position=1,
-            unit="",
+        nm2_undetectable = _next_gen_unfold(
+            w,
+            nm2_pq,
+            nm2_detectable_lookup,
+            nm2_undetectable_lookup,
+            nm2_lowest_atomic_lookup,
+            num_detectors=d2_detectors,
+            quiet=quiet,
         )
-        while len(queue) > 0:
-            new_queue = []
-            for sig in queue:
-                g2_stats_t.update(n=-1)
-                if sig in g2_lookup and g2_lookup[sig] <= w:
-                    continue  # This signature does not provide a weight improvement
-                g2_lookup[sig] = w
+        tqdm.write(f"Finished unfolding weight {w} in queue 2! Next items remaining: {len(nm2_pq.get(w + 1, []))}...")
 
-                if sig & g2_sink_mask == 0:
-                    sig_no_sinks = sig >> g2_sinks
-                    if sig_no_sinks not in g1_undetectable_lookup:
-                        if not quiet:
-                            tqdm.write(
-                                f"{_format_sig(sig, g2_boundaries, g2_sinks)} has no equivalent in g1, or it was not "
-                                f"yet generated and thus has higher weight!"
-                            )
-                        return w
+        for sig in nm1_undetectable:
+            if sig not in nm2_undetectable_lookup:
+                if not quiet:
+                    tqdm.write(
+                        f"{_format_sig(sig, d1_boundaries, 0)} from nm1 has no equivalent in nm2, or it was not "
+                        f"yet generated and thus has higher weight!"
+                    )
+                return w
 
-                if sig in g2_atomic_lookup and g2_atomic_lookup[sig] > w:
-                    g2_atomic_lookup[sig] = w
-
-                for atomic_sig, atomic_w in g2_atomic_lookup.items():
-                    comb_w = atomic_w + w
-                    if comb_w == w:
-                        new_queue.append(atomic_sig ^ sig)
-                        g2_stats_t.update(n=1)
-                    else:
-                        if comb_w not in g2_pq:
-                            g2_pq[comb_w] = []
-                        g2_pq[comb_w].append(atomic_sig ^ sig)
-            queue = new_queue
-        g2_stats_t.close()
-        tqdm.write(f"Finished unfolding weight {w} in queue 2! Next items remaining: {len(g2_pq.get(w + 1, []))}...")
-    t.close()
-
-    if len(g1_pq) == 0 and len(g2_pq) != 0:
-        return w  # We ran out of signatures to generate for g1
+        for sig in nm2_undetectable:
+            if sig not in nm1_undetectable_lookup:
+                if not quiet:
+                    tqdm.write(
+                        f"{_format_sig(sig, d2_boundaries, 0)} from nm2 has no equivalent in nm1, or it was not "
+                        f"yet generated and thus has higher weight!"
+                    )
+                return w
+    w_pgb.close()
 
     return None

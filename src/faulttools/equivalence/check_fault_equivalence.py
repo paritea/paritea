@@ -8,7 +8,7 @@ from faulttools.noise import Fault, NoiseModel
 from faulttools.pauli import Pauli, PauliString
 from faulttools.utils import NoiseModelParam, noise_model_params
 
-from .enumeration import _normal_strategy, _regular_strategy
+from .enumeration import _next_gen_strategy, _normal_strategy
 
 
 class Stabilisers:
@@ -104,7 +104,6 @@ def _is_fault_equivalence(
     use_normally_weighted_strategy = atomic_weights_1 == {1} and atomic_weights_2 == {1}
     if not quiet:
         print(f"Using {'normal' if use_normally_weighted_strategy else 'regular'} strategy!")
-    strategy = _normal_strategy if use_normally_weighted_strategy else _regular_strategy
 
     d1, d2 = noise_1.diagram, noise_2.diagram
     d1_edge_idx_map = {d1.incident_edges(b)[0]: i for i, b in enumerate(d1.io_sorted())}
@@ -128,16 +127,33 @@ def _is_fault_equivalence(
     if not quiet:
         print(f"Retrieved {len(g2_sig_nf)} atomic faults for d2!")
 
-    if not quiet:
-        print("Checking if d1 is fault-bound by d2...")
-    g1_g2_weight = strategy(g1_sig_nf, g2_sig_nf, num_detectors_1, len(d2_edge_idx_map), num_detectors_2, quiet=quiet)
-    if g1_g2_weight is not None:
-        return False
+    if use_normally_weighted_strategy:
+        if not quiet:
+            print("Checking if d1 is fault-bound by d2...")
+        g1_g2_weight = _normal_strategy(
+            g1_sig_nf, g2_sig_nf, num_detectors_1, len(d2_edge_idx_map), num_detectors_2, quiet=quiet
+        )
+        if g1_g2_weight is not None:
+            return False
 
-    if not quiet:
-        print("Checking if d2 is fault-bound by d1...")
-    g2_g1_weight = strategy(g2_sig_nf, g1_sig_nf, num_detectors_2, len(d1_edge_idx_map), num_detectors_1, quiet=quiet)
-    return g2_g1_weight is None
+        if not quiet:
+            print("Checking if d2 is fault-bound by d1...")
+        g2_g1_weight = _normal_strategy(
+            g2_sig_nf, g1_sig_nf, num_detectors_2, len(d1_edge_idx_map), num_detectors_1, quiet=quiet
+        )
+
+        return g2_g1_weight is None
+    else:
+        violating_weight = _next_gen_strategy(
+            g1_sig_nf,
+            g2_sig_nf,
+            len(d1_edge_idx_map),
+            num_detectors_1,
+            len(d2_edge_idx_map),
+            num_detectors_2,
+            quiet=quiet,
+        )
+        return violating_weight is None
 
 
 @noise_model_params("noise_1", "noise_2")
