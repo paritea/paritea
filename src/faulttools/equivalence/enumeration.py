@@ -34,7 +34,8 @@ def _normal_strategy(
 
     :returns: the size of such a combination or `None` if no such combination exists.
     """
-    g1_lookup = {0: 0}  # The trivial signature requires zero signatures to generate
+    g1_undetectable_lookup = {0: 0}  # The trivial signature requires zero signatures to generate
+    g1_detectable_lookup = {}
     g2_lookup = {}
 
     g1_unique_sigs = {f for f, w in g1_sigs}
@@ -68,11 +69,15 @@ def _normal_strategy(
         g1_new_signatures = []
         for last_it_int, atomic_sig_nf_int in itertools.product(g1_last_new_signatures, g1_unique_sigs):
             combined_sig = last_it_int ^ atomic_sig_nf_int
-
-            combined_sig_no_sinks = combined_sig >> g1_sinks
-            if combined_sig_no_sinks not in g1_lookup:
-                g1_new_signatures.append(combined_sig)
-                g1_lookup[combined_sig_no_sinks] = max_size
+            if combined_sig & g1_sink_mask > 0:
+                if combined_sig not in g1_detectable_lookup:
+                    g1_new_signatures.append(combined_sig)
+                    g1_detectable_lookup[combined_sig] = max_size
+            else:
+                combined_sig_no_sinks = combined_sig >> g1_sinks
+                if combined_sig_no_sinks not in g1_undetectable_lookup:
+                    g1_new_signatures.append(combined_sig)
+                    g1_undetectable_lookup[combined_sig_no_sinks] = max_size
         g1_last_new_signatures = g1_new_signatures
         if not quiet:
             tqdm.write(f"Populating g1 lookup took {time.time() - g1_time}s.")
@@ -99,7 +104,7 @@ def _normal_strategy(
                 continue  # Detectable
 
             # Perform search with real output signature
-            if combined_sig >> g2_sinks not in g1_lookup:
+            if combined_sig >> g2_sinks not in g1_undetectable_lookup:
                 if not quiet:
                     tqdm.write(
                         f"{_format_sig(combined_sig, g2_boundaries, g2_sinks)} has no equivalent in g1, or it was not "
