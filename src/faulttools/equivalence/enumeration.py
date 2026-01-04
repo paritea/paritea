@@ -197,7 +197,7 @@ def _next_gen_strategy(
 ) -> int | None:
     """
     Takes weighted fault signatures of nm1,nm2 in normalised form (stabilisers factored out), encoded as integers with
-    bits as `<z boundary flips><x boundary flips><detector flips>`.
+    bits as `<z and x boundary flips><detector flips>`.
 
     Determines the smallest weight of a combination `comb_sig` from elements of `nm2_sigs` such that
 
