@@ -4,11 +4,11 @@ import numpy as np
 from galois import GF2
 
 from faulttools import build_flip_operators, push_out
-from faulttools.noise import NoiseModel
+from faulttools.noise import Fault, NoiseModel
 from faulttools.pauli import Pauli, PauliString
 from faulttools.utils import NoiseModelParam, noise_model_params
 
-from .enumeration import _smallest_size_iteration
+from .enumeration import _next_gen_strategy, _normal_strategy
 
 
 class Stabilisers:
@@ -55,17 +55,18 @@ def _compile_atomic_faults(
     stabilisers: AugmentedStabilisers,
     boundaries_to_idx: Mapping[int, int],
     detector_to_idx: Mapping[int, int],
-) -> list[GF2]:
-    normalised_faults: list[GF2] = []
-    for f in noise.atomic_faults():
+) -> list[tuple[int, int]]:
+    normalised_faults: list[tuple[int, int]] = []
+    for f, vs in noise.atomic_faults_with_values():
         if f.is_trivial():
             continue
 
         compiled = f.compile(boundaries_to_idx, detector_to_idx)
-        normalised_faults.append(stabilisers.normalise_single(compiled))
-    sig_nf = [GF2(l) for l in np.unique(normalised_faults, axis=0)]
+        normalised = stabilisers.normalise_single(compiled)
+        normalised_int = Fault.compiled_to_int(normalised)
+        normalised_faults.extend((normalised_int, v) for v in vs)
 
-    return sig_nf
+    return normalised_faults
 
 
 def _is_fault_equivalence(
@@ -93,11 +94,16 @@ def _is_fault_equivalence(
     """
     atomic_weights_1 = {w for _, w in noise_1.atomic_faults_with_values_unpacked()}
     atomic_weights_2 = {w for _, w in noise_2.atomic_faults_with_values_unpacked()}
-    if atomic_weights_1 != {1} or atomic_weights_2 != {1}:
+    negative_weights_1 = {w for w in atomic_weights_1 if w < 0}
+    negative_weights_2 = {w for w in atomic_weights_2 if w < 0}
+    if len(negative_weights_1) > 0 or len(negative_weights_2) > 0:
         raise ValueError(
-            f"Both given noise models must be equally and normally weighted. "
-            f"Weight sets detected: {atomic_weights_1} and {atomic_weights_2}"
+            "Cannot process noise models with negative weights, but the following negative weights were given: "
+            f"Noise model 1: {negative_weights_1}; Noise model 2: {negative_weights_2}."
         )
+    use_normally_weighted_strategy = atomic_weights_1 == {1} and atomic_weights_2 == {1}
+    if not quiet:
+        print(f"Using {'normal' if use_normally_weighted_strategy else 'regular'} strategy!")
 
     d1, d2 = noise_1.diagram, noise_2.diagram
     d1_edge_idx_map = {d1.incident_edges(b)[0]: i for i, b in enumerate(d1.io_sorted())}
@@ -109,32 +115,45 @@ def _is_fault_equivalence(
 
     if not quiet:
         print("Compiling atomic faults for d1...")
-    g1_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, len(d1_detector_idx_map))
+    g1_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, num_detectors_1)
     g1_sig_nf = _compile_atomic_faults(noise_1, g1_stabs, d1_edge_idx_map, d1_detector_idx_map)
     if not quiet:
-        print(f"Retrieved {len(g1_sig_nf)} unique faults for d1!")
+        print(f"Retrieved {len(g1_sig_nf)} atomic faults for d1!")
 
     if not quiet:
         print("Compiling atomic faults for d2...")
-    g2_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, len(d2_detector_idx_map))
+    g2_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, num_detectors_2)
     g2_sig_nf = _compile_atomic_faults(noise_2, g2_stabs, d2_edge_idx_map, d2_detector_idx_map)
     if not quiet:
-        print(f"Retrieved {len(g2_sig_nf)} unique faults for d2!")
+        print(f"Retrieved {len(g2_sig_nf)} atomic faults for d2!")
 
-    if not quiet:
-        print("Checking if d1 is fault-bound by d2...")
-    g1_g2_weight = _smallest_size_iteration(
-        g1_sig_nf, g2_sig_nf, num_detectors_1, len(d2_edge_idx_map), num_detectors_2, quiet=quiet
-    )
-    if g1_g2_weight is not None:
-        return False
+    if use_normally_weighted_strategy:
+        if not quiet:
+            print("Checking if d1 is fault-bound by d2...")
+        g1_g2_weight = _normal_strategy(
+            g1_sig_nf, g2_sig_nf, num_detectors_1, len(d2_edge_idx_map), num_detectors_2, quiet=quiet
+        )
+        if g1_g2_weight is not None:
+            return False
 
-    if not quiet:
-        print("Checking if d2 is fault-bound by d1...")
-    g2_g1_weight = _smallest_size_iteration(
-        g2_sig_nf, g1_sig_nf, num_detectors_2, len(d1_edge_idx_map), num_detectors_1, quiet=quiet
-    )
-    return g2_g1_weight is None
+        if not quiet:
+            print("Checking if d2 is fault-bound by d1...")
+        g2_g1_weight = _normal_strategy(
+            g2_sig_nf, g1_sig_nf, num_detectors_2, len(d1_edge_idx_map), num_detectors_1, quiet=quiet
+        )
+
+        return g2_g1_weight is None
+    else:
+        violating_weight = _next_gen_strategy(
+            g1_sig_nf,
+            g2_sig_nf,
+            len(d1_edge_idx_map),
+            num_detectors_1,
+            len(d2_edge_idx_map),
+            num_detectors_2,
+            quiet=quiet,
+        )
+        return violating_weight is None
 
 
 @noise_model_params("noise_1", "noise_2")
