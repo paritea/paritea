@@ -2,6 +2,8 @@
 name = "paritea"
 version = "0.1.0"
 description = "A collection of tools for the FTQC researcher."
+license = "Apache-2.0"
+license-files = ["LICENSE.md", "NOTICE.md"]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
