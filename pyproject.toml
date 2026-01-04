@@ -1,7 +1,7 @@
 [project]
 name = "paritea"
 version = "0.1.0"
-description = "Add your description here"
+description = "A collection of tools for the FTQC researcher."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
