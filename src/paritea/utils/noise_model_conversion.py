@@ -1,6 +1,6 @@
-from faulttools.noise import NoiseModel
-from faulttools.util import canonicalize_input
-from faulttools.utils import DiagramParam, to_diagram
+from paritea.noise import NoiseModel
+from paritea.util import canonicalize_input
+from paritea.utils import DiagramParam, to_diagram
 
 type NoiseModelParam[T] = NoiseModel[T] | DiagramParam
 

@@ -5,9 +5,9 @@ from itertools import starmap
 import numpy as np
 from galois import GF2
 
-from faulttools import PauliString
-from faulttools.diagram import Diagram, NodeType
-from faulttools.web import compute_pauli_webs
+from paritea import PauliString
+from paritea.diagram import Diagram, NodeType
+from paritea.web import compute_pauli_webs
 
 
 @dataclasses.dataclass(init=True, repr=False)

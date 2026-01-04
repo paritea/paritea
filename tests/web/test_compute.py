@@ -5,11 +5,11 @@ import numpy as np
 import pytest
 from galois import GF2
 
-from faulttools import Pauli, PauliString, generate
-from faulttools.diagram import Diagram, NodeType
-from faulttools.glue.pyzx import from_pyzx
-from faulttools.web import compute_pauli_webs
-from faulttools.web.partitions import pauli_webs_through_partitions
+from paritea import Pauli, PauliString, generate
+from paritea.diagram import Diagram, NodeType
+from paritea.glue.pyzx import from_pyzx
+from paritea.web import compute_pauli_webs
+from paritea.web.partitions import pauli_webs_through_partitions
 
 SerializedPauliString = Mapping[str, Pauli]
 

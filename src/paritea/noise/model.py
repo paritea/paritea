@@ -5,8 +5,8 @@ from typing import NamedTuple
 
 from galois import GF2
 
-from faulttools.diagram import Diagram
-from faulttools.pauli import Pauli, PauliString
+from paritea.diagram import Diagram
+from paritea.pauli import Pauli, PauliString
 
 
 class Fault(NamedTuple):

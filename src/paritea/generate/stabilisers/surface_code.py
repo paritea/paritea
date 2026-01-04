@@ -1,4 +1,4 @@
-from faulttools import Pauli, PauliString
+from paritea import Pauli, PauliString
 
 
 def rotated_planar_surface_code_stabilisers(L: int) -> list[PauliString]:
