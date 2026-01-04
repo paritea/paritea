@@ -1,4 +1,4 @@
-from faulttools import PauliString
+from paritea import PauliString
 
 
 def steane_code_stabilisers() -> list[PauliString]:

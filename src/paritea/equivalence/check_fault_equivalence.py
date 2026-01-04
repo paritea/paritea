@@ -3,10 +3,10 @@ from collections.abc import Mapping
 import numpy as np
 from galois import GF2
 
-from faulttools import build_flip_operators, push_out
-from faulttools.noise import Fault, NoiseModel
-from faulttools.pauli import Pauli, PauliString
-from faulttools.utils import NoiseModelParam, noise_model_params
+from paritea import build_flip_operators, push_out
+from paritea.noise import Fault, NoiseModel
+from paritea.pauli import Pauli, PauliString
+from paritea.utils import NoiseModelParam, noise_model_params
 
 from .enumeration import _next_gen_strategy, _normal_strategy
 

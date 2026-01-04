@@ -1,8 +1,8 @@
 from collections import defaultdict
 
-from faulttools import PauliString
-from faulttools.flip_operators import FlipOperators
-from faulttools.noise import Fault, NoiseModel
+from paritea import PauliString
+from paritea.flip_operators import FlipOperators
+from paritea.noise import Fault, NoiseModel
 
 
 def push_out[T](model: NoiseModel[T], flip_ops: FlipOperators) -> NoiseModel[T]:

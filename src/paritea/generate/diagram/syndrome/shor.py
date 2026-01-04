@@ -1,7 +1,7 @@
 from typing import Literal, overload
 
-from faulttools import Pauli, PauliString
-from faulttools.diagram import Diagram, NodeType
+from paritea import Pauli, PauliString
+from paritea.diagram import Diagram, NodeType
 
 
 @overload

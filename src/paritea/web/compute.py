@@ -2,8 +2,8 @@ from copy import deepcopy
 
 import numpy as np
 
-from faulttools.diagram import Diagram
-from faulttools.pauli import Pauli, PauliString
+from paritea.diagram import Diagram
+from paritea.pauli import Pauli, PauliString
 
 from .firing_assignments import (
     convert_firing_assignment_to_web_prototype,

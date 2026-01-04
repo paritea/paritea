@@ -1,4 +1,4 @@
-from faulttools import Pauli, PauliString
+from paritea import Pauli, PauliString
 
 
 def test_constructor():
