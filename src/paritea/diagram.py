@@ -21,10 +21,10 @@ class _NodeInfo(RecordClass):
 
 
 class SupportsPositioning(Protocol):
-    def set_x(self, node_idx: int, x: int) -> None: ...
-    def set_y(self, node_idx: int, y: int) -> None: ...
-    def x(self, node_idx: int) -> int: ...
-    def y(self, node_idx: int) -> int: ...
+    def set_x(self, node_idx: int, x: float | int) -> None: ...
+    def set_y(self, node_idx: int, y: float | int) -> None: ...
+    def x(self, node_idx: int) -> float | int: ...
+    def y(self, node_idx: int) -> float | int: ...
 
 
 @runtime_checkable
@@ -38,8 +38,8 @@ class Diagram(SupportsPositioning, Protocol):
 
     def __init__(self, *, additional_keys: Iterable[str] | None = None):
         self._g = rx.PyGraph[_NodeInfo, None]()
-        self._x: dict[int, int] = {}
-        self._y: dict[int, int] = {}
+        self._x: dict[int, float | int] = {}
+        self._y: dict[int, float | int] = {}
         self._io: tuple[list[int], list[int]] | None = None
         self._is_io_virtual: bool = True
         # Additional untyped keys for node index mappings
@@ -81,8 +81,8 @@ class Diagram(SupportsPositioning, Protocol):
         self,
         t: NodeType,
         phase: Fraction | None = None,
-        x: int | None = None,
-        y: int | None = None,
+        x: float | int | None = None,
+        y: float | int | None = None,
         **kwargs: dict[str, Any],
     ) -> int:
         idx = self._g.add_node(_NodeInfo(t, phase or Fraction(0, 1)))
@@ -157,18 +157,18 @@ class Diagram(SupportsPositioning, Protocol):
     def phase(self, node_idx: int) -> Fraction:
         return self._g.get_node_data(node_idx).phase
 
-    def set_x(self, node_idx: int, x: int) -> Self:
+    def set_x(self, node_idx: int, x: float | int) -> Self:
         self._x[node_idx] = x
         return self
 
-    def set_y(self, node_idx: int, y: int) -> Self:
+    def set_y(self, node_idx: int, y: float | int) -> Self:
         self._y[node_idx] = y
         return self
 
-    def x(self, node_idx: int) -> int:
+    def x(self, node_idx: int) -> float | int:
         return self._x.get(node_idx, -1)
 
-    def y(self, node_idx: int) -> int:
+    def y(self, node_idx: int) -> float | int:
         return self._y.get(node_idx, -1)
 
     def set_io(self, inputs: list[int], outputs: list[int], *, virtual: bool) -> Self:
