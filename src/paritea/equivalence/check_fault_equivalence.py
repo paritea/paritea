@@ -76,6 +76,7 @@ def _is_fault_equivalence(
     num_detectors_2: int,
     stabilisers: list[PauliString],
     *,
+    until: int | None = None,
     quiet: bool = True,
 ) -> bool:
     """
@@ -90,6 +91,7 @@ def _is_fault_equivalence(
     :param num_detectors_1: Size of detector basis in the diagram attached to noise_1
     :param num_detectors_2: Size of detector basis in the diagram attached to noise_2
     :param stabilisers: A stabiliser basis for the diagrams attached to noise_1 and noise_2
+    :param until: Up to which weight (inclusive) to check the equivalence
     :param quiet: Whether to silence additional informative output
     """
     atomic_weights_1 = {w for _, w in noise_1.atomic_faults_with_values_unpacked()}
@@ -131,7 +133,7 @@ def _is_fault_equivalence(
         if not quiet:
             print("Checking if d1 is fault-bound by d2...")
         g1_g2_weight = _normal_strategy(
-            g1_sig_nf, g2_sig_nf, num_detectors_1, len(d2_edge_idx_map), num_detectors_2, quiet=quiet
+            g1_sig_nf, g2_sig_nf, num_detectors_1, len(d2_edge_idx_map), num_detectors_2, until=until, quiet=quiet
         )
         if g1_g2_weight is not None:
             return False
@@ -139,7 +141,7 @@ def _is_fault_equivalence(
         if not quiet:
             print("Checking if d2 is fault-bound by d1...")
         g2_g1_weight = _normal_strategy(
-            g2_sig_nf, g1_sig_nf, num_detectors_2, len(d1_edge_idx_map), num_detectors_1, quiet=quiet
+            g2_sig_nf, g1_sig_nf, num_detectors_2, len(d1_edge_idx_map), num_detectors_1, until=until, quiet=quiet
         )
 
         return g2_g1_weight is None
@@ -151,6 +153,7 @@ def _is_fault_equivalence(
             num_detectors_1,
             len(d2_edge_idx_map),
             num_detectors_2,
+            until=until,
             quiet=quiet,
         )
         return violating_weight is None
@@ -161,6 +164,7 @@ def is_fault_equivalence(
     noise_1: NoiseModelParam[int],
     noise_2: NoiseModelParam[int],
     *,
+    until: int | None = None,
     quiet: bool = True,
 ) -> bool:
     """
@@ -173,6 +177,7 @@ def is_fault_equivalence(
 
     :param noise_1: First noise model to check
     :param noise_2: Second noise model to check
+    :param until: Up to which weight (inclusive) to check the equivalence
     :param quiet: Whether to silence additional informative output
     """
     flip_ops_1 = build_flip_operators(noise_1.diagram)
@@ -187,5 +192,6 @@ def is_fault_equivalence(
         num_detectors_1=len(flip_ops_1.region_gen_set),
         num_detectors_2=len(flip_ops_2.region_gen_set),
         stabilisers=flip_ops_1.stab_gen_set,  # TODO assert stabiliser space equality
+        until=until,
         quiet=quiet,
     )
