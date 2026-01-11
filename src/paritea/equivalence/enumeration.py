@@ -55,7 +55,7 @@ def _normal_strategy(
     g2_last_new_detectable = [0]
     g1_sink_mask = (1 << g1_sinks) - 1
     g2_sink_mask = (1 << g2_sinks) - 1
-    max_weight = min(len(g2_unique_sigs), until) if until is not None else len(g2_unique_sigs)
+    max_weight = min(len(g2_unique_sigs), until - 1) if until is not None else len(g2_unique_sigs)
     for max_size in tqdm(
         range(1, max_weight + 1), desc="Weight: ", initial=1, total=max_weight, leave=False, disable=quiet
     ):
@@ -239,7 +239,7 @@ def _next_gen_strategy(
     w_pgb = tqdm(
         desc="Current weight", initial=0, leave=False, disable=quiet, unit="", bar_format="{desc}: {n_fmt}", ncols=0
     )
-    while (len(nm1_pq) > 0 or len(nm2_pq) > 0) and (until is None or w < until):
+    while (len(nm1_pq) > 0 or len(nm2_pq) > 0) and (until is None or w < until - 1):
         w += 1
         w_pgb.update()
 

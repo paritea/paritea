@@ -363,9 +363,9 @@ def test_surface_code_weight_limiting():
     nm2 = NoiseModel.weighted_edge_flip_noise(
         d, w_x=1, w_y=1000, w_z=1000, idealised_edges=[e for e in d.edge_indices() if not _is_crossing_edge(e)]
     )
-    # The fault equivalence is valid until exactly weight 2, since the circuit has distance 3
-    assert is_fault_equivalence(nm1, nm2, until=2, quiet=False)
-    assert not is_fault_equivalence(nm1, nm2, until=3, quiet=False)
+    # The fault equivalence is valid until exactly weight 3, since the circuit has distance 3
+    assert is_fault_equivalence(nm1, nm2, until=3, quiet=False)
+    assert not is_fault_equivalence(nm1, nm2, until=4, quiet=False)
 
 
 def test_idempotent():

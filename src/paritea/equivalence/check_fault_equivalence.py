@@ -91,7 +91,7 @@ def _is_fault_equivalence(
     :param num_detectors_1: Size of detector basis in the diagram attached to noise_1
     :param num_detectors_2: Size of detector basis in the diagram attached to noise_2
     :param stabilisers: A stabiliser basis for the diagrams attached to noise_1 and noise_2
-    :param until: Up to which weight (inclusive) to check the equivalence
+    :param until: Up to which weight (exclusive) to check the equivalence
     :param quiet: Whether to silence additional informative output
     """
     atomic_weights_1 = {w for _, w in noise_1.atomic_faults_with_values_unpacked()}
@@ -177,7 +177,7 @@ def is_fault_equivalence(
 
     :param noise_1: First noise model to check
     :param noise_2: Second noise model to check
-    :param until: Up to which weight (inclusive) to check the equivalence
+    :param until: Up to which weight (exclusive) to check the equivalence
     :param quiet: Whether to silence additional informative output
     """
     flip_ops_1 = build_flip_operators(noise_1.diagram)
