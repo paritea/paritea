@@ -1,3 +1,4 @@
+from copy import deepcopy
 from fractions import Fraction
 
 import pytest
@@ -128,6 +129,22 @@ def test_cat_state_decomposition(n):
     _add_cz_layer(g2, [*bs1, *bs2])
 
     assert is_fault_equivalence(g1, g2, quiet=False)
+
+
+def test_cat_state_decomposition_limited():
+    """
+    A cat state expansion is valid in general, so it must also be valid when the check is limited to a low weight.
+    """
+    n = 7
+    g1 = zx.Graph()
+    _add_cat_state(g1, size=2 * n, qubit=0, row=0)
+
+    g2 = zx.Graph()
+    _, bs1 = _add_cat_state(g2, size=n, qubit=2, row=0)
+    _, bs2 = _add_cat_state(g2, size=n, qubit=6, row=0)
+    _add_cz_layer(g2, [*bs1, *bs2])
+
+    assert is_fault_equivalence(g1, g2, until=5, quiet=False)
 
 
 @pytest.mark.parametrize("n", [2, 3, 4, 5])
@@ -317,6 +334,38 @@ def test_parallel_syndrome_extraction():
     assert is_fault_equivalence(
         from_pyzx(g1, convert_had_edges=True), from_pyzx(g2, convert_had_edges=True), quiet=False
     )
+
+
+def test_surface_code_weight_limiting():
+    d = generate.shor_extraction(
+        generate.rotated_planar_surface_code_stabilisers(3),
+        qubits=9,
+        repeat=1,
+    )
+    d.virtualize_io()
+    max_x = max(d.x(n) for n in d.node_indices())
+    d2 = deepcopy(d)
+    for n in d2.node_indices():
+        d2.set_x(n, d2.x(n) + max_x + 1)
+    orig_nodes = d.node_indices()
+    orig_in, orig_out = d.io()
+    other_in, other_out = d2.io()
+    node_map = d.compose(d2, dict(zip(orig_out, other_in)))
+    d.set_io(orig_in, [node_map[o] for o in other_out], virtual=True)
+    d.realize_io()
+
+    def _is_crossing_edge(e: int) -> bool:
+        s, t = d.get_edge_endpoints_by_index(e)
+
+        return (s in node_map.values() and t in orig_nodes) or (t in node_map.values() and s in orig_nodes)
+
+    nm1 = NoiseModel.weighted_edge_flip_noise(d, idealised_edges=d.edge_indices())
+    nm2 = NoiseModel.weighted_edge_flip_noise(
+        d, w_x=1, w_y=1000, w_z=1000, idealised_edges=[e for e in d.edge_indices() if not _is_crossing_edge(e)]
+    )
+    # The fault equivalence is valid until exactly weight 3, since the circuit has distance 3
+    assert is_fault_equivalence(nm1, nm2, until=3, quiet=False)
+    assert not is_fault_equivalence(nm1, nm2, until=4, quiet=False)
 
 
 def test_idempotent():
