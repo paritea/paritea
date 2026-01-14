@@ -147,19 +147,19 @@ def prepare_atomic_faults(nm_sigs: list[tuple[int, int]]) -> AtomicFaults:
     return atomics
 
 
-def prepare_priority_queue(atomics: AtomicFaults) -> dict[int, list[int]]:
-    pq: dict[int, list[int]] = {}
+def prepare_priority_queue(atomics: AtomicFaults) -> dict[int, set[int]]:
+    pq: dict[int, set[int]] = {}
     for sig, v in atomics.all_iter():
         if v not in pq:
-            pq[v] = []
-        pq[v].append(sig)
+            pq[v] = set()
+        pq[v].add(sig)
 
     return pq
 
 
 def _next_gen_unfold(
     w: int,
-    pq: dict[int, list[int]],
+    pq: dict[int, set[int]],
     detectable_lookup: dict[int, int],
     undetectable_lookup: dict[int, int],
     atomics: AtomicFaults,
@@ -179,8 +179,10 @@ def _next_gen_unfold(
         unit="",
     )
     undetectables_generated = []
+    items_done, start_time = 0, time.time()
     while len(queue) > 0:
-        new_queue = []
+        new_queue = set()
+        items_done += len(queue)
         for sig in queue:
             sigs_pgb.update(n=-1)
             if sig & detector_mask > 0:
@@ -200,14 +202,19 @@ def _next_gen_unfold(
             for atomic_sig, atomic_w in atomics.all_iter():
                 comb_w = atomic_w + w
                 if comb_w == w:
-                    new_queue.append(atomic_sig ^ sig)
+                    new_queue.add(atomic_sig ^ sig)
                     sigs_pgb.update(n=1)
                 else:
                     if comb_w not in pq:
-                        pq[comb_w] = []
-                    pq[comb_w].append(atomic_sig ^ sig)
+                        pq[comb_w] = set()
+                    pq[comb_w].add(atomic_sig ^ sig)
         queue = new_queue
+    end_time = time.time()
     sigs_pgb.close()
+    if not quiet:
+        tqdm.write(
+            f"|   w={w} iteration averaged {items_done / (end_time - start_time) / 1000:.2f}k iterations per second ..."
+        )
 
     return set(undetectables_generated)
 
