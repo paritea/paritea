@@ -1,5 +1,7 @@
 import itertools
 import time
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 
 from tqdm.auto import tqdm
 
@@ -127,12 +129,40 @@ def _normal_strategy(
     return None
 
 
+@dataclass(init=True)
+class AtomicFaults:
+    weight_lookup: dict[int, int] = field(default_factory=dict, init=False)
+
+    def all_iter(self) -> Iterator[tuple[int, int]]:
+        return iter(self.weight_lookup.items())
+
+
+def prepare_atomic_faults(nm_sigs: list[tuple[int, int]]) -> AtomicFaults:
+    atomics: AtomicFaults = AtomicFaults()
+    for sig, v in nm_sigs:
+        if sig in atomics.weight_lookup and atomics.weight_lookup[sig] <= v:
+            continue
+        atomics.weight_lookup[sig] = v
+
+    return atomics
+
+
+def prepare_priority_queue(atomics: AtomicFaults) -> dict[int, list[int]]:
+    pq: dict[int, list[int]] = {}
+    for sig, v in atomics.all_iter():
+        if v not in pq:
+            pq[v] = []
+        pq[v].append(sig)
+
+    return pq
+
+
 def _next_gen_unfold(
     w: int,
     pq: dict[int, list[int]],
     detectable_lookup: dict[int, int],
     undetectable_lookup: dict[int, int],
-    atomic_lookup: dict[int, int],
+    atomics: AtomicFaults,
     *,
     num_detectors: int,
     quiet: bool = True,
@@ -164,10 +194,10 @@ def _next_gen_unfold(
                 undetectable_lookup[sig_no_sinks] = w
                 undetectables_generated.append(sig_no_sinks)
 
-            if sig in atomic_lookup and atomic_lookup[sig] > w:
-                atomic_lookup[sig] = w
+            if sig in atomics.weight_lookup and atomics.weight_lookup[sig] > w:
+                atomics.weight_lookup[sig] = w
 
-            for atomic_sig, atomic_w in atomic_lookup.items():
+            for atomic_sig, atomic_w in atomics.all_iter():
                 comb_w = atomic_w + w
                 if comb_w == w:
                     new_queue.append(atomic_sig ^ sig)
@@ -213,27 +243,11 @@ def _next_gen_strategy(
     nm2_detectable_lookup = {}
     nm2_undetectable_lookup = {0: 0}
 
-    nm1_lowest_atomic_lookup: dict[int, int] = {}
-    for sig, v in nm1_sigs:
-        if sig in nm1_lowest_atomic_lookup and nm1_lowest_atomic_lookup[sig] <= v:
-            continue
-        nm1_lowest_atomic_lookup[sig] = v
-    nm1_pq: dict[int, list[int]] = {}
-    for sig, v in nm1_lowest_atomic_lookup.items():
-        if v not in nm1_pq:
-            nm1_pq[v] = []
-        nm1_pq[v].append(sig)
+    nm1_atomics = prepare_atomic_faults(nm1_sigs)
+    nm1_pq = prepare_priority_queue(nm1_atomics)
 
-    nm2_lowest_atomic_lookup: dict[int, int] = {}
-    for sig, v in nm2_sigs:
-        if sig in nm2_lowest_atomic_lookup and nm2_lowest_atomic_lookup[sig] <= v:
-            continue
-        nm2_lowest_atomic_lookup[sig] = v
-    nm2_pq: dict[int, list[int]] = {}
-    for sig, v in nm2_lowest_atomic_lookup.items():
-        if v not in nm2_pq:
-            nm2_pq[v] = []
-        nm2_pq[v].append(sig)
+    nm2_atomics = prepare_atomic_faults(nm2_sigs)
+    nm2_pq = prepare_priority_queue(nm2_atomics)
 
     w = 0
     w_pgb = tqdm(
@@ -248,7 +262,7 @@ def _next_gen_strategy(
             nm1_pq,
             nm1_detectable_lookup,
             nm1_undetectable_lookup,
-            nm1_lowest_atomic_lookup,
+            nm1_atomics,
             num_detectors=d1_detectors,
             quiet=quiet,
         )
@@ -259,7 +273,7 @@ def _next_gen_strategy(
             nm2_pq,
             nm2_detectable_lookup,
             nm2_undetectable_lookup,
-            nm2_lowest_atomic_lookup,
+            nm2_atomics,
             num_detectors=d2_detectors,
             quiet=quiet,
         )
