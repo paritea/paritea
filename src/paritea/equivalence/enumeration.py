@@ -252,7 +252,10 @@ def _next_gen_strategy(
             num_detectors=d1_detectors,
             quiet=quiet,
         )
-        tqdm.write(f"Finished unfolding weight {w} in queue 1! Next items remaining: {len(nm1_pq.get(w + 1, []))}...")
+        if not quiet:
+            tqdm.write(
+                f"Finished unfolding weight {w} in queue 1! Next items remaining: {len(nm1_pq.get(w + 1, []))}..."
+            )
 
         nm2_undetectable = _next_gen_unfold(
             w,
@@ -263,7 +266,10 @@ def _next_gen_strategy(
             num_detectors=d2_detectors,
             quiet=quiet,
         )
-        tqdm.write(f"Finished unfolding weight {w} in queue 2! Next items remaining: {len(nm2_pq.get(w + 1, []))}...")
+        if not quiet:
+            tqdm.write(
+                f"Finished unfolding weight {w} in queue 2! Next items remaining: {len(nm2_pq.get(w + 1, []))}..."
+            )
 
         for sig in nm1_undetectable:
             if sig not in nm2_undetectable_lookup:
