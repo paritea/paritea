@@ -1,4 +1,5 @@
 import itertools
+import math
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -132,15 +133,46 @@ def _normal_strategy(
 @dataclass(init=True)
 class AtomicFaults:
     weight_lookup: dict[int, int] = field(default_factory=dict, init=False)
+    undetectable: set[int] = field(default_factory=set, init=False)
+    detectable_with_detectors: dict[int, int] = field(default_factory=dict, init=False)
 
     def all_iter(self) -> Iterator[tuple[int, int]]:
-        return iter(self.weight_lookup.items())
+        for sig in itertools.chain(self.undetectable, self.detectable_with_detectors.keys()):
+            yield sig, self.weight_lookup[sig]
+
+    def detector_overlapping(self, detector_info: int) -> list[int]:
+        lowest_weight = math.inf
+        lowest_weight_sigs = []
+        for sig, sig_info in self.detectable_with_detectors.items():
+            if detector_info & sig_info == 0:
+                continue
+            w = self.weight_lookup[sig]
+            if w > lowest_weight:
+                continue
+            if w == lowest_weight:
+                lowest_weight_sigs.append(sig)
+            else:
+                lowest_weight = w
+                lowest_weight_sigs = [sig]
+
+        return lowest_weight_sigs
 
 
-def prepare_atomic_faults(nm_sigs: list[tuple[int, int]]) -> AtomicFaults:
+def prepare_atomic_faults(nm_sigs: list[tuple[int, int]], *, num_detectors: int) -> AtomicFaults:
     atomics: AtomicFaults = AtomicFaults()
+    detector_mask = (1 << num_detectors) - 1
     for sig, v in nm_sigs:
-        if sig in atomics.weight_lookup and atomics.weight_lookup[sig] <= v:
+        detectable = sig & detector_mask > 0
+        if detectable:
+            if sig not in atomics.detectable_with_detectors:
+                atomics.detectable_with_detectors[sig] = sig & detector_mask
+                atomics.weight_lookup[sig] = v
+        else:
+            if sig not in atomics.undetectable:
+                atomics.undetectable.add(sig)
+                atomics.weight_lookup[sig] = v
+
+        if atomics.weight_lookup[sig] <= v:
             continue
         atomics.weight_lookup[sig] = v
 
@@ -188,7 +220,9 @@ def _next_gen_unfold(
         items_done += len(queue)
         for sig in queue:
             sigs_pgb.update(n=-1)
-            if sig & detector_mask > 0:
+            detector_info = sig & detector_mask
+            detectable = detector_info > 0
+            if detectable:
                 if sig in detectable_lookup and detectable_lookup[sig] <= w:
                     continue  # This signature does not provide a weight improvement
                 detectable_lookup[sig] = w
@@ -202,8 +236,9 @@ def _next_gen_unfold(
             if sig in atomics.weight_lookup and atomics.weight_lookup[sig] > w:
                 atomics.weight_lookup[sig] = w
 
-            for atomic_sig, atomic_w in atomics.all_iter():
-                comb_w = atomic_w + w
+            atomic_faults = atomics.undetectable if not detectable else atomics.detector_overlapping(detector_info)
+            for atomic_sig in atomic_faults:
+                comb_w = atomics.weight_lookup[atomic_sig] + w
                 if comb_w == w:
                     new_queue.add(atomic_sig ^ sig)
                     sigs_pgb.update(n=1)
@@ -253,10 +288,10 @@ def _next_gen_strategy(
     nm2_detectable_lookup = {}
     nm2_undetectable_lookup = {0: 0}
 
-    nm1_atomics = prepare_atomic_faults(nm1_sigs)
+    nm1_atomics = prepare_atomic_faults(nm1_sigs, num_detectors=d1_detectors)
     nm1_pq = prepare_priority_queue(nm1_atomics)
 
-    nm2_atomics = prepare_atomic_faults(nm2_sigs)
+    nm2_atomics = prepare_atomic_faults(nm2_sigs, num_detectors=d2_detectors)
     nm2_pq = prepare_priority_queue(nm2_atomics)
 
     w = 0
