@@ -8,7 +8,7 @@ from paritea.noise import Fault, NoiseModel
 from paritea.pauli import Pauli, PauliString
 from paritea.utils import NoiseModelParam, noise_model_params
 
-from .enumeration import _next_gen_strategy, _normal_strategy
+from .enumeration import _next_gen_strategy
 
 
 class Stabilisers:
@@ -103,9 +103,6 @@ def _is_fault_equivalence(
             "Cannot process noise models with negative weights, but the following negative weights were given: "
             f"Noise model 1: {negative_weights_1}; Noise model 2: {negative_weights_2}."
         )
-    use_normally_weighted_strategy = atomic_weights_1 == {1} and atomic_weights_2 == {1}
-    if not quiet:
-        print(f"Using {'normal' if use_normally_weighted_strategy else 'regular'} strategy!")
 
     d1, d2 = noise_1.diagram, noise_2.diagram
     d1_edge_idx_map = {d1.incident_edges(b)[0]: i for i, b in enumerate(d1.io_sorted())}
@@ -129,34 +126,17 @@ def _is_fault_equivalence(
     if not quiet:
         print(f"Retrieved {len(g2_sig_nf)} atomic faults for d2!")
 
-    if use_normally_weighted_strategy:
-        if not quiet:
-            print("Checking if d1 is fault-bound by d2...")
-        g1_g2_weight = _normal_strategy(
-            g1_sig_nf, g2_sig_nf, num_detectors_1, len(d2_edge_idx_map), num_detectors_2, until=until, quiet=quiet
-        )
-        if g1_g2_weight is not None:
-            return False
-
-        if not quiet:
-            print("Checking if d2 is fault-bound by d1...")
-        g2_g1_weight = _normal_strategy(
-            g2_sig_nf, g1_sig_nf, num_detectors_2, len(d1_edge_idx_map), num_detectors_1, until=until, quiet=quiet
-        )
-
-        return g2_g1_weight is None
-    else:
-        violating_weight = _next_gen_strategy(
-            g1_sig_nf,
-            g2_sig_nf,
-            len(d1_edge_idx_map),
-            num_detectors_1,
-            len(d2_edge_idx_map),
-            num_detectors_2,
-            until=until,
-            quiet=quiet,
-        )
-        return violating_weight is None
+    violating_weight = _next_gen_strategy(
+        g1_sig_nf,
+        g2_sig_nf,
+        len(d1_edge_idx_map),
+        num_detectors_1,
+        len(d2_edge_idx_map),
+        num_detectors_2,
+        until=until,
+        quiet=quiet,
+    )
+    return violating_weight is None
 
 
 @noise_model_params("noise_1", "noise_2")
