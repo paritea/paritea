@@ -169,6 +169,9 @@ def _next_gen_unfold(
 ) -> set[int]:
     detector_mask = (1 << num_detectors) - 1
     queue = pq.pop(w, [])
+    if len(queue) == 0:
+        return set()
+
     sigs_pgb = tqdm(
         desc="Sigs remaining: ",
         initial=len(queue),
