@@ -178,7 +178,7 @@ def _next_gen_unfold(
         position=1,
         unit="",
     )
-    undetectables_generated = []
+    undetectables_generated = set()
     items_done, start_time = 0, time.time()
     while len(queue) > 0:
         new_queue = set()
@@ -194,7 +194,7 @@ def _next_gen_unfold(
                 if sig_no_sinks in undetectable_lookup and undetectable_lookup[sig_no_sinks] <= w:
                     continue  # This signature does not provide a weight improvement
                 undetectable_lookup[sig_no_sinks] = w
-                undetectables_generated.append(sig_no_sinks)
+                undetectables_generated.add(sig_no_sinks)
 
             if sig in atomics.weight_lookup and atomics.weight_lookup[sig] > w:
                 atomics.weight_lookup[sig] = w
@@ -216,7 +216,7 @@ def _next_gen_unfold(
             f"|   w={w} iteration averaged {items_done / (end_time - start_time) / 1000:.2f}k iterations per second ..."
         )
 
-    return set(undetectables_generated)
+    return undetectables_generated
 
 
 def _next_gen_strategy(
