@@ -26,7 +26,11 @@ Developers should then, after cloning this repository, install all required depe
 ```shell
 uv sync --group all
 ```
-This will by default install developer dependencies as well, such as test and code style dependencies.
+This will by default install developer dependencies as well, such as test and code style dependencies. Afterward, run
+```shell
+pre-commit install
+```
+to install git [pre-commit](https://github.com/pre-commit/pre-commit) hooks.
 
 ### Linting and code formatting
 The project uses [`ruff`](https://github.com/astral-sh/ruff) for both linting and formatting with (so far) minimal configuration changes.
