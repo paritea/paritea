@@ -30,6 +30,7 @@ bench = [
 ]
 
 dev = [
+    "pre-commit>=4.5.1",
     "ruff==0.14.9", # Pinned to ensure everyone uses the same rules
 ]
 
