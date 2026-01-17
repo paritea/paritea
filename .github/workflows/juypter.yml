@@ -1,0 +1,23 @@
+name: Code Style - Jupyter
+on:
+  pull_request:
+    paths:
+      - '**.ipynb'
+  push:
+    branches:
+      - main
+    paths:
+      - '**.ipynb'
+  workflow_dispatch:
+jobs:
+  check-notebooks:
+    name: Clean Juypter notebooks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Check notebooks are stripped
+        uses: kynan/nbstripout@2abb2aed6aa1d74e61ef2e50f8366d342b6895d3 # 0.8.2
+        with:
+          paths: '**/*.ipynb'
