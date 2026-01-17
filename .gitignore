@@ -9,5 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
+# Jupyter
+**/.ipynb_checkpoints
+
 # Jetbrains
 .idea
