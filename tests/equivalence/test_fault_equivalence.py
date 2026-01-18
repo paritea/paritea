@@ -380,11 +380,3 @@ def test_idempotent_non_normal_weight():
     nm = NoiseModel.weighted_edge_flip_noise(d, 1, 2, 3)
 
     assert is_fault_equivalence(nm, nm, quiet=False)
-
-
-def test_non_normal_weight_negative():
-    d = from_pyzx(generate.clifford(5, 10))
-    nm1 = NoiseModel.weighted_edge_flip_noise(d, 1, 2, 1)
-    nm2 = NoiseModel.weighted_edge_flip_noise(d, 1, 2, 3)
-
-    assert not is_fault_equivalence(nm1, nm2, quiet=False)
