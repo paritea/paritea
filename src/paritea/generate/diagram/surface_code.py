@@ -67,8 +67,8 @@ def surface_code_memory_experiment(
     # Place ancilla qubits
     x_measure_coords: set[_Coord] = set()
     z_measure_coords: set[_Coord] = set()
-    for x in range(distance):
-        for y in range(distance):
+    for x in range(distance + 1):
+        for y in range(distance + 1):
             q = _Coord(x * 2, y * 2)
             on_boundary_x = x == 0 or x == distance
             on_boundary_y = y == 0 or y == distance
