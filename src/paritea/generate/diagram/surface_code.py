@@ -1,5 +1,6 @@
 # The code in this file is directly derived from generators in https://github.com/quantumlib/Stim, with open boundaries,
 # translated to Python. See https://github.com/quantumlib/Stim/blob/main/LICENSE for license details.
+# Details on the stabiliser measurement cycles etc. can be found in https://arxiv.org/pdf/1404.3747.
 
 from itertools import chain
 from typing import Literal, NamedTuple, overload
@@ -155,12 +156,12 @@ def _generate_rotated_surface_code(
     for _ in range(rounds):
         new_nodes = []
 
-        new_nodes.extend(builder.append_reset(measurement_qubits, n_type=NodeType.X))  # Protects the X observable
+        new_nodes.extend(builder.append_reset(measurement_qubits, n_type=NodeType.X))
         new_nodes.extend(builder.append_single_qubit(x_measurement_qubits, n_type=NodeType.H))
         for cts in cnot_cts:
             new_nodes.extend(builder.append_cnot(cts))
         new_nodes.extend(builder.append_single_qubit(x_measurement_qubits, n_type=NodeType.H))
-        new_nodes.extend(builder.append_measure(measurement_qubits, n_type=NodeType.X))  # Protects the X observable
+        new_nodes.extend(builder.append_measure(measurement_qubits, n_type=NodeType.X))
 
         partitions.append(new_nodes)
     outputs = builder.append_single_qubit(data_qubits, n_type=NodeType.B)
