@@ -106,7 +106,7 @@ pub fn create_firing_verification(d: &Diagram, ordering: &GraphOrdering) -> BitM
     for i_row in 0..num_pi_2 {
         for i_col in 0..num_pi_2 {
             let (r, c) = (rows - num_pi_2 + i_row, cols - num_pi_2 + i_col);
-            m_d.set_bit(r, c, m_d.bit(r, c) ^ true);
+            m_d.set_bit(r, c, m_d.bit(r, c) ^ (i_row == i_col));
         }
     }
 

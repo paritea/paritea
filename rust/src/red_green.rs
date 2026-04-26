@@ -66,7 +66,8 @@ impl AdditionalNodes {
         web.remove(&upair(v1, id_node.node));
         web.remove(&upair(id_node.node, v2));
         adj.get_mut(&v1).unwrap().remove(&id_node.node);
-        adj.remove(&id_node.node);
+        adj.get_mut(&id_node.node).unwrap().remove(&v1);
+        adj.get_mut(&id_node.node).unwrap().remove(&v2);
         adj.get_mut(&v2).unwrap().remove(&id_node.node);
     }
 
@@ -100,9 +101,12 @@ impl AdditionalNodes {
         web.remove(&upair(w2, w3));
         web.remove(&upair(w3, r));
         adj.get_mut(&l).unwrap().remove(&w1);
-        adj.remove(&w1);
-        adj.remove(&w2);
-        adj.remove(&w3);
+        adj.get_mut(&w1).unwrap().remove(&l);
+        adj.get_mut(&w1).unwrap().remove(&w2);
+        adj.get_mut(&w2).unwrap().remove(&w1);
+        adj.get_mut(&w2).unwrap().remove(&w3);
+        adj.get_mut(&w3).unwrap().remove(&w2);
+        adj.get_mut(&w3).unwrap().remove(&r);
         adj.get_mut(&r).unwrap().remove(&w3);
     }
 

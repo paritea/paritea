@@ -98,7 +98,9 @@ mod _bindings {
     ) -> PyResult<(Vec<Bound<'py, PyAny>>, Vec<Bound<'py, PyAny>>)> {
         let py = diagram.py();
         let (nd, rs_to_py_edges) = _to_rs_diagram(diagram);
+        println!("CONVERTED");
         let (stabs, regions) = compute_pauli_webs(nd);
+        println!("COMPUTED");
 
         Ok((
             stabs

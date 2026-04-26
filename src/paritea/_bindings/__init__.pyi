@@ -1,4 +1,5 @@
-from typing import Any
+from paritea.diagram import Diagram
+from paritea.pauli import PauliString
 
 
-def _compute_pauli_webs(a: Any) -> tuple[list[dict[int, str]], list[dict[int, str]]]: ...
+def _compute_pauli_webs(a: Diagram) -> tuple[list[PauliString], list[PauliString]]: ...

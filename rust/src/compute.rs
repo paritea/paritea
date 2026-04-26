@@ -4,7 +4,7 @@ use crate::firing_assignments::{
 };
 use crate::pauli::{Pauli, PauliString};
 use crate::red_green::to_red_green_form;
-use bitgauss::{BitMatrix, BitVec};
+use bitgauss::BitMatrix;
 use itertools::Itertools;
 use rustworkx_core::petgraph::graph::NodeIndex;
 use rustworkx_core::petgraph::prelude::EdgeRef;
@@ -46,10 +46,6 @@ fn compute(
 
     // Compute row span of valid firing assignment space
     let sol_row_basis = BitMatrix::vstack_from_iter(&m_d.nullspace());
-
-    let b: Vec<bool> = BitVec::new().into();
-
-    BitMatrix::from_bool_vec(&vec![b]);
 
     let stabs = if !stabilisers {
         None
