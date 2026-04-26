@@ -112,11 +112,17 @@ class CircuitBuilder[CostT]:
             self._queue_for_edge_replacement(prot, cost)
         return self._append_single_qubit(qs, n_type)
 
+    def append_measure_comp(self, qs: Iterable[int]) -> list[int]:
+        return self.append_measure(qs, NodeType.Z)
+
     def append_reset(self, qs: Iterable[int], n_type: NodeType) -> list[int]:
         nodes = self._append_single_qubit(qs, n_type, connect=False)
         for prot, cost in self._noise_model_builder.for_reset(qs):
             self._queue_for_edge_replacement(prot, cost)
         return nodes
+
+    def append_reset_zero(self, qs: Iterable[int]) -> list[int]:
+        return self.append_reset(qs, NodeType.Z)
 
     def append_x(self, qs: Iterable[int]) -> list[int]:
         nodes = self._append_single_qubit(qs, NodeType.X)
