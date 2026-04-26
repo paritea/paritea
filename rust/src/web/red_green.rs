@@ -156,7 +156,7 @@ fn euler_expand_edges(d: &mut Diagram) -> Vec<ExpandedHadamard> {
         };
 
         let w2 = place_node_between(d, pattern[1], v1, v2);
-        d.add_to_phase(w2, Phase::new(1u32, 2u32)); // TODO convert to fraction
+        d.add_to_phase(w2, Phase::new(1u32, 2u32));
         let w1 = place_node_between(d, pattern[0], v1, w2);
         d.add_to_phase(w1, Phase::new(1u32, 2u32));
         let w3 = place_node_between(d, pattern[2], w2, v2);
