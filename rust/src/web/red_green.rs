@@ -51,8 +51,11 @@ impl AdditionalNodes {
         for web in webs.iter_mut() {
             if let Some(p) = web.remove(&upair(v1, id_node.node)) {
                 web.insert(upair(v1, v2), p);
+                debug_assert!(web.contains_key(&upair(id_node.node, v2)));
+                web.remove(&upair(id_node.node, v2));
+            } else {
+                debug_assert!(!web.contains_key(&upair(id_node.node, v2)));
             }
-            web.remove(&upair(id_node.node, v2));
         }
         adj.get_mut(&v1).unwrap().remove(&id_node.node);
         adj.get_mut(&id_node.node).unwrap().remove(&v1);
@@ -81,12 +84,18 @@ impl AdditionalNodes {
         for web in webs.iter_mut() {
             if let Some(p) = web.remove(&upair(l, w1)) {
                 web.insert(upair(l, hadamard.origin), p);
+                debug_assert!(web.contains_key(&upair(w1, w2)));
+                debug_assert!(web.contains_key(&upair(w2, w3)));
                 debug_assert_eq!(web.get(&upair(w3, r)), Some(&p.flip()));
                 web.insert(upair(hadamard.origin, r), p.flip());
+                web.remove(&upair(w1, w2));
+                web.remove(&upair(w2, w3));
+                web.remove(&upair(w3, r));
+            } else {
+                debug_assert!(!web.contains_key(&upair(w1, w2)));
+                debug_assert!(!web.contains_key(&upair(w2, w3)));
+                debug_assert!(!web.contains_key(&upair(w3, r)));
             }
-            web.remove(&upair(w1, w2));
-            web.remove(&upair(w2, w3));
-            web.remove(&upair(w3, r));
         }
         adj.get_mut(&l).unwrap().remove(&w1);
         adj.get_mut(&w1).unwrap().remove(&l);
