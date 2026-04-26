@@ -113,7 +113,7 @@ class CircuitBuilder[CostT]:
         return self._append_single_qubit(qs, n_type)
 
     def append_measure_comp(self, qs: Iterable[int]) -> list[int]:
-        return self.append_measure(qs, NodeType.Z)
+        return self.append_measure(qs, NodeType.X)
 
     def append_reset(self, qs: Iterable[int], n_type: NodeType) -> list[int]:
         nodes = self._append_single_qubit(qs, n_type, connect=False)
@@ -122,7 +122,7 @@ class CircuitBuilder[CostT]:
         return nodes
 
     def append_reset_zero(self, qs: Iterable[int]) -> list[int]:
-        return self.append_reset(qs, NodeType.Z)
+        return self.append_reset(qs, NodeType.X)
 
     def append_x(self, qs: Iterable[int]) -> list[int]:
         nodes = self._append_single_qubit(qs, NodeType.X)
