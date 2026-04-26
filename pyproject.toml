@@ -37,3 +37,16 @@ dev = [
 test = [
     "pytest>=8.4.2",
 ]
+
+
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+module-name = "paritea._bindings"
+python-source = "src/"
+manifest-path = "rust-bindings/Cargo.toml"
+features = ["pyo3/extension-module"] # skips linking against libpython.so
+profile = "dev-py"
+

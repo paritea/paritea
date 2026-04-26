@@ -1,0 +1,14 @@
+[package]
+name = "paritea"
+description = "Supporting Rust library for paritea"
+version = "0.1.0"
+edition = "2024"
+publish = false
+rust-version = "1.91.0"
+
+[lints.rust]
+missing_docs = "warn"
+
+[dependencies]
+itertools = { workspace = true }
+derive_more = { workspace = true }

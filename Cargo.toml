@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "rust",
+    "rust-bindings",
+]
+
+[workspace.dependencies]
+itertools = "0.14.0"
+derive_more = { version = "2", features = ["display", "from"] }
+
+[profile.dev-py]
+inherits = "dev"
+
+[profile.release-py]
+inherits = "release"
+lto = "fat"
+strip = "symbols"
+panic = "abort"
