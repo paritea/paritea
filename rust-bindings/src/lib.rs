@@ -7,9 +7,9 @@ use pyo3::pymodule;
 /// `src/paritea/_bindings/__init__.pyi` type stubs.
 #[pymodule]
 mod _bindings {
-    use paritea::compute::compute;
     use paritea::diagram::{Diagram, NodeData, NodeType, Phase};
     use paritea::pauli::PauliString;
+    use paritea::web::compute::compute;
     use pyo3::prelude::*;
     use pyo3::types::PyDict;
     use rustworkx_core::petgraph::graph::{EdgeIndex, NodeIndex};

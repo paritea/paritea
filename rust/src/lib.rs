@@ -1,7 +1,4 @@
-pub mod pauli;
-
-pub mod compute;
 pub mod diagram;
-mod firing_assignments;
-mod red_green;
+pub mod pauli;
 mod util;
+pub mod web;

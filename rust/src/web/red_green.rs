@@ -7,12 +7,12 @@ use rustworkx_core::petgraph::graph::NodeIndex;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, Copy)]
-pub struct ExtraIdNode {
+struct ExtraIdNode {
     node: NodeIndex,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct ExpandedHadamard {
+struct ExpandedHadamard {
     r1_node: NodeIndex,
     r2_node: NodeIndex,
     r3_node: NodeIndex,

@@ -1,9 +1,9 @@
 use crate::diagram::Diagram;
-use crate::firing_assignments::{
+use crate::pauli::{Pauli, PauliString};
+use crate::web::firing_assignments::{
     convert_firing_assignment_to_web_prototype, create_firing_verification, determine_ordering,
 };
-use crate::pauli::{Pauli, PauliString};
-use crate::red_green::to_red_green_form;
+use crate::web::red_green::to_red_green_form;
 use bitgauss::BitMatrix;
 use itertools::Itertools;
 use rustworkx_core::petgraph::graph::NodeIndex;
