@@ -4,7 +4,7 @@ use crate::util::upair;
 use fraction::{CheckedDiv, Zero};
 use itertools::Itertools;
 use rustworkx_core::petgraph::graph::NodeIndex;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, Copy)]
 pub struct ExtraIdNode {
@@ -52,13 +52,13 @@ impl AdditionalNodes {
     }
 
     fn remove_extra_id_node(
-        adj: &mut HashMap<NodeIndex, HashMap<NodeIndex, bool>>,
+        adj: &mut HashMap<NodeIndex, HashSet<NodeIndex>>,
         webs: &mut Vec<HashMap<(NodeIndex, NodeIndex), Pauli>>,
         id_node: ExtraIdNode,
     ) {
-        let (v1, v2) = adj[&id_node.node].keys().copied().collect_tuple().unwrap();
-        adj.get_mut(&v1).unwrap().insert(v2, true);
-        adj.get_mut(&v2).unwrap().insert(v1, true);
+        let (v1, v2) = adj[&id_node.node].iter().copied().collect_tuple().unwrap();
+        adj.get_mut(&v1).unwrap().insert(v2);
+        adj.get_mut(&v2).unwrap().insert(v1);
         for web in webs.iter_mut() {
             if let Some(p) = web.remove(&upair(v1, id_node.node)) {
                 web.insert(upair(v1, v2), p);
@@ -72,23 +72,23 @@ impl AdditionalNodes {
     }
 
     fn remove_expanded_hadamard(
-        adj: &mut HashMap<NodeIndex, HashMap<NodeIndex, bool>>,
+        adj: &mut HashMap<NodeIndex, HashSet<NodeIndex>>,
         webs: &mut Vec<HashMap<(NodeIndex, NodeIndex), Pauli>>,
         hadamard: ExpandedHadamard,
     ) {
         let (w1, w2, w3) = (hadamard.r1_node, hadamard.r2_node, hadamard.r3_node);
-        let (w1_left, w1_right) = adj[&w1].keys().copied().collect_tuple().unwrap();
+        let (w1_left, w1_right) = adj[&w1].iter().copied().collect_tuple().unwrap();
         let l = if w1_right == w2 { w1_left } else { w1_right };
-        let (w3_left, w3_right) = adj[&w3].keys().copied().collect_tuple().unwrap();
+        let (w3_left, w3_right) = adj[&w3].iter().copied().collect_tuple().unwrap();
         let r = if w3_left == w2 { w3_right } else { w3_left };
 
         if !adj.contains_key(&hadamard.origin) {
-            adj.insert(hadamard.origin, HashMap::new());
+            adj.insert(hadamard.origin, HashSet::new());
         }
-        adj.get_mut(&l).unwrap().insert(hadamard.origin, true);
-        adj.get_mut(&hadamard.origin).unwrap().insert(l, true);
-        adj.get_mut(&r).unwrap().insert(hadamard.origin, true);
-        adj.get_mut(&hadamard.origin).unwrap().insert(r, true);
+        adj.get_mut(&l).unwrap().insert(hadamard.origin);
+        adj.get_mut(&hadamard.origin).unwrap().insert(l);
+        adj.get_mut(&r).unwrap().insert(hadamard.origin);
+        adj.get_mut(&hadamard.origin).unwrap().insert(r);
         for web in webs.iter_mut() {
             if let Some(p) = web.remove(&upair(l, w1)) {
                 web.insert(upair(l, hadamard.origin), p);
@@ -112,7 +112,7 @@ impl AdditionalNodes {
     pub fn remove_from(&self, d: &Diagram, webs: &mut Vec<HashMap<(NodeIndex, NodeIndex), Pauli>>) {
         let mut adj = d
             .node_indices()
-            .map(|n| (n, d.neighbors(n).map(|m| (m, true)).collect()))
+            .map(|n| (n, d.neighbors(n).collect()))
             .collect();
         for &id_node in &self.extra_id_nodes {
             Self::remove_extra_id_node(&mut adj, webs, id_node);
