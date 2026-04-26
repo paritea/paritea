@@ -22,7 +22,7 @@ class NoiseModelBuilder[CostT]:
                     yield {q: p}, cost
 
     def for_two_q(self, qs: Iterable[tuple[int, int]]) -> Iterable[tuple[dict[int, Pauli], CostT]]:
-        for (q1, q2) in qs:
+        for q1, q2 in qs:
             for (p1, p2), cost in self.two_q_cost.items():
                 yield {q1: p1, q2: p2}, cost
 
@@ -80,7 +80,13 @@ class CircuitBuilder[CostT]:
             self._fault_prot_queue = [prot for i, prot in enumerate(self._fault_prot_queue) if i not in flushed_indices]
 
     def _append_single_qubit(
-        self, qs: Iterable[int], n_type: NodeType, phase: Fraction | None = None, *, connect: bool = True, offset: bool = True
+        self,
+        qs: Iterable[int],
+        n_type: NodeType,
+        phase: Fraction | None = None,
+        *,
+        connect: bool = True,
+        offset: bool = True,
     ) -> list[int]:
         new_nodes = [self.diagram.add_node(n_type, phase, x=self.row_offset, y=q) for q in qs]
         if offset:
