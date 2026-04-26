@@ -4,7 +4,7 @@ use crate::util::upair;
 use fraction::{CheckedDiv, Zero};
 use itertools::Itertools;
 use rustworkx_core::petgraph::graph::NodeIndex;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 
 #[derive(Debug, Clone, Copy)]
 struct ExtraIdNode {
@@ -41,13 +41,11 @@ impl AdditionalNodes {
     }
 
     fn remove_extra_id_node(
-        adj: &mut HashMap<NodeIndex, HashSet<NodeIndex>>,
+        adj: &mut HashMap<NodeIndex, BTreeSet<NodeIndex>>,
         webs: &mut Vec<HashMap<(NodeIndex, NodeIndex), Pauli>>,
         id_node: ExtraIdNode,
     ) {
         let (v1, v2) = adj[&id_node.node].iter().copied().collect_tuple().unwrap();
-        adj.get_mut(&v1).unwrap().insert(v2);
-        adj.get_mut(&v2).unwrap().insert(v1);
         for web in webs.iter_mut() {
             if let Some(p) = web.remove(&upair(v1, id_node.node)) {
                 web.insert(upair(v1, v2), p);
@@ -57,14 +55,19 @@ impl AdditionalNodes {
                 debug_assert!(!web.contains_key(&upair(id_node.node, v2)));
             }
         }
-        adj.get_mut(&v1).unwrap().remove(&id_node.node);
-        adj.get_mut(&id_node.node).unwrap().remove(&v1);
-        adj.get_mut(&id_node.node).unwrap().remove(&v2);
-        adj.get_mut(&v2).unwrap().remove(&id_node.node);
+        let v1_mut = adj.get_mut(&v1).unwrap();
+        v1_mut.insert(v2);
+        v1_mut.remove(&id_node.node);
+        let id_node_mut = adj.get_mut(&id_node.node).unwrap();
+        id_node_mut.remove(&v1);
+        id_node_mut.remove(&v2);
+        let v2_mut = adj.get_mut(&v2).unwrap();
+        v2_mut.insert(v1);
+        v2_mut.remove(&id_node.node);
     }
 
     fn remove_expanded_hadamard(
-        adj: &mut HashMap<NodeIndex, HashSet<NodeIndex>>,
+        adj: &mut HashMap<NodeIndex, BTreeSet<NodeIndex>>,
         webs: &mut Vec<HashMap<(NodeIndex, NodeIndex), Pauli>>,
         hadamard: ExpandedHadamard,
     ) {
@@ -74,13 +77,11 @@ impl AdditionalNodes {
         let (w3_left, w3_right) = adj[&w3].iter().copied().collect_tuple().unwrap();
         let r = if w3_left == w2 { w3_right } else { w3_left };
 
-        if !adj.contains_key(&hadamard.origin) {
-            adj.insert(hadamard.origin, HashSet::new());
-        }
         adj.get_mut(&l).unwrap().insert(hadamard.origin);
-        adj.get_mut(&hadamard.origin).unwrap().insert(l);
+        adj.entry(hadamard.origin)
+            .or_insert(BTreeSet::new())
+            .extend([l, r]);
         adj.get_mut(&r).unwrap().insert(hadamard.origin);
-        adj.get_mut(&hadamard.origin).unwrap().insert(r);
         for web in webs.iter_mut() {
             if let Some(p) = web.remove(&upair(l, w1)) {
                 web.insert(upair(l, hadamard.origin), p);
@@ -98,12 +99,15 @@ impl AdditionalNodes {
             }
         }
         adj.get_mut(&l).unwrap().remove(&w1);
-        adj.get_mut(&w1).unwrap().remove(&l);
-        adj.get_mut(&w1).unwrap().remove(&w2);
-        adj.get_mut(&w2).unwrap().remove(&w1);
-        adj.get_mut(&w2).unwrap().remove(&w3);
-        adj.get_mut(&w3).unwrap().remove(&w2);
-        adj.get_mut(&w3).unwrap().remove(&r);
+        let w1_mut = adj.get_mut(&w1).unwrap();
+        w1_mut.remove(&l);
+        w1_mut.remove(&w2);
+        let w2_mut = adj.get_mut(&w2).unwrap();
+        w2_mut.remove(&w1);
+        w2_mut.remove(&w3);
+        let w3_mut = adj.get_mut(&w3).unwrap();
+        w3_mut.remove(&w2);
+        w3_mut.remove(&r);
         adj.get_mut(&r).unwrap().remove(&w3);
     }
 
