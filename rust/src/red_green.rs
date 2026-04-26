@@ -57,16 +57,12 @@ impl AdditionalNodes {
         id_node: ExtraIdNode,
     ) {
         let (v1, v2) = adj[&id_node.node].keys().copied().collect_tuple().unwrap();
-        for web in webs.iter_mut() {
-            web.insert(
-                upair(v1, v2),
-                *web.get(&upair(v1, id_node.node)).unwrap_or(&Pauli::I),
-            );
-        }
         adj.get_mut(&v1).unwrap().insert(v2, true);
         adj.get_mut(&v2).unwrap().insert(v1, true);
         for web in webs.iter_mut() {
-            web.remove(&upair(v1, id_node.node));
+            if let Some(p) = web.remove(&upair(v1, id_node.node)) {
+                web.insert(upair(v1, v2), p);
+            }
             web.remove(&upair(id_node.node, v2));
         }
         adj.get_mut(&v1).unwrap().remove(&id_node.node);
@@ -85,16 +81,7 @@ impl AdditionalNodes {
         let l = if w1_right == w2 { w1_left } else { w1_right };
         let (w3_left, w3_right) = adj[&w3].keys().copied().collect_tuple().unwrap();
         let r = if w3_left == w2 { w3_right } else { w3_left };
-        for web in webs.iter_mut() {
-            web.insert(
-                upair(l, hadamard.origin),
-                *web.get(&upair(l, w1)).unwrap_or(&Pauli::I),
-            );
-            web.insert(
-                upair(hadamard.origin, r),
-                *web.get(&upair(w3, r)).unwrap_or(&Pauli::I),
-            );
-        }
+
         if !adj.contains_key(&hadamard.origin) {
             adj.insert(hadamard.origin, HashMap::new());
         }
@@ -103,7 +90,11 @@ impl AdditionalNodes {
         adj.get_mut(&r).unwrap().insert(hadamard.origin, true);
         adj.get_mut(&hadamard.origin).unwrap().insert(r, true);
         for web in webs.iter_mut() {
-            web.remove(&upair(l, w1));
+            if let Some(p) = web.remove(&upair(l, w1)) {
+                web.insert(upair(l, hadamard.origin), p);
+                debug_assert_eq!(web.get(&upair(w3, r)), Some(&p.flip()));
+                web.insert(upair(hadamard.origin, r), p.flip());
+            }
             web.remove(&upair(w1, w2));
             web.remove(&upair(w2, w3));
             web.remove(&upair(w3, r));

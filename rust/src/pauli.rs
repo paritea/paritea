@@ -11,6 +11,17 @@ pub enum Pauli {
     Z,
 }
 
+impl Pauli {
+    pub fn flip(&self) -> Pauli {
+        match self {
+            Pauli::I => Pauli::I,
+            Pauli::X => Pauli::Z,
+            Pauli::Y => Pauli::Y,
+            Pauli::Z => Pauli::X,
+        }
+    }
+}
+
 impl Mul for Pauli {
     type Output = Self;
 
