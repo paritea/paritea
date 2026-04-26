@@ -1,7 +1,7 @@
-mod pauli;
+pub mod pauli;
 
-mod compute;
-mod diagram;
+pub mod compute;
+pub mod diagram;
 mod firing_assignments;
 mod red_green;
 mod util;

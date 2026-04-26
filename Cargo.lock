@@ -335,9 +335,9 @@ dependencies = [
 name = "paritea-py"
 version = "0.1.0"
 dependencies = [
- "derive_more",
  "paritea",
  "pyo3",
+ "rustworkx-core",
 ]
 
 [[package]]

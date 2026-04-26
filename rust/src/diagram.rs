@@ -20,15 +20,18 @@ pub enum NodeType {
 pub struct NodeData(NodeType, Phase);
 
 impl NodeData {
+    pub fn new(nt: NodeType, phase: Phase) -> Self {
+        Self(nt, phase)
+    }
+
     pub fn from_type(nt: NodeType) -> Self {
         Self(nt, Phase::new(0u32, 1u32))
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Diagram {
     graph: StableUnGraph<NodeData, ()>,
-    io: (Vec<NodeIndex>, Vec<NodeIndex>),
     is_io_virtual: bool,
 }
 
@@ -49,8 +52,8 @@ impl Diagram {
         self.graph[node].1 = self.graph[node].1 + phase;
     }
 
-    pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex) {
-        self.graph.add_edge(a, b, ());
+    pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex) -> EdgeIndex {
+        self.graph.add_edge(a, b, ())
     }
 
     pub fn add_edges(&mut self, points: impl IntoIterator<Item = (NodeIndex, NodeIndex)>) {
@@ -93,15 +96,6 @@ impl Diagram {
             pub fn edges_connecting(&self, a: NodeIndex, b: NodeIndex) -> EdgesConnecting<(), Undirected>;
             pub fn remove_edge(&mut self, e: EdgeIndex);
             pub fn has_parallel_edges(&self) -> bool;
-            // self.has_node = self._g.has_node
-            // self.has_edge = self._g.has_edge
-            // self.edge_indices = self._g.edge_indices
-            // self.get_edge_endpoints_by_index = self._g.get_edge_endpoints_by_index
-            // self.incident_edges = self._g.incident_edges
-            // self.incident_edge_index_map = self._g.incident_edge_index_map
-            // self.add_edges = self._g.add_edges_from_no_data
-            // self.remove_edge = self._g.remove_edge
-            // self.neighbors = self._g.neighbors
         }
     }
 }

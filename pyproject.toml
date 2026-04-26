@@ -23,6 +23,7 @@ dev = [
     { include-group = "bench" },
     { include-group = "lint" },
     { include-group = "test" },
+    "maturin>=1.4,<2.0",
 ]
 
 bench = [
@@ -49,4 +50,3 @@ python-source = "src/"
 manifest-path = "rust-bindings/Cargo.toml"
 features = ["pyo3/extension-module"] # skips linking against libpython.so
 profile = "dev-py"
-

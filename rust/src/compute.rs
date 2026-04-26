@@ -58,7 +58,7 @@ fn compute(
         let transp = sol_row_basis.transposed();
         let mut boundary_selected_basis = BitMatrix::from_bool_vec(
             &(0..(ordering.z_boundaries.len() * 2))
-                .map(|i| transp.row(i).to_vec().into())
+                .map(|i| transp.row(i).iter().take(transp.cols()).collect_vec())
                 .collect_vec(),
         );
         boundary_selected_basis.gauss(true);
@@ -73,7 +73,7 @@ fn compute(
         let mut web_prototypes = pivot_cols
             .into_iter()
             .map(|col| sol_row_basis.row(col).to_vec())
-            .map(|v| convert_firing_assignment_to_web_prototype(&d, &ordering, v))
+            .map(|v| convert_firing_assignment_to_web_prototype(&d, &ordering, v.into()))
             .collect::<Vec<_>>();
         for web_prototype in web_prototypes.iter_mut() {
             additional_nodes.remove_from(&d, web_prototype);
@@ -88,7 +88,7 @@ fn compute(
         let transp = sol_row_basis.transposed();
         let mut boundary_selected_basis = BitMatrix::from_bool_vec(
             &(0..(ordering.z_boundaries.len() * 2))
-                .map(|i| transp.row(i).to_vec().into())
+                .map(|i| transp.row(i).iter().take(transp.cols()).collect_vec())
                 .collect_vec(),
         );
         let boundary_nullspace_vectors =
@@ -97,13 +97,13 @@ fn compute(
         let region_sols = if boundary_nullspace_vectors.rows() == 0 {
             Vec::new()
         } else {
-            let r = boundary_selected_basis.mul(&sol_row_basis);
+            let r = boundary_nullspace_vectors.mul(&sol_row_basis);
             (0..r.rows()).map(|i| r.row(i).to_vec()).collect::<Vec<_>>()
         };
 
         let mut web_prototypes = region_sols
             .into_iter()
-            .map(|v| convert_firing_assignment_to_web_prototype(&d, &ordering, v))
+            .map(|v| convert_firing_assignment_to_web_prototype(&d, &ordering, v.into()))
             .collect::<Vec<_>>();
         for web_prototype in &mut web_prototypes {
             additional_nodes.remove_from(&d, web_prototype);
