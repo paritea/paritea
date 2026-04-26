@@ -5,7 +5,7 @@ from fractions import Fraction
 
 from paritea import Pauli, PauliString
 from paritea.diagram import Diagram, NodeType
-from paritea.noise import Fault
+from paritea.noise import Fault, NoiseModel
 
 
 @dataclass(init=True, frozen=True)
@@ -149,3 +149,6 @@ class CircuitBuilder[CostT]:
         for prot, cost in self._noise_model_builder.for_single_q(qs):
             self._queue_for_edge_replacement(prot, cost)
         return nodes1 + nodes2 + nodes3
+
+    def finish(self) -> tuple[Diagram, NoiseModel[CostT]]:
+        return self.diagram, NoiseModel(self.diagram, self.atomic_faults)
