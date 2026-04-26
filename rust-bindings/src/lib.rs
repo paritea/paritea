@@ -7,7 +7,7 @@ use pyo3::pymodule;
 /// `src/paritea/_bindings/__init__.pyi` type stubs.
 #[pymodule]
 mod _bindings {
-    use paritea::compute::compute_pauli_webs;
+    use paritea::compute::compute;
     use paritea::diagram::{Diagram, NodeData, NodeType, Phase};
     use paritea::pauli::PauliString;
     use pyo3::prelude::*;
@@ -93,22 +93,32 @@ mod _bindings {
     }
 
     #[pyfunction]
+    #[pyo3(signature = (diagram, *, stabilisers, detecting_regions))]
     fn _compute_pauli_webs<'py>(
         diagram: Bound<'py, PyAny>,
-    ) -> PyResult<(Vec<Bound<'py, PyAny>>, Vec<Bound<'py, PyAny>>)> {
+        stabilisers: bool,
+        detecting_regions: bool,
+    ) -> PyResult<(
+        Option<Vec<Bound<'py, PyAny>>>,
+        Option<Vec<Bound<'py, PyAny>>>,
+    )> {
         let py = diagram.py();
         let (nd, rs_to_py_edges) = _to_rs_diagram(diagram);
-        let (stabs, regions) = compute_pauli_webs(nd);
+        let (stabs_opt, regions_opt) = compute(&nd, stabilisers, detecting_regions);
 
         Ok((
-            stabs
-                .into_iter()
-                .map(|s| _to_py_string(py, s, &rs_to_py_edges))
-                .collect(),
-            regions
-                .into_iter()
-                .map(|r| _to_py_string(py, r, &rs_to_py_edges))
-                .collect(),
+            stabs_opt.map(|stabs| {
+                stabs
+                    .into_iter()
+                    .map(|s| _to_py_string(py, s, &rs_to_py_edges))
+                    .collect()
+            }),
+            regions_opt.map(|regions| {
+                regions
+                    .into_iter()
+                    .map(|r| _to_py_string(py, r, &rs_to_py_edges))
+                    .collect()
+            }),
         ))
     }
 }

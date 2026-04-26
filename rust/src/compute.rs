@@ -14,7 +14,7 @@ use std::ops::Mul;
 /// Performs full stabiliser and detecting region computation, depending on the given flags.
 /// Enabling both flags in one call is preferred to enabling them in separate calls as they may
 /// share basic computations.
-fn compute(
+pub fn compute(
     diagram: &Diagram,
     stabilisers: bool,
     detecting_regions: bool,
@@ -109,24 +109,24 @@ fn compute(
 /// A set of stabilising webs for the given diagram that forms a basis for the diagrams stabilisers
 /// when restricted to its boundary. A full basis for all stabilising webs is only obtained
 /// combining the return value with a basis for the diagrams detecting regions.
-pub fn compute_stabilisers(diagram: Diagram) -> Vec<PauliString> {
-    let (Some(stabilisers), None) = compute(&diagram, true, false) else {
+pub fn compute_stabilisers(diagram: &Diagram) -> Vec<PauliString> {
+    let (Some(stabilisers), None) = compute(diagram, true, false) else {
         unreachable!("Should have passed the right flags!");
     };
     stabilisers
 }
 
 /// A basis for the detecting regions of the given diagram.
-pub fn compute_detecting_regions(diagram: Diagram) -> Vec<PauliString> {
-    let (None, Some(regions)) = compute(&diagram, false, true) else {
+pub fn compute_detecting_regions(diagram: &Diagram) -> Vec<PauliString> {
+    let (None, Some(regions)) = compute(diagram, false, true) else {
         unreachable!("Should have passed the right flags!");
     };
     regions
 }
 
 /// See [`compute_stabilisers`] and [`compute_detecting_regions`].
-pub fn compute_pauli_webs(diagram: Diagram) -> (Vec<PauliString>, Vec<PauliString>) {
-    let (Some(stabilisers), Some(regions)) = compute(&diagram, true, true) else {
+pub fn compute_pauli_webs(diagram: &Diagram) -> (Vec<PauliString>, Vec<PauliString>) {
+    let (Some(stabilisers), Some(regions)) = compute(diagram, true, true) else {
         unreachable!("Should have passed the right flags!");
     };
     (stabilisers, regions)
