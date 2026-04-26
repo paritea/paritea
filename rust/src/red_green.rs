@@ -17,7 +17,6 @@ pub struct ExpandedHadamard {
     r2_node: NodeIndex,
     r3_node: NodeIndex,
     origin: NodeIndex,
-    flipped_decomposition: bool,
 }
 
 pub struct AdditionalNodes {
@@ -26,16 +25,6 @@ pub struct AdditionalNodes {
 }
 
 impl AdditionalNodes {
-    pub fn new(
-        extra_id_nodes: Vec<ExtraIdNode>,
-        expanded_hadamards: Vec<ExpandedHadamard>,
-    ) -> Self {
-        AdditionalNodes {
-            extra_id_nodes,
-            expanded_hadamards,
-        }
-    }
-
     pub fn empty() -> Self {
         AdditionalNodes {
             extra_id_nodes: Vec::new(),
@@ -169,7 +158,6 @@ fn euler_expand_edges(d: &mut Diagram) -> Vec<ExpandedHadamard> {
             r2_node: w2,
             r3_node: w3,
             origin: v,
-            flipped_decomposition: flip,
         });
     }
 
