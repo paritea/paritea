@@ -53,18 +53,22 @@ impl AdditionalNodes {
 
     fn remove_extra_id_node(
         adj: &mut HashMap<NodeIndex, HashMap<NodeIndex, bool>>,
-        web: &mut HashMap<(NodeIndex, NodeIndex), Pauli>,
+        webs: &mut Vec<HashMap<(NodeIndex, NodeIndex), Pauli>>,
         id_node: ExtraIdNode,
     ) {
         let (v1, v2) = adj[&id_node.node].keys().copied().collect_tuple().unwrap();
-        web.insert(
-            upair(v1, v2),
-            *web.get(&upair(v1, id_node.node)).unwrap_or(&Pauli::I),
-        );
+        for web in webs.iter_mut() {
+            web.insert(
+                upair(v1, v2),
+                *web.get(&upair(v1, id_node.node)).unwrap_or(&Pauli::I),
+            );
+        }
         adj.get_mut(&v1).unwrap().insert(v2, true);
         adj.get_mut(&v2).unwrap().insert(v1, true);
-        web.remove(&upair(v1, id_node.node));
-        web.remove(&upair(id_node.node, v2));
+        for web in webs.iter_mut() {
+            web.remove(&upair(v1, id_node.node));
+            web.remove(&upair(id_node.node, v2));
+        }
         adj.get_mut(&v1).unwrap().remove(&id_node.node);
         adj.get_mut(&id_node.node).unwrap().remove(&v1);
         adj.get_mut(&id_node.node).unwrap().remove(&v2);
@@ -73,7 +77,7 @@ impl AdditionalNodes {
 
     fn remove_expanded_hadamard(
         adj: &mut HashMap<NodeIndex, HashMap<NodeIndex, bool>>,
-        web: &mut HashMap<(NodeIndex, NodeIndex), Pauli>,
+        webs: &mut Vec<HashMap<(NodeIndex, NodeIndex), Pauli>>,
         hadamard: ExpandedHadamard,
     ) {
         let (w1, w2, w3) = (hadamard.r1_node, hadamard.r2_node, hadamard.r3_node);
@@ -81,14 +85,16 @@ impl AdditionalNodes {
         let l = if w1_right == w2 { w1_left } else { w1_right };
         let (w3_left, w3_right) = adj[&w3].keys().copied().collect_tuple().unwrap();
         let r = if w3_left == w2 { w3_right } else { w3_left };
-        web.insert(
-            upair(l, hadamard.origin),
-            *web.get(&upair(l, w1)).unwrap_or(&Pauli::I),
-        );
-        web.insert(
-            upair(hadamard.origin, r),
-            *web.get(&upair(w3, r)).unwrap_or(&Pauli::I),
-        );
+        for web in webs.iter_mut() {
+            web.insert(
+                upair(l, hadamard.origin),
+                *web.get(&upair(l, w1)).unwrap_or(&Pauli::I),
+            );
+            web.insert(
+                upair(hadamard.origin, r),
+                *web.get(&upair(w3, r)).unwrap_or(&Pauli::I),
+            );
+        }
         if !adj.contains_key(&hadamard.origin) {
             adj.insert(hadamard.origin, HashMap::new());
         }
@@ -96,10 +102,12 @@ impl AdditionalNodes {
         adj.get_mut(&hadamard.origin).unwrap().insert(l, true);
         adj.get_mut(&r).unwrap().insert(hadamard.origin, true);
         adj.get_mut(&hadamard.origin).unwrap().insert(r, true);
-        web.remove(&upair(l, w1));
-        web.remove(&upair(w1, w2));
-        web.remove(&upair(w2, w3));
-        web.remove(&upair(w3, r));
+        for web in webs.iter_mut() {
+            web.remove(&upair(l, w1));
+            web.remove(&upair(w1, w2));
+            web.remove(&upair(w2, w3));
+            web.remove(&upair(w3, r));
+        }
         adj.get_mut(&l).unwrap().remove(&w1);
         adj.get_mut(&w1).unwrap().remove(&l);
         adj.get_mut(&w1).unwrap().remove(&w2);
@@ -110,16 +118,16 @@ impl AdditionalNodes {
         adj.get_mut(&r).unwrap().remove(&w3);
     }
 
-    pub fn remove_from(&self, d: &Diagram, web: &mut HashMap<(NodeIndex, NodeIndex), Pauli>) {
+    pub fn remove_from(&self, d: &Diagram, webs: &mut Vec<HashMap<(NodeIndex, NodeIndex), Pauli>>) {
         let mut adj = d
             .node_indices()
             .map(|n| (n, d.neighbors(n).map(|m| (m, true)).collect()))
             .collect();
         for &id_node in &self.extra_id_nodes {
-            Self::remove_extra_id_node(&mut adj, web, id_node);
+            Self::remove_extra_id_node(&mut adj, webs, id_node);
         }
         for &hadamard in &self.expanded_hadamards {
-            Self::remove_expanded_hadamard(&mut adj, web, hadamard);
+            Self::remove_expanded_hadamard(&mut adj, webs, hadamard);
         }
     }
 }

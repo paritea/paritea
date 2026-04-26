@@ -71,9 +71,7 @@ fn compute(
             .map(|col| sol_row_basis.row(col).to_vec())
             .map(|v| convert_firing_assignment_to_web_prototype(&d, &ordering, v.into()))
             .collect::<Vec<_>>();
-        for web_prototype in web_prototypes.iter_mut() {
-            additional_nodes.remove_from(&d, web_prototype);
-        }
+        additional_nodes.remove_from(&d, &mut web_prototypes);
         Some(web_prototypes.into_iter().map(to_pauli_string).collect())
     };
 
@@ -101,9 +99,7 @@ fn compute(
             .into_iter()
             .map(|v| convert_firing_assignment_to_web_prototype(&d, &ordering, v.into()))
             .collect::<Vec<_>>();
-        for web_prototype in &mut web_prototypes {
-            additional_nodes.remove_from(&d, web_prototype);
-        }
+        additional_nodes.remove_from(&d, &mut web_prototypes);
         Some(web_prototypes.into_iter().map(to_pauli_string).collect())
     };
 
