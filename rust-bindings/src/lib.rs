@@ -82,13 +82,21 @@ mod _bindings {
         rs_to_py_edges: &HashMap<EdgeIndex, usize>,
     ) -> Bound<'py, PyAny> {
         let m = py.import("paritea.pauli").unwrap();
-        let class = m.getattr("PauliString").unwrap();
+        let string_class = m.getattr("PauliString").unwrap();
+        let pauli_class = m.getattr("Pauli").unwrap();
         let dict = PyDict::new(py);
         for (e, p) in ps {
-            dict.set_item(rs_to_py_edges[&e], format!("{:?}", p))
+            let p_py_str = match p {
+                paritea::pauli::Pauli::I => "I",
+                paritea::pauli::Pauli::X => "X",
+                paritea::pauli::Pauli::Y => "Y",
+                paritea::pauli::Pauli::Z => "Z",
+            };
+
+            dict.set_item(rs_to_py_edges[&e], pauli_class.call1((p_py_str,)).unwrap())
                 .unwrap();
         }
-        let string = class.call1((dict,)).unwrap();
+        let string = string_class.call1((dict,)).unwrap();
         string
     }
 
