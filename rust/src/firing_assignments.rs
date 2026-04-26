@@ -1,7 +1,7 @@
 use crate::diagram::{Diagram, NodeType};
 use crate::pauli::Pauli;
 use crate::util::upair;
-use bitgauss::{BitMatrix, BitVec};
+use bitgauss::BitMatrix;
 use rustworkx_core::petgraph::graph::NodeIndex;
 use std::collections::{HashMap, HashSet};
 
@@ -76,32 +76,26 @@ pub fn determine_ordering(d: &Diagram) -> GraphOrdering {
 pub fn create_firing_verification(d: &Diagram, ordering: &GraphOrdering) -> BitMatrix {
     let num_z_boundaries = ordering.z_boundaries.len();
     let num_non_boundary_spiders = num_z_boundaries + ordering.internal_spiders.len();
-    let mut adj_matrix = BitMatrix::zeros(num_non_boundary_spiders, num_non_boundary_spiders);
-
-    for (s, t) in d.edge_list() {
-        if d.node_type(s) != NodeType::B && d.node_type(t) != NodeType::B {
-            adj_matrix.set_bit(ordering.ord(s), ordering.ord(t), true);
-            adj_matrix.set_bit(ordering.ord(t), ordering.ord(s), true);
-        }
-    }
 
     let (rows, cols) = (
         num_non_boundary_spiders,
         num_non_boundary_spiders + num_z_boundaries,
     );
     let mut m_d = BitMatrix::zeros(rows, cols);
+    // Init with identity, padded down and right with zeros
     for i in 0..num_z_boundaries {
         m_d.set_bit(i, i, true);
     }
-    for i_row in 0..num_non_boundary_spiders {
-        for i_col in 0..num_non_boundary_spiders {
-            m_d.set_bit(
-                i_row,
-                i_col + num_z_boundaries,
-                adj_matrix.bit(i_row, i_col),
-            );
+    // Store adjacency matrix to the right of the identity
+    for (s, t) in d.edge_list() {
+        if d.node_type(s) != NodeType::B && d.node_type(t) != NodeType::B {
+            let i_row = ordering.ord(s);
+            let i_col = ordering.ord(t);
+            m_d.set_bit(i_row, i_col + num_z_boundaries, true);
+            m_d.set_bit(i_col, i_row + num_z_boundaries, true);
         }
     }
+    // Subtract identity for pi/2 spiders in the bottom right corner
     let num_pi_2 = ordering.pi_2_spiders.len();
     for i_row in 0..num_pi_2 {
         for i_col in 0..num_pi_2 {
