@@ -19,9 +19,9 @@ dependencies = [
 ]
 
 [dependency-groups]
-all = [
+dev = [
     { include-group = "bench" },
-    { include-group = "dev" },
+    { include-group = "lint" },
     { include-group = "test" },
 ]
 
@@ -29,7 +29,7 @@ bench = [
     "pyinstrument>=5.1.1",
 ]
 
-dev = [
+lint = [
     "pre-commit>=4.5.1",
     "ruff==0.14.9", # Pinned to ensure everyone uses the same rules
 ]

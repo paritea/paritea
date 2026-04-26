@@ -1377,16 +1377,16 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-all = [
+bench = [
+    { name = "pyinstrument" },
+]
+dev = [
     { name = "pre-commit" },
     { name = "pyinstrument" },
     { name = "pytest" },
     { name = "ruff" },
 ]
-bench = [
-    { name = "pyinstrument" },
-]
-dev = [
+lint = [
     { name = "pre-commit" },
     { name = "ruff" },
 ]
@@ -1408,14 +1408,14 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-all = [
+bench = [{ name = "pyinstrument", specifier = ">=5.1.1" }]
+dev = [
     { name = "pre-commit", specifier = ">=4.5.1" },
     { name = "pyinstrument", specifier = ">=5.1.1" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "ruff", specifier = "==0.14.9" },
 ]
-bench = [{ name = "pyinstrument", specifier = ">=5.1.1" }]
-dev = [
+lint = [
     { name = "pre-commit", specifier = ">=4.5.1" },
     { name = "ruff", specifier = "==0.14.9" },
 ]
