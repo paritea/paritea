@@ -142,7 +142,7 @@ def test_rotated_surface_code_shor(code_size, repeat, assert_pauli_webs):
     d, partitions = generate.shor_extraction(
         generate.rotated_planar_surface_code_stabilisers(code_size),
         qubits=code_size**2,
-        repeat=10,
+        repeat=repeat,
         partition=True,
     )
 
