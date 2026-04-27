@@ -2,14 +2,15 @@ use crate::diagram::{Diagram, NodeType};
 use crate::pauli::Pauli;
 use crate::util::upair;
 use bitgauss::BitMatrix;
+use rustc_hash::FxHashMap;
 use rustworkx_core::petgraph::graph::NodeIndex;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 pub struct GraphOrdering {
-    graph_to_ordering: HashMap<NodeIndex, usize>,
-    ordering_to_graph: HashMap<usize, NodeIndex>,
+    graph_to_ordering: FxHashMap<NodeIndex, usize>,
+    ordering_to_graph: FxHashMap<usize, NodeIndex>,
 
-    pub z_boundaries: HashMap<NodeIndex, NodeIndex>,
+    pub z_boundaries: FxHashMap<NodeIndex, NodeIndex>,
     pub internal_spiders: Vec<NodeIndex>,
     pub pi_2_spiders: Vec<NodeIndex>,
 }
@@ -29,7 +30,7 @@ pub fn determine_ordering(d: &Diagram) -> GraphOrdering {
     let z_boundaries = boundaries
         .iter()
         .map(|&b| (d.neighbors(b).next().unwrap(), b))
-        .collect::<HashMap<_, _>>();
+        .collect::<FxHashMap<_, _>>();
     let internal_spiders = d
         .node_indices()
         .collect::<HashSet<_>>()
@@ -45,8 +46,8 @@ pub fn determine_ordering(d: &Diagram) -> GraphOrdering {
         .copied()
         .collect::<HashSet<_>>();
 
-    let mut graph_to_ordering: HashMap<NodeIndex, usize> = HashMap::new();
-    let mut ordering_to_graph: HashMap<usize, NodeIndex> = HashMap::new();
+    let mut graph_to_ordering: FxHashMap<NodeIndex, usize> = FxHashMap::default();
+    let mut ordering_to_graph: FxHashMap<usize, NodeIndex> = FxHashMap::default();
     let mut idx = 0;
     for boundary in z_boundaries.keys() {
         graph_to_ordering.insert(*boundary, idx);
@@ -109,8 +110,8 @@ pub fn convert_firing_assignment_to_web_prototype(
     d: &Diagram,
     ordering: &GraphOrdering,
     v: Vec<bool>,
-) -> HashMap<(NodeIndex, NodeIndex), Pauli> {
-    let mut prot = HashMap::new(); // TODO defaultdict
+) -> FxHashMap<(NodeIndex, NodeIndex), Pauli> {
+    let mut prot = FxHashMap::default(); // TODO defaultdict
 
     for (&adj_vertex, &g_vertex) in ordering.ordering_to_graph.iter() {
         let g_type = d.node_type(g_vertex);

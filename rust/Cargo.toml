@@ -12,6 +12,7 @@ missing_docs = "warn"
 [dependencies]
 itertools = { workspace = true }
 rustworkx-core = { workspace = true }
+rustc-hash = { workspace = true }
 bitgauss = "0.3.4"
 delegate = "0.13.5"
 fraction = "0.15.4"

@@ -8,6 +8,7 @@ members = [
 [workspace.dependencies]
 rustworkx-core = "0.17.1"
 itertools = "0.14.0"
+rustc-hash = "2.1.2"
 derive_more = { version = "2", features = ["display", "from"] }
 
 [profile.dev-py]

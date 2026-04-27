@@ -328,6 +328,7 @@ dependencies = [
  "derive_more",
  "fraction",
  "itertools",
+ "rustc-hash",
  "rustworkx-core",
 ]
 

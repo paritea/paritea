@@ -6,9 +6,9 @@ use crate::web::firing_assignments::{
 use crate::web::red_green::to_red_green_form;
 use bitgauss::BitMatrix;
 use itertools::Itertools;
+use rustc_hash::FxHashMap;
 use rustworkx_core::petgraph::graph::NodeIndex;
 use rustworkx_core::petgraph::prelude::EdgeRef;
-use std::collections::HashMap;
 use std::ops::Mul;
 
 /// Performs full stabiliser and detecting region computation, depending on the given flags.
@@ -23,7 +23,7 @@ pub fn compute(
         panic!("This function does not accept diagrams with virtual IO!"); // TODO result
     }
 
-    let to_pauli_string = |prototype: HashMap<(NodeIndex, NodeIndex), Pauli>| -> PauliString {
+    let to_pauli_string = |prototype: FxHashMap<(NodeIndex, NodeIndex), Pauli>| -> PauliString {
         prototype
             .into_iter()
             .map(|(edge, p)| {

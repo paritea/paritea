@@ -1,5 +1,5 @@
+use rustc_hash::FxHashMap;
 use rustworkx_core::petgraph::graph::EdgeIndex;
-use std::collections::HashMap;
 use std::ops::Mul;
 use std::ops::MulAssign;
 
@@ -42,4 +42,4 @@ impl MulAssign for Pauli {
     }
 }
 
-pub type PauliString = HashMap<EdgeIndex, Pauli>;
+pub type PauliString = FxHashMap<EdgeIndex, Pauli>;
