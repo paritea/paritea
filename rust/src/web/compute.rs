@@ -36,7 +36,8 @@ pub fn compute(
                     p,
                 )
             })
-            .collect()
+            .collect::<FxHashMap<_, _>>()
+            .into()
     };
 
     let mut d = diagram.clone();

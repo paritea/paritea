@@ -1,10 +1,13 @@
+use crate::diagram::NodeType::B;
 use delegate::delegate;
 use fraction::Fraction;
+use itertools::Itertools;
 use rustworkx_core::graph_ext::HasParallelEdgesUndirected;
 use rustworkx_core::petgraph::Undirected;
 use rustworkx_core::petgraph::graph::{EdgeIndex, NodeIndex};
 use rustworkx_core::petgraph::prelude::StableUnGraph;
-use rustworkx_core::petgraph::stable_graph::EdgesConnecting;
+use rustworkx_core::petgraph::stable_graph::{Edges, EdgesConnecting};
+use std::collections::{BTreeSet, HashMap};
 
 pub type Phase = Fraction;
 
@@ -32,12 +35,52 @@ impl NodeData {
 #[derive(Debug, Clone, Default)]
 pub struct Diagram {
     graph: StableUnGraph<NodeData, ()>,
+    io: (Vec<NodeIndex>, Vec<NodeIndex>),
     is_io_virtual: bool,
 }
 
 impl Diagram {
     pub fn is_io_virtual(&self) -> bool {
         self.is_io_virtual
+    }
+
+    /// Sets the boundary node indices regarded as inputs / outputs. Their order directly determines
+    /// their index through isomorphic conversion to a states outputs, i.e. they are indexed as
+    /// <...all-inputs><...all-outputs>.
+    pub fn set_virtual_io(&mut self, inputs: Vec<NodeIndex>, outputs: Vec<NodeIndex>) {
+        let boundaries = BTreeSet::from_iter(self.boundary_nodes());
+        if boundaries.len() > 0 {
+            panic!("Graph may not contain any boundaries when setting virtual IO!");
+        }
+
+        self.io = (inputs, outputs);
+        self.is_io_virtual = true;
+    }
+
+    pub fn realize_io(&mut self) -> (Vec<NodeIndex>, Vec<NodeIndex>) {
+        if !self.is_io_virtual {
+            return self.io.clone();
+        };
+
+        let (inputs, outputs) = self.io.clone();
+
+        let mut new_inputs = Vec::new();
+        for &inp in inputs.iter() {
+            let new_inp = self.add_node(NodeData::from_type(B));
+            new_inputs.push(new_inp);
+            self.add_edge(inp, new_inp);
+        }
+        let mut new_outputs = Vec::new();
+        for &out in outputs.iter() {
+            let new_out = self.add_node(NodeData::from_type(B));
+            new_outputs.push(new_out);
+            self.add_edge(out, new_out);
+        }
+
+        self.io = (new_inputs.clone(), new_outputs.clone());
+        self.is_io_virtual = false;
+
+        (new_inputs, new_outputs)
     }
 
     pub fn node_type(&self, node: NodeIndex) -> NodeType {
@@ -85,6 +128,23 @@ impl Diagram {
             .filter(|&e| self.graph[e].0 == NodeType::B)
     }
 
+    pub fn subgraph(
+        &self,
+        nodes: impl IntoIterator<Item = NodeIndex>,
+    ) -> (Self, HashMap<NodeIndex, NodeIndex>) {
+        let mut outgraph = Self::default();
+        let node_map: HashMap<NodeIndex, NodeIndex> = nodes
+            .into_iter()
+            .map(|n| (n, outgraph.add_node(self.graph[n].clone())))
+            .collect();
+        for (a, b) in self.edge_list() {
+            if let (Some(&a_sub), Some(&b_sub)) = (node_map.get(&a), node_map.get(&b)) {
+                outgraph.add_edge(a_sub, b_sub);
+            }
+        }
+        (outgraph, node_map)
+    }
+
     delegate! {
         to self.graph {
             pub fn node_count(&self) -> usize;
@@ -93,7 +153,10 @@ impl Diagram {
             pub fn remove_node(&mut self, n: NodeIndex);
             pub fn neighbors(&self, a: NodeIndex) -> impl Iterator<Item=NodeIndex>;
             pub fn edge_count(&self) -> usize;
+            pub fn edges(&self, a: NodeIndex) -> Edges<'_, (), Undirected>;
             pub fn edges_connecting(&self, a: NodeIndex, b: NodeIndex) -> EdgesConnecting<(), Undirected>;
+            pub fn edge_indices(&self) -> impl Iterator<Item=EdgeIndex>;
+            pub fn edge_endpoints(&self, e: EdgeIndex) -> Option<(NodeIndex, NodeIndex)>;
             pub fn remove_edge(&mut self, e: EdgeIndex);
             pub fn has_parallel_edges(&self) -> bool;
         }

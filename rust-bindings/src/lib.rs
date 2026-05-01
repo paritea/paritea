@@ -10,10 +10,11 @@ mod _bindings {
     use paritea::diagram::{Diagram, NodeData, NodeType, Phase};
     use paritea::pauli::PauliString;
     use paritea::web::compute::compute;
+    use paritea::web::partition::pauli_webs_through_partitions;
     use pyo3::prelude::*;
     use pyo3::types::PyDict;
     use rustworkx_core::petgraph::graph::{EdgeIndex, NodeIndex};
-    use std::collections::HashMap;
+    use std::collections::{BTreeSet, HashMap};
 
     fn _to_rs_diagram(d: Bound<'_, PyAny>) -> (Diagram, HashMap<EdgeIndex, usize>) {
         let mut nd = Diagram::default();
@@ -85,7 +86,7 @@ mod _bindings {
         let string_class = m.getattr("PauliString").unwrap();
         let pauli_class = m.getattr("Pauli").unwrap();
         let dict = PyDict::new(py);
-        for (e, p) in ps {
+        for (e, p) in ps.0 {
             let p_py_str = match p {
                 paritea::pauli::Pauli::I => "I",
                 paritea::pauli::Pauli::X => "X",
@@ -127,6 +128,34 @@ mod _bindings {
                     .map(|r| _to_py_string(py, r, &rs_to_py_edges))
                     .collect()
             }),
+        ))
+    }
+
+    #[pyfunction]
+    #[pyo3(signature = (diagram, *, partitions))]
+    fn _compute_pauli_webs_through_partitions<'py>(
+        diagram: Bound<'py, PyAny>,
+        partitions: Vec<Vec<usize>>,
+    ) -> PyResult<(Vec<Bound<'py, PyAny>>, Vec<Bound<'py, PyAny>>)> {
+        let py = diagram.py();
+        let (nd, rs_to_py_edges) = _to_rs_diagram(diagram);
+        let (stabs, regions) = pauli_webs_through_partitions(
+            &nd,
+            partitions
+                .into_iter()
+                .map(|nodes| BTreeSet::from_iter(nodes.into_iter().map(|n| NodeIndex::new(n))))
+                .collect(),
+        );
+
+        Ok((
+            stabs
+                .into_iter()
+                .map(|s| _to_py_string(py, s, &rs_to_py_edges))
+                .collect(),
+            regions
+                .into_iter()
+                .map(|r| _to_py_string(py, r, &rs_to_py_edges))
+                .collect(),
         ))
     }
 }

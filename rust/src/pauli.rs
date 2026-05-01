@@ -1,5 +1,9 @@
+use bitgauss::{BitMatrix, BitVec};
+use derive_more::From;
+use derive_more::with_trait::Index;
 use rustc_hash::FxHashMap;
 use rustworkx_core::petgraph::graph::EdgeIndex;
+use std::collections::BTreeSet;
 use std::ops::Mul;
 use std::ops::MulAssign;
 
@@ -42,4 +46,58 @@ impl MulAssign for Pauli {
     }
 }
 
-pub type PauliString = FxHashMap<EdgeIndex, Pauli>;
+#[derive(Default, Clone, From, Index)]
+pub struct PauliString(#[from] pub FxHashMap<EdgeIndex, Pauli>);
+
+impl PauliString {
+    pub fn is_trivial(&self) -> bool {
+        self.0.values().all(|&p| p == Pauli::I)
+    }
+
+    pub fn restrict(&self, edges: &Vec<EdgeIndex>) -> Self {
+        Self(
+            edges
+                .iter()
+                .copied()
+                .filter_map(|e| self.0.get(&e).map(|p| (e, *p)))
+                .collect(),
+        )
+    }
+
+    pub fn compile(&self, idx_map: &FxHashMap<EdgeIndex, usize>) -> BitMatrix {
+        let num_indices = idx_map.len();
+        let mut matrix = BitMatrix::zeros(num_indices, 1);
+        for (e, &p) in &self.0 {
+            if p == Pauli::Z || p == Pauli::Y {
+                matrix.set_bit(idx_map[e], 0, true);
+            }
+            if p == Pauli::X || p == Pauli::Y {
+                matrix.set_bit(idx_map[e] + num_indices, 0, true);
+            }
+        }
+
+        matrix
+    }
+}
+
+impl Mul<Self> for PauliString {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let my_keys = self.0.keys().copied().collect::<BTreeSet<_>>();
+        let rhs_keys = rhs.0.keys().copied().collect::<BTreeSet<_>>();
+        let mut product = FxHashMap::from_iter(
+            my_keys
+                .symmetric_difference(&rhs_keys)
+                .map(|e| (*e, *self.0.get(e).or(rhs.0.get(e)).unwrap())),
+        );
+        for k in my_keys.intersection(&rhs_keys) {
+            let result = self[k] * rhs[k];
+            if result != Pauli::I {
+                product.insert(*k, result);
+            }
+        }
+
+        PauliString(product)
+    }
+}
