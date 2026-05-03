@@ -140,6 +140,7 @@ class CircuitBuilder[CostT]:
                 raise NotImplementedError(f"Unknown basis: {basis}")
 
     def append_measure_comp(self, qs: Iterable[int]) -> list[int]:
+        """Appends a measurement in the computational basis postselected to |0>."""
         return self.append_measure(qs, PauliBasis.Z)
 
     def append_reset(self, qs: Iterable[int], basis: PauliBasis) -> list[int]:
@@ -158,6 +159,7 @@ class CircuitBuilder[CostT]:
         return nodes
 
     def append_reset_zero(self, qs: Iterable[int]) -> list[int]:
+        """Appends a reset into |0>."""
         return self.append_reset(qs, PauliBasis.Z)
 
     def append_x(self, qs: Iterable[int]) -> list[int]:
