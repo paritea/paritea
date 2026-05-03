@@ -111,6 +111,9 @@ class CircuitBuilder[CostT]:
             new_nodes.append(c_node)
             new_nodes.append(t_node)
 
+        for prot, cost in self._noise_model_builder.for_two_q(cts):
+            self._queue_for_edge_replacement(prot, cost)
+
         return new_nodes
 
     def append_measure(self, qs: Iterable[int], n_type: NodeType) -> list[int]:
