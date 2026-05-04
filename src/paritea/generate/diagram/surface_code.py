@@ -1,5 +1,5 @@
 # The code in this file is directly derived from generators in https://github.com/quantumlib/Stim, with open boundaries,
-# translated to Python. See https://github.com/quantumlib/Stim/blob/main/LICENSE for license details.
+# translated to Python. See https://github.com/quantumlib/Stim/blob/main/LICENSE for licence details.
 # Details on the stabiliser measurement cycles etc. can be found in https://arxiv.org/pdf/1404.3747.
 
 from itertools import chain
