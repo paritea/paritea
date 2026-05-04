@@ -27,7 +27,7 @@ fn find_webs(
     )
 }
 
-fn _zip_webs(
+pub fn zip_webs(
     cur_stabs: Vec<PauliString>,
     next_stabs: Vec<PauliString>,
     zipped_edges: Vec<EdgeIndex>,
@@ -61,8 +61,7 @@ fn _zip_webs(
 
     // Compute matchings over shared edges
     let all_compiled =
-        BitMatrix::hstack_from_iter(cur_stabs_compiled.iter().chain(next_stabs_compiled.iter()))
-            .transposed();
+        BitMatrix::hstack_from_iter(cur_stabs_compiled.iter().chain(next_stabs_compiled.iter()));
     // Row-matrix of combination vectors for valid matches
     let solutions = BitMatrix::vstack_from_iter(&all_compiled.nullspace());
 
@@ -73,20 +72,10 @@ fn _zip_webs(
             .chain(next_stabs_boundary_compiled.iter()),
     );
     let boundary_solutions = &solutions * &all_boundary_compiled;
-    let mut stacked = boundary_solutions.hstack(&BitMatrix::identity(boundary_solutions.rows()));
-    stacked.gauss(true);
-    // basis_change = stacked.row_reduce()[:, -len(boundary_solutions) :]
-    let basis_change = BitMatrix::from_bool_vec(
-        &(0..stacked.rows())
-            .map(|i| {
-                stacked
-                    .row(i)
-                    .iter()
-                    .dropping(stacked.cols() - boundary_solutions.rows())
-                    .collect_vec()
-            })
-            .collect_vec(),
-    );
+    let mut proxy = BitMatrix::identity(boundary_solutions.rows());
+    let mut stacked = boundary_solutions.clone();
+    stacked.gauss_with_proxy(true, 1, &mut proxy);
+    let basis_change = proxy;
     let solutions_basis_changed = &basis_change * &solutions;
 
     // Extract webs from matching information
@@ -103,7 +92,7 @@ fn _zip_webs(
         // Activate current stabilisers (the first `cur_stabs.len()` entries of the solution)
         for (idx, &activated) in enumerate(solution.iter().take(cur_stabs.len())) {
             if activated {
-                next_web = next_web * cur_stabs[idx].clone()
+                next_web = next_web * &cur_stabs[idx]
             }
         }
 
@@ -111,11 +100,11 @@ fn _zip_webs(
         let shared_edges = next_web.restrict(&zipped_edges);
         for (idx, &activated) in enumerate(solution.iter().dropping(cur_stabs.len())) {
             if activated {
-                next_web = next_web * next_stabs[idx].clone()
+                next_web = next_web * &next_stabs[idx]
             }
         }
         // Reapply action on shared edges since they cancelled out previously
-        next_web = next_web * shared_edges;
+        next_web = next_web * &shared_edges;
 
         if next_web.restrict(&new_boundaries).is_trivial() {
             new_regions.push(next_web);
@@ -181,7 +170,7 @@ pub fn pauli_webs_through_partitions(
                     continue;
                 };
 
-                io_nodes.push(node);
+                io_nodes.push((node, e.id()));
                 if cut_edges.contains_key(&e.id()) {
                     let neighbour_id = cut_edges[&e.id()];
                     let neighbour = &mut sg_trackers[neighbour_id];
@@ -194,7 +183,10 @@ pub fn pauli_webs_through_partitions(
             }
         }
 
-        subgraph.set_virtual_io(vec![], io_nodes.iter().map(|n| node_map[n]).collect_vec());
+        subgraph.set_virtual_io(
+            vec![],
+            io_nodes.iter().map(|&n| node_map[&n.0]).collect_vec(),
+        );
 
         let mut edge_map = HashMap::<EdgeIndex, EdgeIndex>::new();
         for se in subgraph.edge_indices() {
@@ -209,7 +201,7 @@ pub fn pauli_webs_through_partitions(
         }
 
         let (_, real_sub_outputs) = subgraph.realize_io();
-        for (&b, &d_edge) in real_sub_outputs.iter().zip(tracker.inc_edges.keys()) {
+        for (&b, &(_, d_edge)) in real_sub_outputs.iter().zip(io_nodes.iter()) {
             edge_map.insert(subgraph.edges(b).next().unwrap().id(), d_edge);
         }
         sg_trackers.push(tracker);
@@ -270,7 +262,7 @@ pub fn pauli_webs_through_partitions(
         };
 
         let (neighbour_stabs, neighbour_regions) = webs[neighbour_id].clone();
-        let (nex_stabs, nex_regions) = _zip_webs(
+        let (nex_stabs, nex_regions) = zip_webs(
             cur_stabs,
             neighbour_stabs,
             edges_to_neighbour,

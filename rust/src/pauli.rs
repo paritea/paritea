@@ -1,8 +1,9 @@
-use bitgauss::{BitMatrix, BitVec};
+use bitgauss::BitMatrix;
 use derive_more::From;
 use derive_more::with_trait::Index;
 use rustc_hash::FxHashMap;
 use rustworkx_core::petgraph::graph::EdgeIndex;
+use std::borrow::Borrow;
 use std::collections::BTreeSet;
 use std::ops::Mul;
 use std::ops::MulAssign;
@@ -46,7 +47,7 @@ impl MulAssign for Pauli {
     }
 }
 
-#[derive(Default, Clone, From, Index)]
+#[derive(Default, Debug, Clone, From, Index)]
 pub struct PauliString(#[from] pub FxHashMap<EdgeIndex, Pauli>);
 
 impl PauliString {
@@ -66,7 +67,7 @@ impl PauliString {
 
     pub fn compile(&self, idx_map: &FxHashMap<EdgeIndex, usize>) -> BitMatrix {
         let num_indices = idx_map.len();
-        let mut matrix = BitMatrix::zeros(num_indices, 1);
+        let mut matrix = BitMatrix::zeros(num_indices * 2, 1);
         for (e, &p) in &self.0 {
             if p == Pauli::Z || p == Pauli::Y {
                 matrix.set_bit(idx_map[e], 0, true);
@@ -80,10 +81,14 @@ impl PauliString {
     }
 }
 
-impl Mul<Self> for PauliString {
-    type Output = Self;
+impl<S> Mul<S> for &PauliString
+where
+    S: Borrow<PauliString>,
+{
+    type Output = PauliString;
 
-    fn mul(self, rhs: Self) -> Self::Output {
+    fn mul(self, rhs: S) -> Self::Output {
+        let rhs = rhs.borrow();
         let my_keys = self.0.keys().copied().collect::<BTreeSet<_>>();
         let rhs_keys = rhs.0.keys().copied().collect::<BTreeSet<_>>();
         let mut product = FxHashMap::from_iter(
@@ -99,5 +104,16 @@ impl Mul<Self> for PauliString {
         }
 
         PauliString(product)
+    }
+}
+
+impl<S> Mul<S> for PauliString
+where
+    S: Borrow<Self>,
+{
+    type Output = Self;
+
+    fn mul(self, rhs: S) -> Self::Output {
+        &self * rhs
     }
 }
