@@ -70,7 +70,8 @@ pub fn zip_webs(
         cur_stabs_boundary_compiled
             .iter()
             .chain(next_stabs_boundary_compiled.iter()),
-    );
+    )
+    .transposed();
     let boundary_solutions = &solutions * &all_boundary_compiled;
     let mut proxy = BitMatrix::identity(boundary_solutions.rows());
     let mut stacked = boundary_solutions.clone();
