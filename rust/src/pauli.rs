@@ -1,6 +1,7 @@
 use bitgauss::BitMatrix;
 use derive_more::From;
 use derive_more::with_trait::Index;
+use itertools::Itertools;
 use rustc_hash::FxHashMap;
 use rustworkx_core::petgraph::graph::EdgeIndex;
 use std::borrow::Borrow;
@@ -91,17 +92,19 @@ where
         let rhs = rhs.borrow();
         let my_keys = self.0.keys().copied().collect::<BTreeSet<_>>();
         let rhs_keys = rhs.0.keys().copied().collect::<BTreeSet<_>>();
-        let mut product = FxHashMap::from_iter(
+        let product = FxHashMap::from_iter(
             my_keys
                 .symmetric_difference(&rhs_keys)
-                .map(|e| (*e, *self.0.get(e).or(rhs.0.get(e)).unwrap())),
+                .map(|e| (*e, *self.0.get(e).or(rhs.0.get(e)).unwrap()))
+                .chain(my_keys.intersection(&rhs_keys).filter_map(|k| {
+                    let result = self[k] * rhs[k];
+                    if result != Pauli::I {
+                        Some((*k, result))
+                    } else {
+                        None
+                    }
+                })),
         );
-        for k in my_keys.intersection(&rhs_keys) {
-            let result = self[k] * rhs[k];
-            if result != Pauli::I {
-                product.insert(*k, result);
-            }
-        }
 
         PauliString(product)
     }
