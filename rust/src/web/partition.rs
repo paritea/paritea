@@ -27,7 +27,7 @@ fn find_webs(
     )
 }
 
-pub fn zip_webs(
+fn zip_webs(
     cur_stabs: Vec<PauliString>,
     next_stabs: Vec<PauliString>,
     zipped_edges: Vec<EdgeIndex>,
@@ -72,11 +72,9 @@ pub fn zip_webs(
             .chain(next_stabs_boundary_compiled.iter()),
     )
     .transposed();
-    let boundary_solutions = &solutions * &all_boundary_compiled;
-    let mut proxy = BitMatrix::identity(boundary_solutions.rows());
-    let mut stacked = boundary_solutions.clone();
-    stacked.gauss_with_proxy(true, 1, &mut proxy);
-    let basis_change = proxy;
+    let mut boundary_solutions = &solutions * &all_boundary_compiled;
+    let mut basis_change = BitMatrix::identity(boundary_solutions.rows());
+    boundary_solutions.gauss_with_proxy(true, 1, &mut basis_change);
     let solutions_basis_changed = &basis_change * &solutions;
 
     // Extract webs from matching information
