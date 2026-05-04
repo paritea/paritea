@@ -28,13 +28,13 @@ fn find_webs(
 }
 
 fn zip_webs(
-    cur_stabs: Vec<PauliString>,
-    next_stabs: Vec<PauliString>,
-    zipped_edges: Vec<EdgeIndex>,
-    new_boundaries: Vec<EdgeIndex>,
+    cur_stabs: &Vec<PauliString>,
+    next_stabs: &Vec<PauliString>,
+    zipped_edges: BTreeSet<EdgeIndex>,
+    new_boundaries: BTreeSet<EdgeIndex>,
 ) -> (Vec<PauliString>, Vec<PauliString>) {
     // Prepare and compile stabilisers for both subdiagrams
-    let zip_idx_map = HashMap::from_iter(enumerate(zipped_edges.clone()).map(|(i, e)| (e, i)));
+    let zip_idx_map = HashMap::from_iter(enumerate(&zipped_edges).map(|(i, &e)| (e, i)));
     let boundary_idx_map =
         HashMap::from_iter(enumerate(new_boundaries.clone()).map(|(i, e)| (e, i)));
     let cur_stabs_compiled = cur_stabs
@@ -219,30 +219,25 @@ pub fn pauli_webs_through_partitions(
     }
 
     // Find webs for all subdiagrams
-    let webs = subgraphs
+    let (stabilisers, regions) = subgraphs
         .into_iter()
         .map(|(d, edge_map)| find_webs(&d, edge_map))
-        .collect_vec();
+        .unzip::<_, _, Vec<_>, Vec<_>>();
 
     // Zip all webs together
-    let (mut cur_stabs, mut cur_regions) = webs[0].clone();
     let main_tracker_id = 0;
+    let mut cur_stabs = stabilisers[main_tracker_id].clone();
+    let mut regions = regions.into_iter().flatten().collect_vec();
     while let Some(neighbour_id) = sg_trackers[main_tracker_id]
         .inc_edges
         .values()
         .find_map(|&s| s)
     {
-        let edges_to_neighbour = sg_trackers[main_tracker_id]
+        let edges_to_neighbour: BTreeSet<_> = sg_trackers[main_tracker_id]
             .inc_edges
             .iter()
-            .filter_map(|(&e, &tracker_id)| {
-                if tracker_id == Some(neighbour_id) {
-                    Some(e)
-                } else {
-                    None
-                }
-            })
-            .collect_vec();
+            .filter_map(|(&e, &tracker_id)| (tracker_id == Some(neighbour_id)).then_some(e))
+            .collect();
 
         let new_edges: HashMap<EdgeIndex, Option<usize>> = {
             let neighbour = &sg_trackers[neighbour_id];
@@ -260,19 +255,17 @@ pub fn pauli_webs_through_partitions(
                 .collect()
         };
 
-        let (neighbour_stabs, neighbour_regions) = webs[neighbour_id].clone();
         let (nex_stabs, nex_regions) = zip_webs(
-            cur_stabs,
-            neighbour_stabs,
+            &cur_stabs,
+            &stabilisers[neighbour_id],
             edges_to_neighbour,
-            new_edges.keys().copied().collect_vec(),
+            new_edges.keys().copied().collect(),
         );
         sg_trackers[main_tracker_id].inc_edges = new_edges;
 
         cur_stabs = nex_stabs;
-        cur_regions.extend(neighbour_regions);
-        cur_regions.extend(nex_regions);
+        regions.extend(nex_regions);
     }
 
-    (cur_stabs, cur_regions)
+    (cur_stabs, regions)
 }

@@ -55,7 +55,7 @@ impl PauliString {
         self.0.values().all(|&p| p == Pauli::I)
     }
 
-    pub fn restrict(&self, edges: &Vec<EdgeIndex>) -> Self {
+    pub fn restrict(&self, edges: &BTreeSet<EdgeIndex>) -> Self {
         Self(
             edges
                 .iter()
