@@ -5,7 +5,6 @@ from .stabilisers import rotated_planar_surface_code_stabilisers, steane_code_st
 
 __all__ = [
     "CircuitBuilder",
-    "CircuitBuilder",
     "NoiseModelBuilder",
     "clifford",
     "rotated_planar_surface_code_stabilisers",
