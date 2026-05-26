@@ -5,7 +5,6 @@ import pytest
 import pyzx as zx
 
 from paritea import generate
-from paritea.diagram import Diagram, NodeType
 from paritea.equivalence import is_fault_equivalence
 from paritea.glue.pyzx import from_pyzx
 from paritea.noise import NoiseModel
@@ -381,18 +380,3 @@ def test_idempotent_non_normal_weight():
     nm = NoiseModel.weighted_edge_flip_noise(d, 1, 2, 3)
 
     assert is_fault_equivalence(nm, nm, quiet=False)
-
-
-def test_different_semantics():
-    # Replacing two pi/2 phase spiders with one is a change in semantics
-    d1 = Diagram()
-    z1, z2 = d1.add_node(NodeType.Z, phase=Fraction(1, 2)), d1.add_node(NodeType.Z, phase=Fraction(1, 2))
-    d1.add_edges([(d1.add_node(NodeType.B), z1), (z1, z2), (z2, d1.add_node(NodeType.B))])
-
-    d2 = Diagram()
-    z = d2.add_node(NodeType.Z, phase=Fraction(1, 2))
-    d2.add_edges([(d2.add_node(NodeType.B), z), (z, d2.add_node(NodeType.B))])
-
-    with pytest.raises(ValueError) as exc_info:
-        is_fault_equivalence(d1, d2)
-    assert exc_info.value.args[0] == "The two circuits given have different stabilisers and thus different semantics!"

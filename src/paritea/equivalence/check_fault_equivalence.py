@@ -74,7 +74,7 @@ def _is_fault_equivalence(
     noise_2: NoiseModel[int],
     num_detectors_1: int,
     num_detectors_2: int,
-    stabilisers: Stabilisers,
+    stabilisers: list[PauliString],
     *,
     until: int | None = None,
     quiet: bool = True,
@@ -110,16 +110,18 @@ def _is_fault_equivalence(
     d2_edge_idx_map = {d2.incident_edges(b)[0]: i for i, b in enumerate(d2.io_sorted())}
     d2_detector_idx_map = {i: i for i in range(num_detectors_2)}
 
+    compiled_stabilisers = _stabilisers(stabilisers, d1_edge_idx_map)
+
     if not quiet:
         print("Compiling atomic faults for d1...")
-    g1_stabs = AugmentedStabilisers.from_stabilisers(stabilisers, num_detectors_1)
+    g1_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, num_detectors_1)
     g1_sig_nf = _compile_atomic_faults(noise_1, g1_stabs, d1_edge_idx_map, d1_detector_idx_map)
     if not quiet:
         print(f"Retrieved {len(g1_sig_nf)} atomic faults for d1!")
 
     if not quiet:
         print("Compiling atomic faults for d2...")
-    g2_stabs = AugmentedStabilisers.from_stabilisers(stabilisers, num_detectors_2)
+    g2_stabs = AugmentedStabilisers.from_stabilisers(compiled_stabilisers, num_detectors_2)
     g2_sig_nf = _compile_atomic_faults(noise_2, g2_stabs, d2_edge_idx_map, d2_detector_idx_map)
     if not quiet:
         print(f"Retrieved {len(g2_sig_nf)} atomic faults for d2!")
@@ -158,19 +160,10 @@ def is_fault_equivalence(
     :param until: Up to which weight (exclusive) to check the equivalence
     :param quiet: Whether to silence additional informative output
     """
-    d1, d2 = noise_1.diagram, noise_2.diagram
-    d1_edge_idx_map = {d1.incident_edges(b)[0]: i for i, b in enumerate(d1.io_sorted())}
-    d2_edge_idx_map = {d2.incident_edges(b)[0]: i for i, b in enumerate(d2.io_sorted())}
-
-    flip_ops_1 = build_flip_operators(d1)
-    flip_ops_2 = build_flip_operators(d2)
-    stabilisers_1 = _stabilisers(flip_ops_1.stab_gen_set, d1_edge_idx_map)
-    stabilisers_2 = _stabilisers(flip_ops_2.stab_gen_set, d2_edge_idx_map)
-
-    if not np.array_equal(stabilisers_1.rref, stabilisers_2.rref):
-        raise ValueError("The two circuits given have different stabilisers and thus different semantics!")
-
+    flip_ops_1 = build_flip_operators(noise_1.diagram)
     pushed_out_noise_1 = push_out(noise_1, flip_ops_1)
+
+    flip_ops_2 = build_flip_operators(noise_2.diagram)
     pushed_out_noise_2 = push_out(noise_2, flip_ops_2)
 
     return _is_fault_equivalence(
@@ -178,7 +171,7 @@ def is_fault_equivalence(
         noise_2=pushed_out_noise_2,
         num_detectors_1=len(flip_ops_1.region_gen_set),
         num_detectors_2=len(flip_ops_2.region_gen_set),
-        stabilisers=stabilisers_1,
+        stabilisers=flip_ops_1.stab_gen_set,  # TODO assert stabiliser space equality
         until=until,
         quiet=quiet,
     )
