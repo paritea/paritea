@@ -7,6 +7,8 @@ from .compute import compute_detecting_regions, compute_pauli_webs, compute_stab
 
 
 def row_reduce_webs(webs: list[PauliString], idx_map: dict[int, int]) -> GF2:
+    """Produces a row-reduction of the provided webs, only including the keys of the
+    index map, at the index indicated by the keys entry in the map."""
     np_stabilisers = np.zeros((len(webs), len(idx_map) * 2), dtype=int)
     for i, stab in enumerate(webs):
         np_stabilisers[i, :] = stab.restrict(idx_map.keys()).compile(idx_map)
