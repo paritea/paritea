@@ -155,7 +155,7 @@ def plot_results(json_path: str) -> None:
     ax.set_xticks(sorted({r for vals in series.values() for r in vals}))
     ax.set_title("Pauli web computation benchmark")
     ax.legend(fontsize="small", ncol=2)
-    ax.grid(True, which="both", linestyle="--", alpha=0.5)
+    ax.grid(visible=True, which="both", linestyle="--", alpha=0.5)
     fig.tight_layout()
 
     out_path = Path(json_path).with_suffix(".png")
