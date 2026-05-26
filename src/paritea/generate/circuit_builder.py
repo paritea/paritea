@@ -1,6 +1,7 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from enum import StrEnum
 from fractions import Fraction
 
 from paritea import Pauli, PauliString
@@ -22,7 +23,7 @@ class NoiseModelBuilder[CostT]:
                     yield {q: p}, cost
 
     def for_two_q(self, qs: Iterable[tuple[int, int]]) -> Iterable[tuple[dict[int, Pauli], CostT]]:
-        for (q1, q2) in qs:
+        for q1, q2 in qs:
             for (p1, p2), cost in self.two_q_cost.items():
                 yield {q1: p1, q2: p2}, cost
 
@@ -37,6 +38,12 @@ class NoiseModelBuilder[CostT]:
             for p, cost in zip((Pauli.X, Pauli.Z, Pauli.Y), self.reset_cost):
                 if cost is not None:
                     yield {q: p}, cost
+
+
+class PauliBasis(StrEnum):
+    X = "X"
+    Y = "Y"
+    Z = "Z"
 
 
 @dataclass(init=False)
@@ -80,7 +87,13 @@ class CircuitBuilder[CostT]:
             self._fault_prot_queue = [prot for i, prot in enumerate(self._fault_prot_queue) if i not in flushed_indices]
 
     def _append_single_qubit(
-        self, qs: Iterable[int], n_type: NodeType, phase: Fraction | None = None, *, connect: bool = True, offset: bool = True
+        self,
+        qs: Iterable[int],
+        n_type: NodeType,
+        phase: Fraction | None = None,
+        *,
+        connect: bool = True,
+        offset: bool = True,
     ) -> list[int]:
         new_nodes = [self.diagram.add_node(n_type, phase, x=self.row_offset, y=q) for q in qs]
         if offset:
@@ -105,24 +118,49 @@ class CircuitBuilder[CostT]:
             new_nodes.append(c_node)
             new_nodes.append(t_node)
 
+        for prot, cost in self._noise_model_builder.for_two_q(cts):
+            self._queue_for_edge_replacement(prot, cost)
+
         return new_nodes
 
-    def append_measure(self, qs: Iterable[int], n_type: NodeType) -> list[int]:
+    def append_measure(self, qs: Iterable[int], basis: PauliBasis) -> list[int]:
+        """Appends a measurement in the given basis postselected to the +1 eigenstate of
+        the basis."""
         for prot, cost in self._noise_model_builder.for_measure(qs):
             self._queue_for_edge_replacement(prot, cost)
-        return self._append_single_qubit(qs, n_type)
+
+        match basis:
+            case PauliBasis.X:
+                return self._append_single_qubit(qs, NodeType.Z)
+            case PauliBasis.Y:
+                return self._append_single_qubit(qs, NodeType.Z, phase=Fraction(-1, 2))
+            case PauliBasis.Z:
+                return self._append_single_qubit(qs, NodeType.X)
+            case _:
+                raise NotImplementedError(f"Unknown basis: {basis}")
 
     def append_measure_comp(self, qs: Iterable[int]) -> list[int]:
-        return self.append_measure(qs, NodeType.Z)
+        """Appends a measurement in the computational basis postselected to |0>."""
+        return self.append_measure(qs, PauliBasis.Z)
 
-    def append_reset(self, qs: Iterable[int], n_type: NodeType) -> list[int]:
-        nodes = self._append_single_qubit(qs, n_type, connect=False)
+    def append_reset(self, qs: Iterable[int], basis: PauliBasis) -> list[int]:
+        """Appends a reset into the +1 eigenstate of the given basis."""
+        match basis:
+            case PauliBasis.X:
+                nodes = self._append_single_qubit(qs, NodeType.Z, connect=False)
+            case PauliBasis.Y:
+                nodes = self._append_single_qubit(qs, NodeType.Z, phase=Fraction(1, 2))
+            case PauliBasis.Z:
+                nodes = self._append_single_qubit(qs, NodeType.X, connect=False)
+            case _:
+                raise NotImplementedError(f"Unknown basis: {basis}")
         for prot, cost in self._noise_model_builder.for_reset(qs):
             self._queue_for_edge_replacement(prot, cost)
         return nodes
 
     def append_reset_zero(self, qs: Iterable[int]) -> list[int]:
-        return self.append_reset(qs, NodeType.Z)
+        """Appends a reset into |0>."""
+        return self.append_reset(qs, PauliBasis.Z)
 
     def append_x(self, qs: Iterable[int]) -> list[int]:
         nodes = self._append_single_qubit(qs, NodeType.X)
