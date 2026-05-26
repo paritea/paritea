@@ -110,7 +110,7 @@ def plot_results(json_path: str) -> None:
     with Path(json_path).open() as f:
         data = json.load(f)
 
-    # Map benchmark names → {(distance, rounds): median_seconds}
+    # Map benchmark names → {(method, distance, rounds): median_seconds}
     KIND_LABELS = {
         "test_bench_stabilisers": "Stabilisers",
         "test_bench_detecting_regions": "Detecting regions",
@@ -118,40 +118,51 @@ def plot_results(json_path: str) -> None:
         "test_bench_partitioned": "Partitioned",
     }
 
-    series: dict[str, dict[str, float]] = defaultdict(dict)
+    # Keyed by (method, distance) → {rounds: median}
+    series: dict[tuple[str, int], dict[int, float]] = defaultdict(dict)
     for bench in data["benchmarks"]:
         full_name: str = bench["name"]
         # full_name looks like "test_bench_stabilisers[d3_r1]"
         func_name, param_tag = full_name.split("[")
         param_tag = param_tag.rstrip("]")
-        label = KIND_LABELS.get(func_name, func_name)
+        method = KIND_LABELS.get(func_name, func_name)
+        parts = param_tag.replace("d", "").split("_r")
+        distance, rounds = int(parts[0]), int(parts[1])
         median = bench["stats"]["median"]
-        series[label][param_tag] = median
+        series[(method, distance)][rounds] = median
 
-    # Sort parameter tags by (distance, rounds) for consistent x-axis order
-    all_tags = sorted(
-        {tag for s in series.values() for tag in s},
-        key=lambda t: tuple(int(x) for x in t.replace("d", "").split("_r")),
-    )
+    # Line style per method, color per distance
+    METHOD_STYLES: dict[str, tuple[str, str]] = {
+        "Stabilisers": ("-", "o"),
+        "Detecting regions": ("--", "s"),
+        "Combined": ("-.", "^"),
+        "Partitioned": (":", "D"),
+    }
+    all_distances = sorted({d for _, d in series})
+    cmap = plt.colormaps["tab10"]
+    distance_colors = {d: cmap(i) for i, d in enumerate(all_distances)}
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    markers = ["o", "s", "^", "D"]
-    for (label, values), marker in zip(sorted(series.items()), itertools.cycle(markers)):
-        x_indices = []
-        y_values = []
-        for i, tag in enumerate(all_tags):
-            if tag in values:
-                x_indices.append(i)
-                y_values.append(values[tag])
-        ax.plot(x_indices, y_values, marker=marker, label=label, linewidth=2)
+    for (method, distance), timing_by_rounds in sorted(series.items()):
+        ls, marker = METHOD_STYLES.get(method, ("-", "o"))
+        rounds_sorted = sorted(timing_by_rounds)
+        medians = [timing_by_rounds[r] for r in rounds_sorted]
+        ax.plot(
+            rounds_sorted,
+            medians,
+            linestyle=ls,
+            marker=marker,
+            color=distance_colors[distance],
+            label=f"{method}, d={distance}",
+            linewidth=2,
+        )
 
-    ax.set_xticks(range(len(all_tags)))
-    ax.set_xticklabels(all_tags, rotation=45, ha="right")
-    ax.set_xlabel("Surface code instance (distance, rounds)")
+    ax.set_xlabel("Rounds")
     ax.set_ylabel("Median time (s)")
     ax.set_yscale("log")
+    ax.set_xticks(sorted({r for vals in series.values() for r in vals}))
     ax.set_title("Pauli web computation benchmark")
-    ax.legend()
+    ax.legend(fontsize="small", ncol=2)
     ax.grid(True, which="both", linestyle="--", alpha=0.5)
     fig.tight_layout()
 
