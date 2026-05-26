@@ -5,7 +5,6 @@ from galois import GF2
 
 from paritea import build_flip_operators, push_out
 from paritea.noise import Fault, NoiseModel
-from paritea.pauli import PauliString
 from paritea.utils import NoiseModelParam, noise_model_params
 from paritea.web import row_reduce_webs
 
@@ -35,14 +34,6 @@ class AugmentedStabilisers:
 
     def normalise(self, compiled_faults: GF2) -> GF2:
         return compiled_faults + compiled_faults[:, self._indices] @ self._rref
-
-
-def _stabilisers(stabilisers: list[PauliString], boundary_idx_map: Mapping[int, int]) -> Stabilisers:
-    np_stabilisers = np.zeros((len(stabilisers), len(boundary_idx_map) * 2), dtype=int)
-    for i, stab in enumerate(stabilisers):
-        np_stabilisers[i, :] = stab.restrict(boundary_idx_map.keys()).compile(boundary_idx_map)
-
-    return Stabilisers(GF2(np_stabilisers).row_reduce(eye="left"))
 
 
 def _compile_atomic_faults(
