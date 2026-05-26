@@ -24,7 +24,7 @@ jobs:
         with:
           version: "0.9.5"
           enable-cache: 'true'
-          python-version: '3.14'
+          python-version: '3.13'
 
       - name: Install the project with bench dependencies
         run: uv sync --locked --all-extras --group bench
