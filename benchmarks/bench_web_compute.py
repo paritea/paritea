@@ -19,6 +19,7 @@ from dataclasses import dataclass
 
 import pytest
 
+from paritea.diagram import Diagram
 from paritea.generate.diagram.surface_code import surface_code_memory_experiment
 from paritea.web.compute import (
     compute_detecting_regions,
@@ -27,23 +28,14 @@ from paritea.web.compute import (
 )
 from paritea.web.partitions import pauli_webs_through_partitions
 
-# ---------------------------------------------------------------------------
-# Experiment parameters
-# ---------------------------------------------------------------------------
-
-DISTANCES = [3, 5, 7]
-ROUNDS = [1, 3, 5]
-
-# ---------------------------------------------------------------------------
-# Fixtures: pre-build diagrams so construction cost is excluded from timings
-# ---------------------------------------------------------------------------
-
+DISTANCES = [3, 5, 7, 9]
+ROUNDS = [1, 2, 3, 5, 10]
 
 @dataclass(frozen=True)
 class SurfaceCodeInstance:
     distance: int
     rounds: int
-    diagram: object  # Diagram
+    diagram: Diagram
     partitions: list[list[int]] | None
 
 
