@@ -4,8 +4,8 @@ on:
   pull_request:
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write # Required for image asset writing
+  pull-requests: write # Required to post comments
 
 # Limits the number of concurrent runs of this workflow for branches to one. For non-main branches, runs caused by newly
 # pushed commits thus cancel any in-progress runs for the same branch.
@@ -44,14 +44,35 @@ jobs:
       - name: Generate plot
         run: uv run python benchmarks/bench_web_compute.py benchmarks/results.json
 
-      - name: Upload benchmark plot
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-plot
-          path: benchmarks/results.png
+      - name: Commit benchmark plot to assets branch
+        id: commit-image
+        run: |
+          IMG_NAME="benchmark-${{ github.event.pull_request.number }}-$(date +%s).png"
+          # Set up a fresh worktree for the assets branch
+          git fetch origin assets/images --depth=1 || true
+          git worktree add --detach /tmp/assets-branch
+          cd /tmp/assets-branch
+          # Create the branch if it doesn't exist yet
+          git checkout assets/images 2>/dev/null || git checkout --orphan assets/images
+          # Clean any tracked files on first creation of the orphan branch
+          git rm -rf --ignore-unmatch . > /dev/null 2>&1
+          mkdir -p benchmarks
+          cp "$GITHUB_WORKSPACE/benchmarks/results.png" "benchmarks/$IMG_NAME"
+          git add "benchmarks/$IMG_NAME"
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "Add benchmark plot for PR #${{ github.event.pull_request.number }}"
+          git push origin HEAD:assets/images
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "img_name=$IMG_NAME" >> "$GITHUB_OUTPUT"
+          cd "$GITHUB_WORKSPACE"
+          git worktree remove /tmp/assets-branch
 
       - name: Post results to PR
         uses: actions/github-script@v7
+        env:
+          IMG_SHA: ${{ steps.commit-image.outputs.sha }}
+          IMG_NAME: ${{ steps.commit-image.outputs.img_name }}
         with:
           script: |
             const fs = require('fs');
@@ -67,13 +88,12 @@ jobs:
                 return `| \`${b.name}\` | ${median} ms | ±${stddev} ms | ${rounds} |`;
               });
 
-            // Upload the image and get a URL for it
-            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const imgUrl = `https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/${process.env.IMG_SHA}/benchmarks/${process.env.IMG_NAME}`;
 
             const body = [
               '## Benchmark Results — Pauli Web Computation',
               '',
-              `[Download benchmark plot](${artifactUrl})`,
+              `![Benchmark plot](${imgUrl})`,
               '',
               '| Benchmark | Median | Std Dev | Rounds |',
               '|-----------|--------|---------|--------|',
