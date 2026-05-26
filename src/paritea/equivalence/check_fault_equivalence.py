@@ -9,6 +9,7 @@ from paritea.pauli import Pauli, PauliString
 from paritea.utils import NoiseModelParam, noise_model_params
 
 from .enumeration import _next_gen_strategy
+from ..web import row_reduce_webs
 
 
 class Stabilisers:
@@ -37,15 +38,9 @@ class AugmentedStabilisers:
 
 
 def _stabilisers(stabilisers: list[PauliString], boundary_idx_map: Mapping[int, int]) -> Stabilisers:
-    num_boundaries = len(boundary_idx_map)
-    np_stabilisers = np.zeros((len(stabilisers), num_boundaries * 2), dtype=int)
+    np_stabilisers = np.zeros((len(stabilisers), len(boundary_idx_map) * 2), dtype=int)
     for i, stab in enumerate(stabilisers):
-        for boundary, pauli in stab.restrict(boundary_idx_map.keys()).items():
-            idx = boundary_idx_map[boundary]
-            if pauli == Pauli.Z or pauli == Pauli.Y:
-                np_stabilisers[i, idx] = 1
-            if pauli == Pauli.X or pauli == Pauli.Y:
-                np_stabilisers[i, idx + num_boundaries] = 1
+        np_stabilisers[i, :] = stab.restrict(boundary_idx_map.keys()).compile(boundary_idx_map)
 
     return Stabilisers(GF2(np_stabilisers).row_reduce(eye="left"))
 
@@ -164,10 +159,10 @@ def is_fault_equivalence(
 
     flip_ops_1 = build_flip_operators(d1)
     flip_ops_2 = build_flip_operators(d2)
-    stabilisers_1 = _stabilisers(flip_ops_1.stab_gen_set, d1_edge_idx_map)
-    stabilisers_2 = _stabilisers(flip_ops_2.stab_gen_set, d2_edge_idx_map)
+    stabs_1_rref = row_reduce_webs(flip_ops_1.stab_gen_set, d1_edge_idx_map)
+    stabs_2_rref = row_reduce_webs(flip_ops_2.stab_gen_set, d2_edge_idx_map)
 
-    if not np.array_equal(stabilisers_1.rref, stabilisers_2.rref):
+    if not np.array_equal(stabs_1_rref, stabs_2_rref):
         raise ValueError("The two circuits given have different stabilisers and thus different semantics!")
 
     pushed_out_noise_1 = push_out(noise_1, flip_ops_1)
@@ -178,7 +173,7 @@ def is_fault_equivalence(
         noise_2=pushed_out_noise_2,
         num_detectors_1=len(flip_ops_1.region_gen_set),
         num_detectors_2=len(flip_ops_2.region_gen_set),
-        stabilisers=stabilisers_1,
+        stabilisers=Stabilisers(stabs_1_rref),
         until=until,
         quiet=quiet,
     )
