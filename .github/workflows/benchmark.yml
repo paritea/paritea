@@ -7,6 +7,12 @@ permissions:
   contents: read
   pull-requests: write
 
+# Limits the number of concurrent runs of this workflow for branches to one. For non-main branches, runs caused by newly
+# pushed commits thus cancel any in-progress runs for the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   changes:
     uses: ./.github/workflows/changes.yml
