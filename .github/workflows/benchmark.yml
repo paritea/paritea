@@ -29,6 +29,9 @@ jobs:
       - name: Install the project with bench dependencies
         run: uv sync --locked --all-extras --group bench
 
+      - name: Install release version of paritea
+        run: uv sync -C "build-args=--profile=release-py"
+
       - name: Run benchmarks
         run: uv run pytest benchmarks/bench_web_compute.py --benchmark-json=benchmarks/results.json
 
