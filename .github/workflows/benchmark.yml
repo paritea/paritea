@@ -39,10 +39,10 @@ jobs:
         run: uv sync -C "build-args=--profile=release-py"
 
       - name: Run benchmarks
-        run: uv run pytest benchmarks/bench_web_compute.py --benchmark-json=benchmarks/results.json
+        run: uv run --no-sync pytest benchmarks/bench_web_compute.py --benchmark-json=benchmarks/results.json
 
       - name: Generate plot
-        run: uv run python benchmarks/bench_web_compute.py benchmarks/results.json
+        run: uv run --no-sync python benchmarks/bench_web_compute.py benchmarks/results.json
 
       - name: Commit benchmark plot to assets branch
         id: commit-image
