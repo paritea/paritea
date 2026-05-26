@@ -20,24 +20,18 @@ struct ExpandedHadamard {
     origin: NodeIndex,
 }
 
+#[derive(Debug, Default)]
 pub struct AdditionalNodes {
     extra_id_nodes: Vec<ExtraIdNode>,
     expanded_hadamards: Vec<ExpandedHadamard>,
 }
 
 impl AdditionalNodes {
-    pub fn empty() -> Self {
-        AdditionalNodes {
-            extra_id_nodes: Vec::new(),
-            expanded_hadamards: Vec::new(),
-        }
-    }
-
-    pub fn add_extra_id_node(&mut self, node: NodeIndex) {
+    fn add_extra_id_node(&mut self, node: NodeIndex) {
         self.extra_id_nodes.push(ExtraIdNode { node });
     }
 
-    pub fn add_expanded_hadamard(&mut self, expanded_hadamard: ExpandedHadamard) {
+    fn add_expanded_hadamard(&mut self, expanded_hadamard: ExpandedHadamard) {
         self.expanded_hadamards.push(expanded_hadamard);
     }
 
@@ -235,7 +229,7 @@ pub fn to_red_green_form(d: &mut Diagram) -> AdditionalNodes {
     }
 
     // Convert all H-edges and Hadamards to red and green spiders
-    let mut additional_nodes = AdditionalNodes::empty();
+    let mut additional_nodes = AdditionalNodes::default();
     for hadamard in euler_expand_edges(d) {
         additional_nodes.add_expanded_hadamard(hadamard);
     }

@@ -1,7 +1,6 @@
 use crate::diagram::NodeType::B;
 use delegate::delegate;
 use fraction::Fraction;
-use itertools::Itertools;
 use rustworkx_core::graph_ext::HasParallelEdgesUndirected;
 use rustworkx_core::petgraph::Undirected;
 use rustworkx_core::petgraph::graph::{EdgeIndex, NodeIndex};
@@ -154,7 +153,7 @@ impl Diagram {
             pub fn neighbors(&self, a: NodeIndex) -> impl Iterator<Item=NodeIndex>;
             pub fn edge_count(&self) -> usize;
             pub fn edges(&self, a: NodeIndex) -> Edges<'_, (), Undirected>;
-            pub fn edges_connecting(&self, a: NodeIndex, b: NodeIndex) -> EdgesConnecting<(), Undirected>;
+            pub fn edges_connecting(&self, a: NodeIndex, b: NodeIndex) -> EdgesConnecting<'_, (), Undirected>;
             pub fn edge_indices(&self) -> impl Iterator<Item=EdgeIndex>;
             pub fn edge_endpoints(&self, e: EdgeIndex) -> Option<(NodeIndex, NodeIndex)>;
             pub fn remove_edge(&mut self, e: EdgeIndex);

@@ -1,7 +1,6 @@
 use bitgauss::BitMatrix;
 use derive_more::From;
 use derive_more::with_trait::Index;
-use itertools::Itertools;
 use rustc_hash::FxHashMap;
 use rustworkx_core::petgraph::graph::EdgeIndex;
 use std::borrow::Borrow;

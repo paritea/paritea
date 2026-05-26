@@ -81,7 +81,7 @@ pub fn compute(
     } else {
         // Search for solutions that do not highlight boundary edges, i.e. detecting regions
         let transp = sol_row_basis.transposed();
-        let mut boundary_selected_basis = BitMatrix::from_bool_vec(
+        let boundary_selected_basis = BitMatrix::from_bool_vec(
             &(0..(ordering.z_boundaries.len() * 2))
                 .map(|i| transp.row(i).iter().take(transp.cols()).collect_vec())
                 .collect_vec(),

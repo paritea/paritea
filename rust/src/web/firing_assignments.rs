@@ -16,12 +16,8 @@ pub struct GraphOrdering {
 }
 
 impl GraphOrdering {
-    pub fn ord(&self, s: NodeIndex) -> usize {
+    fn ord(&self, s: NodeIndex) -> usize {
         self.graph_to_ordering[&s]
-    }
-
-    pub fn graph(&self, o: usize) -> NodeIndex {
-        self.ordering_to_graph[&o]
     }
 }
 
