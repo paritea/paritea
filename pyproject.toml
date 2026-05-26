@@ -27,7 +27,9 @@ dev = [
 ]
 
 bench = [
+    "matplotlib>=3.9",
     "pyinstrument>=5.1.1",
+    "pytest-benchmark>=5.1",
 ]
 
 lint = [
@@ -48,5 +50,5 @@ build-backend = "maturin"
 module-name = "paritea._bindings"
 python-source = "src/"
 manifest-path = "rust-bindings/Cargo.toml"
-features = ["pyo3/extension-module"] # skips linking against libpython.so
+features = ["pyo3/extension-module"]       # skips linking against libpython.so
 profile = "dev-py"
