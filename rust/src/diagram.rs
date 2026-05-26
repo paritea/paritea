@@ -1,12 +1,12 @@
-use crate::diagram::NodeType::B;
 use delegate::delegate;
 use fraction::Fraction;
+use itertools::Itertools;
 use rustworkx_core::graph_ext::HasParallelEdgesUndirected;
 use rustworkx_core::petgraph::Undirected;
 use rustworkx_core::petgraph::graph::{EdgeIndex, NodeIndex};
 use rustworkx_core::petgraph::prelude::StableUnGraph;
 use rustworkx_core::petgraph::stable_graph::{Edges, EdgesConnecting};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 
 pub type Phase = Fraction;
 
@@ -47,8 +47,7 @@ impl Diagram {
     /// their index through isomorphic conversion to a states outputs, i.e. they are indexed as
     /// <...all-inputs><...all-outputs>.
     pub fn set_virtual_io(&mut self, inputs: Vec<NodeIndex>, outputs: Vec<NodeIndex>) {
-        let boundaries = BTreeSet::from_iter(self.boundary_nodes());
-        if boundaries.len() > 0 {
+        if !self.boundary_nodes().collect_vec().is_empty() {
             panic!("Graph may not contain any boundaries when setting virtual IO!");
         }
 
@@ -65,13 +64,13 @@ impl Diagram {
 
         let mut new_inputs = Vec::new();
         for &inp in inputs.iter() {
-            let new_inp = self.add_node(NodeData::from_type(B));
+            let new_inp = self.add_node(NodeData::from_type(NodeType::B));
             new_inputs.push(new_inp);
             self.add_edge(inp, new_inp);
         }
         let mut new_outputs = Vec::new();
         for &out in outputs.iter() {
-            let new_out = self.add_node(NodeData::from_type(B));
+            let new_out = self.add_node(NodeData::from_type(NodeType::B));
             new_outputs.push(new_out);
             self.add_edge(out, new_out);
         }
@@ -91,7 +90,7 @@ impl Diagram {
     }
 
     pub fn add_to_phase(&mut self, node: NodeIndex, phase: Phase) {
-        self.graph[node].1 = self.graph[node].1 + phase;
+        self.graph[node].1 += phase;
     }
 
     pub fn add_edge(&mut self, a: NodeIndex, b: NodeIndex) -> EdgeIndex {

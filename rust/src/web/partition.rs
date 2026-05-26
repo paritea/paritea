@@ -6,6 +6,7 @@ use itertools::{Itertools, enumerate};
 use rustworkx_core::petgraph::graph::NodeIndex;
 use rustworkx_core::petgraph::stable_graph::EdgeIndex;
 use rustworkx_core::petgraph::visit::EdgeRef;
+use std::collections::hash_map::Entry;
 use std::collections::{BTreeSet, HashMap};
 
 #[derive(Default, Clone)]
@@ -28,8 +29,8 @@ fn find_webs(
 }
 
 fn zip_webs(
-    cur_stabs: &Vec<PauliString>,
-    next_stabs: &Vec<PauliString>,
+    cur_stabs: &[PauliString],
+    next_stabs: &[PauliString],
     zipped_edges: BTreeSet<EdgeIndex>,
     new_boundaries: BTreeSet<EdgeIndex>,
 ) -> (Vec<PauliString>, Vec<PauliString>) {
@@ -55,7 +56,7 @@ fn zip_webs(
         .map(|s| s.restrict(&new_boundaries).compile(&boundary_idx_map))
         .collect_vec();
 
-    if cur_stabs_compiled.len() == 0 && next_stabs_compiled.len() == 0 {
+    if cur_stabs_compiled.is_empty() && next_stabs_compiled.is_empty() {
         return (vec![], vec![]);
     }
 
@@ -134,7 +135,7 @@ pub fn pauli_webs_through_partitions(
         panic!("This function can only process diagrams with real IO!"); // TODO result
     }
 
-    if partitions.len() == 0 {
+    if partitions.is_empty() {
         panic!("No partitions given!"); // TODO result
     }
 
@@ -170,14 +171,14 @@ pub fn pauli_webs_through_partitions(
                 };
 
                 io_nodes.push((node, e.id()));
-                if cut_edges.contains_key(&e.id()) {
+                if let Entry::Vacant(entry) = cut_edges.entry(e.id()) {
+                    tracker.inc_edges.insert(e.id(), None);
+                    entry.insert(tracker_id);
+                } else {
                     let neighbour_id = cut_edges[&e.id()];
                     let neighbour = &mut sg_trackers[neighbour_id];
                     tracker.inc_edges.insert(e.id(), Some(neighbour_id));
                     neighbour.inc_edges.insert(e.id(), Some(tracker_id));
-                } else {
-                    tracker.inc_edges.insert(e.id(), None);
-                    cut_edges.insert(e.id(), tracker_id);
                 }
             }
         }
@@ -213,7 +214,7 @@ pub fn pauli_webs_through_partitions(
             .difference(&allocated_nodes)
             .filter(|&&n| d.node_type(n) != NodeType::B)
             .collect_vec();
-        if unallocated_nodes.len() > 0 {
+        if !unallocated_nodes.is_empty() {
             panic!("Not all nodes were allocated: {:?}", unallocated_nodes);
         }
     }

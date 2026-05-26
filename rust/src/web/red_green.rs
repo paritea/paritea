@@ -37,7 +37,7 @@ impl AdditionalNodes {
 
     fn remove_extra_id_node(
         adj: &mut FxHashMap<NodeIndex, BTreeSet<NodeIndex>>,
-        webs: &mut Vec<FxHashMap<(NodeIndex, NodeIndex), Pauli>>,
+        webs: &mut [FxHashMap<(NodeIndex, NodeIndex), Pauli>],
         id_node: ExtraIdNode,
     ) {
         let (v1, v2) = adj[&id_node.node].iter().copied().collect_tuple().unwrap();
@@ -63,7 +63,7 @@ impl AdditionalNodes {
 
     fn remove_expanded_hadamard(
         adj: &mut FxHashMap<NodeIndex, BTreeSet<NodeIndex>>,
-        webs: &mut Vec<FxHashMap<(NodeIndex, NodeIndex), Pauli>>,
+        webs: &mut [FxHashMap<(NodeIndex, NodeIndex), Pauli>],
         hadamard: ExpandedHadamard,
     ) {
         let (w1, w2, w3) = (hadamard.r1_node, hadamard.r2_node, hadamard.r3_node);
@@ -106,11 +106,7 @@ impl AdditionalNodes {
         adj.get_mut(&r).unwrap().remove(&w3);
     }
 
-    pub fn remove_from(
-        &self,
-        d: &Diagram,
-        webs: &mut Vec<FxHashMap<(NodeIndex, NodeIndex), Pauli>>,
-    ) {
+    pub fn remove_from(&self, d: &Diagram, webs: &mut [FxHashMap<(NodeIndex, NodeIndex), Pauli>]) {
         let mut adj = d
             .node_indices()
             .map(|n| (n, d.neighbors(n).collect()))

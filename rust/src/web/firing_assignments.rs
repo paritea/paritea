@@ -112,7 +112,7 @@ pub fn convert_firing_assignment_to_web_prototype(
     for (&adj_vertex, &g_vertex) in ordering.ordering_to_graph.iter() {
         let g_type = d.node_type(g_vertex);
         // Fire all green spiders with full red edges and thus their red neighbours
-        if g_type == NodeType::Z && v[adj_vertex + ordering.z_boundaries.len()] == true {
+        if g_type == NodeType::Z && v[adj_vertex + ordering.z_boundaries.len()] {
             for _n in d.neighbors(g_vertex) {
                 prot.insert(
                     upair(g_vertex, _n),
@@ -121,7 +121,7 @@ pub fn convert_firing_assignment_to_web_prototype(
             }
         }
         // Fire all red spiders with full green edges and thus their green neighbours
-        if g_type == NodeType::X && v[adj_vertex + ordering.z_boundaries.len()] == true {
+        if g_type == NodeType::X && v[adj_vertex + ordering.z_boundaries.len()] {
             for _n in d.neighbors(g_vertex) {
                 prot.insert(
                     upair(g_vertex, _n),
@@ -134,7 +134,7 @@ pub fn convert_firing_assignment_to_web_prototype(
     // Fire all green output edges
     for (&g_z_boundary, &g_boundary) in ordering.z_boundaries.iter() {
         let adj_z_boundary = ordering.ord(g_z_boundary);
-        if v[adj_z_boundary] == true {
+        if v[adj_z_boundary] {
             prot.insert(
                 upair(g_z_boundary, g_boundary),
                 prot.get(&upair(g_z_boundary, g_boundary))

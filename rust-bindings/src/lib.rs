@@ -97,9 +97,10 @@ mod _bindings {
             dict.set_item(rs_to_py_edges[&e], pauli_class.call1((p_py_str,)).unwrap())
                 .unwrap();
         }
-        let string = string_class.call1((dict,)).unwrap();
-        string
+        string_class.call1((dict,)).unwrap()
     }
+
+    type PyWeb<'py> = Vec<Bound<'py, PyAny>>;
 
     #[pyfunction]
     #[pyo3(signature = (diagram, *, stabilisers, detecting_regions))]
@@ -107,10 +108,7 @@ mod _bindings {
         diagram: Bound<'py, PyAny>,
         stabilisers: bool,
         detecting_regions: bool,
-    ) -> PyResult<(
-        Option<Vec<Bound<'py, PyAny>>>,
-        Option<Vec<Bound<'py, PyAny>>>,
-    )> {
+    ) -> PyResult<(Option<PyWeb<'py>>, Option<PyWeb<'py>>)> {
         let py = diagram.py();
         let (nd, rs_to_py_edges) = _to_rs_diagram(diagram);
         let (stabs_opt, regions_opt) = compute(&nd, stabilisers, detecting_regions);
@@ -136,14 +134,14 @@ mod _bindings {
     fn _compute_pauli_webs_through_partitions<'py>(
         diagram: Bound<'py, PyAny>,
         partitions: Vec<Vec<usize>>,
-    ) -> PyResult<(Vec<Bound<'py, PyAny>>, Vec<Bound<'py, PyAny>>)> {
+    ) -> PyResult<(PyWeb<'py>, PyWeb<'py>)> {
         let py = diagram.py();
         let (nd, rs_to_py_edges) = _to_rs_diagram(diagram);
         let (stabs, regions) = pauli_webs_through_partitions(
             &nd,
             partitions
                 .into_iter()
-                .map(|nodes| BTreeSet::from_iter(nodes.into_iter().map(|n| NodeIndex::new(n))))
+                .map(|nodes| BTreeSet::from_iter(nodes.into_iter().map(NodeIndex::new)))
                 .collect(),
         );
 
