@@ -79,8 +79,19 @@ jobs:
             const results = JSON.parse(fs.readFileSync('benchmarks/results.json', 'utf8'));
 
             // Build a markdown summary table
+            // Parse params from name like "test_bench_stabilisers[d3_r1]"
+            function parseKey(name) {
+              const match = name.match(/^(test_bench_\w+)\[d(\d+)_r(\d+)\]$/);
+              if (!match) return { method: name, distance: 0, rounds: 0 };
+              return { method: match[1], distance: parseInt(match[2]), rounds: parseInt(match[3]) };
+            }
+
             const rows = results.benchmarks
-              .sort((a, b) => a.name.localeCompare(b.name))
+              .sort((a, b) => {
+                const ka = parseKey(a.name);
+                const kb = parseKey(b.name);
+                return (ka.distance - kb.distance) || (ka.rounds - kb.rounds) || ka.method.localeCompare(kb.method);
+              })
               .map(b => {
                 const median = (b.stats.median * 1000).toFixed(1);
                 const stddev = (b.stats.stddev * 1000).toFixed(1);
