@@ -1,6 +1,7 @@
+from paritea._bindings import _compute_pauli_webs
 from paritea.diagram import Diagram
 from paritea.pauli import PauliString
-from paritea._bindings import _compute_pauli_webs
+
 
 def compute_stabilisers(diagram: Diagram) -> list[PauliString]:
     """
