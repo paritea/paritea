@@ -31,6 +31,7 @@ from paritea.web.partitions import pauli_webs_through_partitions
 DISTANCES = [3, 5, 7, 9]
 ROUNDS = [1, 2, 3, 5, 10]
 
+
 @dataclass(frozen=True)
 class SurfaceCodeInstance:
     distance: int
