@@ -1,0 +1,36 @@
+name: Detect Changes
+
+on:
+  workflow_call:
+    outputs:
+      rust:
+        description: "Whether Rust source files changed"
+        value: ${{ jobs.detect.outputs.rust }}
+      python:
+        description: "Whether Python source or test files changed"
+        value: ${{ jobs.detect.outputs.python }}
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+      python: ${{ steps.filter.outputs.python }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - 'rust/**'
+              - 'rust-bindings/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+            python:
+              - 'src/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'pytest.ini'

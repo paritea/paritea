@@ -1,0 +1,100 @@
+name: Benchmark - Pauli Web Computation
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
+
+  benchmark:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.6"
+          enable-cache: 'true'
+          python-version: '3.14'
+
+      - name: Install the project with bench dependencies
+        run: uv sync --locked --all-extras --group bench
+
+      - name: Run benchmarks
+        run: uv run pytest benchmarks/bench_web_compute.py --benchmark-json=benchmarks/results.json
+
+      - name: Generate plot
+        run: uv run python benchmarks/bench_web_compute.py benchmarks/results.json
+
+      - name: Upload benchmark plot
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-plot
+          path: benchmarks/results.png
+
+      - name: Post results to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('benchmarks/results.json', 'utf8'));
+
+            // Build a markdown summary table
+            const rows = results.benchmarks
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(b => {
+                const median = (b.stats.median * 1000).toFixed(1);
+                const stddev = (b.stats.stddev * 1000).toFixed(1);
+                const rounds = b.stats.rounds;
+                return `| \`${b.name}\` | ${median} ms | ±${stddev} ms | ${rounds} |`;
+              });
+
+            // Upload the image and get a URL for it
+            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const body = [
+              '## Benchmark Results — Pauli Web Computation',
+              '',
+              `[Download benchmark plot](${artifactUrl})`,
+              '',
+              '| Benchmark | Median | Std Dev | Rounds |',
+              '|-----------|--------|---------|--------|',
+              ...rows,
+              '',
+              `*Commit: ${context.sha.substring(0, 8)}*`,
+            ].join('\n');
+
+            // Find existing comment to update, or create a new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = '## Benchmark Results — Pauli Web Computation';
+            const existing = comments.find(c => c.body.startsWith(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
