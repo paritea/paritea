@@ -28,7 +28,7 @@ from paritea.web.compute import (
 )
 from paritea.web.partitions import pauli_webs_through_partitions
 
-DISTANCES = [3, 5, 7]
+DISTANCES = [3, 5, 7, 9]
 ROUNDS = [1, 2, 3, 5, 10, 15, 20]
 
 
