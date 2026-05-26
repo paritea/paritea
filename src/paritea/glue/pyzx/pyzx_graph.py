@@ -88,6 +88,9 @@ def from_pyzx(
         elif e_type == PyZxEdgeType.HADAMARD:
             if convert_had_edges:
                 h = diagram.add_node(NodeType.H)
+                if positions:
+                    diagram.set_x(h, (pyzx_graph.qubit(source) + pyzx_graph.qubit(target)) / 2)
+                    diagram.set_y(h, (pyzx_graph.row(source) + pyzx_graph.row(target)) / 2)
                 diagram.add_edge(vertex_to_id[source], h)
                 diagram.add_edge(h, vertex_to_id[target])
             else:
