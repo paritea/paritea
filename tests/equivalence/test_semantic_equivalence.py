@@ -17,6 +17,7 @@ def test_removing_pi_2_phase():
 
     assert not is_semantic_equivalence(d1, d2)
 
+
 def test_surface_code_multi_round():
     """Tests that one round of a surface code memory experiment implements the same+
     linear map as two rounds."""

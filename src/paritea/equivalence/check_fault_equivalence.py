@@ -5,11 +5,11 @@ from galois import GF2
 
 from paritea import build_flip_operators, push_out
 from paritea.noise import Fault, NoiseModel
-from paritea.pauli import Pauli, PauliString
+from paritea.pauli import PauliString
 from paritea.utils import NoiseModelParam, noise_model_params
+from paritea.web import row_reduce_webs
 
 from .enumeration import _next_gen_strategy
-from ..web import row_reduce_webs
 
 
 class Stabilisers:
