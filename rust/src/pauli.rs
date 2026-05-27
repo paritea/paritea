@@ -93,21 +93,28 @@ where
 
     fn mul(self, rhs: S) -> Self::Output {
         let rhs = rhs.borrow();
-        let my_keys = self.0.keys().copied().collect::<BTreeSet<_>>();
-        let rhs_keys = rhs.0.keys().copied().collect::<BTreeSet<_>>();
-        let product = FxHashMap::from_iter(
-            my_keys
-                .symmetric_difference(&rhs_keys)
-                .map(|e| (*e, *self.0.get(e).or(rhs.0.get(e)).unwrap()))
-                .chain(my_keys.intersection(&rhs_keys).filter_map(|k| {
-                    let result = self[k] * rhs[k];
+        let mut product =
+            FxHashMap::with_capacity_and_hasher(self.0.len().max(rhs.0.len()), Default::default());
+
+        for (&k, &v) in &self.0 {
+            match rhs.0.get(&k) {
+                Some(&rv) => {
+                    let result = v * rv;
                     if result != Pauli::I {
-                        Some((*k, result))
-                    } else {
-                        None
+                        product.insert(k, result);
                     }
-                })),
-        );
+                }
+                None => {
+                    product.insert(k, v);
+                }
+            }
+        }
+
+        for (&k, &v) in &rhs.0 {
+            if !self.0.contains_key(&k) {
+                product.insert(k, v);
+            }
+        }
 
         PauliString(product)
     }
