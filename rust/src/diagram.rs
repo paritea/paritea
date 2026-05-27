@@ -1,5 +1,6 @@
 /// A recreation of the diagram class native to paritea.
 use delegate::delegate;
+use derive_more::Display;
 use fraction::Fraction;
 use itertools::Itertools;
 use rustworkx_core::graph_ext::HasParallelEdgesUndirected;
@@ -13,7 +14,7 @@ use std::collections::HashMap;
 pub type Phase = Fraction;
 
 /// The type of a single spider
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum NodeType {
     /// A boundary node
     B,

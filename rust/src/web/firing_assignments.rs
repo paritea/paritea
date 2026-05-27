@@ -107,47 +107,39 @@ pub(super) fn convert_firing_assignment_to_web_prototype(
     ordering: &GraphOrdering,
     v: Vec<bool>,
 ) -> FxHashMap<(NodeIndex, NodeIndex), Pauli> {
-    let mut prot = FxHashMap::default(); // TODO defaultdict
+    let mut prot = FxHashMap::default();
 
     for (&adj_vertex, &g_vertex) in ordering.ordering_to_graph.iter() {
-        let g_type = d.node_type(g_vertex);
-        // Fire all green spiders with full red edges and thus their red neighbours
-        if g_type == NodeType::Z && v[adj_vertex + ordering.z_boundaries.len()] {
-            for _n in d.neighbors(g_vertex) {
-                prot.insert(
-                    sorted_pair(g_vertex, _n),
-                    prot.get(&sorted_pair(g_vertex, _n))
-                        .copied()
-                        .unwrap_or(Pauli::I)
-                        * Pauli::X,
-                );
-            }
+        if !v[adj_vertex + ordering.z_boundaries.len()] {
+            continue; // Spider is not fired
         }
-        // Fire all red spiders with full green edges and thus their green neighbours
-        if g_type == NodeType::X && v[adj_vertex + ordering.z_boundaries.len()] {
-            for _n in d.neighbors(g_vertex) {
-                prot.insert(
-                    sorted_pair(g_vertex, _n),
-                    prot.get(&sorted_pair(g_vertex, _n))
-                        .copied()
-                        .unwrap_or(Pauli::I)
-                        * Pauli::Z,
-                );
+
+        let mut apply_to_neighbours = |n: NodeIndex, p: Pauli| {
+            for _n in d.neighbors(n) {
+                prot.entry(sorted_pair(n, _n))
+                    .and_modify(|e| *e *= p)
+                    .or_insert(p);
             }
+        };
+        match d.node_type(g_vertex) {
+            // Fire all green spiders with full red edges and thus their red neighbours
+            NodeType::Z => {
+                apply_to_neighbours(g_vertex, Pauli::X);
+            }
+            // Fire all red spiders with full green edges and thus their green neighbours
+            NodeType::X => {
+                apply_to_neighbours(g_vertex, Pauli::Z);
+            }
+            nt => unreachable!("Should only be encountering X or Z, got {}", nt),
         }
     }
 
     // Fire all green output edges
     for (&g_z_boundary, &g_boundary) in ordering.z_boundaries.iter() {
-        let adj_z_boundary = ordering.ord(g_z_boundary);
-        if v[adj_z_boundary] {
-            prot.insert(
-                sorted_pair(g_z_boundary, g_boundary),
-                prot.get(&sorted_pair(g_z_boundary, g_boundary))
-                    .copied()
-                    .unwrap_or(Pauli::I)
-                    * Pauli::Z,
-            );
+        if v[ordering.ord(g_z_boundary)] {
+            prot.entry(sorted_pair(g_z_boundary, g_boundary))
+                .and_modify(|e| *e *= Pauli::Z)
+                .or_insert(Pauli::Z);
         }
     }
 
