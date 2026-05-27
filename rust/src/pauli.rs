@@ -17,7 +17,7 @@ pub enum Pauli {
 }
 
 impl Pauli {
-    /// Multiplies the Pauli by an H gate, resulting in a flip between X <-> Z.
+    /// Flips between X <-> Z.
     pub fn flip(&self) -> Pauli {
         match self {
             Pauli::I => Pauli::I,
@@ -57,6 +57,7 @@ impl PauliString {
         self.0.values().all(|&p| p == Pauli::I)
     }
 
+    /// Return a new string consisting only of the given edges
     pub fn restrict(&self, edges: &BTreeSet<EdgeIndex>) -> Self {
         Self(
             edges
@@ -67,6 +68,7 @@ impl PauliString {
         )
     }
 
+    /// Returns a 1-column symplectic matrix with Z...Z | X...X bits set according to the map.
     pub fn compile(&self, idx_map: &FxHashMap<EdgeIndex, usize>) -> BitMatrix {
         let num_indices = idx_map.len();
         let mut matrix = BitMatrix::zeros(num_indices * 2, 1);
