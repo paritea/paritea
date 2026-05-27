@@ -7,10 +7,9 @@ use pyo3::pymodule;
 /// `src/paritea/_bindings/__init__.pyi` type stubs.
 #[pymodule]
 mod _bindings {
-    use paritea::diagram::{Diagram, NodeData, NodeType, Phase};
+    use paritea::diagram::{Diagram, NodeType, Phase};
     use paritea::pauli::PauliString;
-    use paritea::web::compute::compute;
-    use paritea::web::partition::pauli_webs_through_partitions;
+    use paritea::web::{compute, pauli_webs_through_partitions};
     use pyo3::prelude::*;
     use pyo3::types::PyDict;
     use rustworkx_core::petgraph::graph::{EdgeIndex, NodeIndex};
@@ -55,7 +54,7 @@ mod _bindings {
                     .extract::<u64>()
                     .unwrap(),
             );
-            py_to_rs_nodes.insert(node, nd.add_node(NodeData::new(node_type, phase)));
+            py_to_rs_nodes.insert(node, nd.add_node(node_type, Some(phase)));
         }
 
         let mut rs_to_py_edges = HashMap::new();

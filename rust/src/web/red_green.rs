@@ -1,6 +1,6 @@
-use crate::diagram::{Diagram, NodeData, NodeType, Phase};
+use crate::diagram::{Diagram, NodeType, Phase};
 use crate::pauli::Pauli;
-use crate::util::upair;
+use crate::sorted_pair;
 use fraction::{CheckedDiv, Zero};
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
@@ -42,12 +42,12 @@ impl AdditionalNodes {
     ) {
         let (v1, v2) = adj[&id_node.node].iter().copied().collect_tuple().unwrap();
         for web in webs.iter_mut() {
-            if let Some(p) = web.remove(&upair(v1, id_node.node)) {
-                web.insert(upair(v1, v2), p);
-                debug_assert!(web.contains_key(&upair(id_node.node, v2)));
-                web.remove(&upair(id_node.node, v2));
+            if let Some(p) = web.remove(&sorted_pair(v1, id_node.node)) {
+                web.insert(sorted_pair(v1, v2), p);
+                debug_assert!(web.contains_key(&sorted_pair(id_node.node, v2)));
+                web.remove(&sorted_pair(id_node.node, v2));
             } else {
-                debug_assert!(!web.contains_key(&upair(id_node.node, v2)));
+                debug_assert!(!web.contains_key(&sorted_pair(id_node.node, v2)));
             }
         }
         let v1_mut = adj.get_mut(&v1).unwrap();
@@ -78,19 +78,19 @@ impl AdditionalNodes {
             .extend([l, r]);
         adj.get_mut(&r).unwrap().insert(hadamard.origin);
         for web in webs.iter_mut() {
-            if let Some(p) = web.remove(&upair(l, w1)) {
-                web.insert(upair(l, hadamard.origin), p);
-                debug_assert!(web.contains_key(&upair(w1, w2)));
-                debug_assert!(web.contains_key(&upair(w2, w3)));
-                debug_assert_eq!(web.get(&upair(w3, r)), Some(&p.flip()));
-                web.insert(upair(hadamard.origin, r), p.flip());
-                web.remove(&upair(w1, w2));
-                web.remove(&upair(w2, w3));
-                web.remove(&upair(w3, r));
+            if let Some(p) = web.remove(&sorted_pair(l, w1)) {
+                web.insert(sorted_pair(l, hadamard.origin), p);
+                debug_assert!(web.contains_key(&sorted_pair(w1, w2)));
+                debug_assert!(web.contains_key(&sorted_pair(w2, w3)));
+                debug_assert_eq!(web.get(&sorted_pair(w3, r)), Some(&p.flip()));
+                web.insert(sorted_pair(hadamard.origin, r), p.flip());
+                web.remove(&sorted_pair(w1, w2));
+                web.remove(&sorted_pair(w2, w3));
+                web.remove(&sorted_pair(w3, r));
             } else {
-                debug_assert!(!web.contains_key(&upair(w1, w2)));
-                debug_assert!(!web.contains_key(&upair(w2, w3)));
-                debug_assert!(!web.contains_key(&upair(w3, r)));
+                debug_assert!(!web.contains_key(&sorted_pair(w1, w2)));
+                debug_assert!(!web.contains_key(&sorted_pair(w2, w3)));
+                debug_assert!(!web.contains_key(&sorted_pair(w3, r)));
             }
         }
         adj.get_mut(&l).unwrap().remove(&w1);
@@ -121,7 +121,7 @@ impl AdditionalNodes {
 }
 
 fn place_node_between(d: &mut Diagram, nt: NodeType, n1: NodeIndex, n2: NodeIndex) -> NodeIndex {
-    let node = d.add_node(NodeData::from_type(nt));
+    let node = d.add_node(nt, None);
     d.remove_edge_between(n1, n2);
     d.add_edges([(n1, node), (node, n2)]);
 

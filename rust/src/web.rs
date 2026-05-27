@@ -1,6 +1,7 @@
-pub mod compute;
+mod compute;
 mod firing_assignments;
-pub mod partition;
+mod partition;
 mod red_green;
 
-pub use compute::{compute, compute_detecting_regions, compute_pauli_webs, compute_stabilisers};
+pub use compute::compute;
+pub use partition::pauli_webs_through_partitions;

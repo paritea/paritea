@@ -1,6 +1,6 @@
 use crate::diagram::{Diagram, NodeType};
 use crate::pauli::PauliString;
-use crate::web::compute_pauli_webs;
+use crate::web::compute;
 use bitgauss::BitMatrix;
 use itertools::{Itertools, enumerate};
 use rustworkx_core::petgraph::graph::NodeIndex;
@@ -21,7 +21,9 @@ fn find_webs(
     let remap_edges =
         |s: PauliString| PauliString(s.0.into_iter().map(|(k, v)| (edge_map[&k], v)).collect());
 
-    let (st, re) = compute_pauli_webs(sg);
+    let (Some(st), Some(re)) = compute(sg, true, true) else {
+        unreachable!("Should have passed the right flags!");
+    };
     (
         st.into_iter().map(remap_edges).collect(),
         re.into_iter().map(remap_edges).collect(),

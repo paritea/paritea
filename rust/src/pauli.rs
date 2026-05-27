@@ -17,6 +17,7 @@ pub enum Pauli {
 }
 
 impl Pauli {
+    /// Multiplies the Pauli by an H gate, resulting in a flip between X <-> Z.
     pub fn flip(&self) -> Pauli {
         match self {
             Pauli::I => Pauli::I,
@@ -51,6 +52,7 @@ impl MulAssign for Pauli {
 pub struct PauliString(#[from] pub FxHashMap<EdgeIndex, Pauli>);
 
 impl PauliString {
+    /// Whether all the strings contents are [`Pauli::I`].
     pub fn is_trivial(&self) -> bool {
         self.0.values().all(|&p| p == Pauli::I)
     }

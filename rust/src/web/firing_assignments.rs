@@ -1,12 +1,12 @@
 use crate::diagram::{Diagram, NodeType};
 use crate::pauli::Pauli;
-use crate::util::upair;
+use crate::sorted_pair;
 use bitgauss::BitMatrix;
 use rustc_hash::FxHashMap;
 use rustworkx_core::petgraph::graph::NodeIndex;
 use std::collections::HashSet;
 
-pub struct GraphOrdering {
+pub(super) struct GraphOrdering {
     graph_to_ordering: FxHashMap<NodeIndex, usize>,
     ordering_to_graph: FxHashMap<usize, NodeIndex>,
 
@@ -21,7 +21,7 @@ impl GraphOrdering {
     }
 }
 
-pub fn determine_ordering(d: &Diagram) -> GraphOrdering {
+pub(super) fn determine_ordering(d: &Diagram) -> GraphOrdering {
     let boundaries = d.boundary_nodes().collect::<HashSet<_>>();
     let z_boundaries = boundaries
         .iter()
@@ -70,7 +70,7 @@ pub fn determine_ordering(d: &Diagram) -> GraphOrdering {
     }
 }
 
-pub fn create_firing_verification(d: &Diagram, ordering: &GraphOrdering) -> BitMatrix {
+pub(super) fn create_firing_verification(d: &Diagram, ordering: &GraphOrdering) -> BitMatrix {
     let num_z_boundaries = ordering.z_boundaries.len();
     let num_non_boundary_spiders = num_z_boundaries + ordering.internal_spiders.len();
 
@@ -102,7 +102,7 @@ pub fn create_firing_verification(d: &Diagram, ordering: &GraphOrdering) -> BitM
     m_d
 }
 
-pub fn convert_firing_assignment_to_web_prototype(
+pub(super) fn convert_firing_assignment_to_web_prototype(
     d: &Diagram,
     ordering: &GraphOrdering,
     v: Vec<bool>,
@@ -115,8 +115,11 @@ pub fn convert_firing_assignment_to_web_prototype(
         if g_type == NodeType::Z && v[adj_vertex + ordering.z_boundaries.len()] {
             for _n in d.neighbors(g_vertex) {
                 prot.insert(
-                    upair(g_vertex, _n),
-                    prot.get(&upair(g_vertex, _n)).copied().unwrap_or(Pauli::I) * Pauli::X,
+                    sorted_pair(g_vertex, _n),
+                    prot.get(&sorted_pair(g_vertex, _n))
+                        .copied()
+                        .unwrap_or(Pauli::I)
+                        * Pauli::X,
                 );
             }
         }
@@ -124,8 +127,11 @@ pub fn convert_firing_assignment_to_web_prototype(
         if g_type == NodeType::X && v[adj_vertex + ordering.z_boundaries.len()] {
             for _n in d.neighbors(g_vertex) {
                 prot.insert(
-                    upair(g_vertex, _n),
-                    prot.get(&upair(g_vertex, _n)).copied().unwrap_or(Pauli::I) * Pauli::Z,
+                    sorted_pair(g_vertex, _n),
+                    prot.get(&sorted_pair(g_vertex, _n))
+                        .copied()
+                        .unwrap_or(Pauli::I)
+                        * Pauli::Z,
                 );
             }
         }
@@ -136,8 +142,8 @@ pub fn convert_firing_assignment_to_web_prototype(
         let adj_z_boundary = ordering.ord(g_z_boundary);
         if v[adj_z_boundary] {
             prot.insert(
-                upair(g_z_boundary, g_boundary),
-                prot.get(&upair(g_z_boundary, g_boundary))
+                sorted_pair(g_z_boundary, g_boundary),
+                prot.get(&sorted_pair(g_z_boundary, g_boundary))
                     .copied()
                     .unwrap_or(Pauli::I)
                     * Pauli::Z,

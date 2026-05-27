@@ -1,3 +1,4 @@
+/// A recreation of the diagram class native to paritea.
 use delegate::delegate;
 use fraction::Fraction;
 use itertools::Itertools;
@@ -8,18 +9,24 @@ use rustworkx_core::petgraph::prelude::StableUnGraph;
 use rustworkx_core::petgraph::stable_graph::{Edges, EdgesConnecting};
 use std::collections::HashMap;
 
+/// A ZX spiders phase, represented as a fraction of pi.
 pub type Phase = Fraction;
 
+/// The type of a single spider
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeType {
+    /// A boundary node
     B,
+    /// An X spider
     X,
+    /// A Z spider
     Z,
+    /// An H-Box
     H,
 }
 
 #[derive(Debug, Clone)]
-pub struct NodeData(NodeType, Phase);
+struct NodeData(NodeType, Phase);
 
 impl NodeData {
     pub fn new(nt: NodeType, phase: Phase) -> Self {
@@ -64,13 +71,13 @@ impl Diagram {
 
         let mut new_inputs = Vec::new();
         for &inp in inputs.iter() {
-            let new_inp = self.add_node(NodeData::from_type(NodeType::B));
+            let new_inp = self.add_node(NodeType::B, None);
             new_inputs.push(new_inp);
             self.add_edge(inp, new_inp);
         }
         let mut new_outputs = Vec::new();
         for &out in outputs.iter() {
-            let new_out = self.add_node(NodeData::from_type(NodeType::B));
+            let new_out = self.add_node(NodeType::B, None);
             new_outputs.push(new_out);
             self.add_edge(out, new_out);
         }
@@ -79,6 +86,15 @@ impl Diagram {
         self.is_io_virtual = false;
 
         (new_inputs, new_outputs)
+    }
+
+    pub fn add_node(&mut self, node_type: NodeType, phase: Option<Phase>) -> NodeIndex {
+        let nd = if let Some(phase) = phase {
+            NodeData::new(node_type, phase)
+        } else {
+            NodeData::from_type(node_type)
+        };
+        self.add_node_inner(nd)
     }
 
     pub fn node_type(&self, node: NodeIndex) -> NodeType {
@@ -133,7 +149,7 @@ impl Diagram {
         let mut outgraph = Self::default();
         let node_map: HashMap<NodeIndex, NodeIndex> = nodes
             .into_iter()
-            .map(|n| (n, outgraph.add_node(self.graph[n].clone())))
+            .map(|n| (n, outgraph.add_node_inner(self.graph[n].clone())))
             .collect();
         for (a, b) in self.edge_list() {
             if let (Some(&a_sub), Some(&b_sub)) = (node_map.get(&a), node_map.get(&b)) {
@@ -147,7 +163,8 @@ impl Diagram {
         to self.graph {
             pub fn node_count(&self) -> usize;
             pub fn node_indices(&self) -> impl Iterator<Item=NodeIndex>;
-            pub fn add_node(&mut self, weight: NodeData) -> NodeIndex;
+            #[call(add_node)]
+            fn add_node_inner(&mut self, weight: NodeData) -> NodeIndex;
             pub fn remove_node(&mut self, n: NodeIndex);
             pub fn neighbors(&self, a: NodeIndex) -> impl Iterator<Item=NodeIndex>;
             pub fn edge_count(&self) -> usize;
