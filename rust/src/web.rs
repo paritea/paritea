@@ -1,3 +1,5 @@
+//! Methods for computing Pauli webs.
+
 mod compute;
 mod firing_assignments;
 mod partition;

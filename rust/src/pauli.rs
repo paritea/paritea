@@ -1,3 +1,5 @@
+//! Paulis and Pauli strings.
+
 use bitgauss::BitMatrix;
 use derive_more::From;
 use derive_more::with_trait::Index;
@@ -9,10 +11,15 @@ use std::ops::Mul;
 use std::ops::MulAssign;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// A single Pauli matrix element
 pub enum Pauli {
+    /// Pauli I matrix
     I,
+    /// Pauli X matrix
     X,
+    /// Pauli Y matrix
     Y,
+    /// Pauli Z matrix
     Z,
 }
 
@@ -49,6 +56,7 @@ impl MulAssign for Pauli {
 }
 
 #[derive(Default, Debug, Clone, From, Index)]
+/// A string of Paulis, indexed by diagram edges
 pub struct PauliString(#[from] pub FxHashMap<EdgeIndex, Pauli>);
 
 impl PauliString {
