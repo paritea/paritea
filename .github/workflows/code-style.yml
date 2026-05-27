@@ -7,7 +7,7 @@ on:
 
 jobs:
   ruff:
-    name: 🐍- Lint and check formatting
+    name: 🐍 - Lint and check formatting
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -24,7 +24,7 @@ jobs:
         run: ruff format --check --diff
   
   rust:
-    name: 🦀- Format, check and lint
+    name: 🦀 - Format, check and lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
