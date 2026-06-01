@@ -57,10 +57,10 @@ impl AtomicFaults {
                 }
             }
 
-            if let Some(w) = weight_lookup.get_mut(&sig) {
-                if v < *w {
-                    *w = v;
-                }
+            if let Some(w) = weight_lookup.get_mut(&sig)
+                && v < *w
+            {
+                *w = v;
             }
         }
 
@@ -132,27 +132,28 @@ fn next_gen_unfold(
         for sig in &current_queue {
             let detectable = has_any_bit(sig, &detector_mask);
             if detectable {
-                if let Some(&existing_w) = detectable_lookup.get(sig) {
-                    if existing_w <= w {
-                        continue; // This signature does not provide a weight improvement
+                match detectable_lookup.get(sig) {
+                    Some(&existing_w) if existing_w <= w => continue, // No improvement
+                    _ => {
+                        detectable_lookup.insert(sig.clone(), w);
                     }
                 }
-                detectable_lookup.insert(sig.clone(), w);
             } else {
                 let sig_no_sinks = sig >> num_detectors;
-                if let Some(&existing_w) = undetectable_lookup.get(&sig_no_sinks) {
-                    if existing_w <= w {
-                        continue; // This signature does not provide a weight improvement
+
+                match undetectable_lookup.get(&sig_no_sinks) {
+                    Some(&existing_w) if existing_w <= w => continue, // No improvement
+                    _ => {
+                        undetectable_lookup.insert(sig_no_sinks.clone(), w);
+                        undetectables_generated.insert(sig_no_sinks);
                     }
                 }
-                undetectable_lookup.insert(sig_no_sinks.clone(), w);
-                undetectables_generated.insert(sig_no_sinks);
             }
 
-            if let Some(existing_w) = atomics.weight_lookup.get_mut(sig) {
-                if *existing_w > w {
-                    *existing_w = w; // Improved atomic weight found
-                }
+            if let Some(existing_w) = atomics.weight_lookup.get_mut(sig)
+                && *existing_w > w
+            {
+                *existing_w = w; // Improved atomic weight found
             }
 
             let atomic_sigs: Vec<&Fault> = if !detectable {
@@ -218,7 +219,7 @@ pub fn check_fault_equivalence(
 
     let mut w: Weight = 0;
 
-    while (!nm1_pq.is_empty() || !nm2_pq.is_empty()) && until.map_or(true, |u| w < u - 1) {
+    while (!nm1_pq.is_empty() || !nm2_pq.is_empty()) && until.is_none_or(|u| w < u - 1) {
         w += 1;
 
         let nm1_undetectable = next_gen_unfold(
