@@ -1,7 +1,7 @@
 from fractions import Fraction
 
 from paritea.diagram import Diagram, NodeType
-from paritea.equivalence.semantic_equivalence import is_semantic_equivalence
+from paritea.equivalence import is_semantic_equivalence
 from paritea.generate import surface_code_memory_experiment
 
 
