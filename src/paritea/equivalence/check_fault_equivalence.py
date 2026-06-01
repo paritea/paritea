@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import NamedTuple, Iterable, overload, Literal
 
 import numpy as np
 from galois import GF2
@@ -8,7 +9,7 @@ from paritea.noise import Fault, NoiseModel
 from paritea.utils import NoiseModelParam, noise_model_params
 from paritea.web import row_reduce_webs
 
-from .enumeration import _next_gen_strategy
+from ._enumeration import next_gen_strategy
 
 
 class Stabilisers:
@@ -37,13 +38,13 @@ class AugmentedStabilisers:
 
 
 def _compile_atomic_faults(
-    noise: NoiseModel[int],
+    atomics: list[tuple[Fault, list[int]]],
     stabilisers: AugmentedStabilisers,
     boundaries_to_idx: Mapping[int, int],
     detector_to_idx: Mapping[int, int],
 ) -> list[tuple[int, int]]:
     normalised_faults: list[tuple[int, int]] = []
-    for f, vs in noise.atomic_faults_with_values():
+    for f, vs in atomics:
         if f.is_trivial():
             continue
 
@@ -55,6 +56,16 @@ def _compile_atomic_faults(
     return normalised_faults
 
 
+class Violation(NamedTuple):
+    is_nm1: bool
+    """Whether the violation of fault equivalence results from the first noise model
+    (true) or the second (false)."""
+    weight: int
+    """The total weight of the violating combination."""
+    faults: Iterable[tuple[Fault, int]] | None
+    """The atomic faults from which the violating combination was constructed."""
+
+
 def _is_fault_equivalence(
     noise_1: NoiseModel[int],
     noise_2: NoiseModel[int],
@@ -62,9 +73,10 @@ def _is_fault_equivalence(
     num_detectors_2: int,
     stabilisers: Stabilisers,
     *,
-    until: int | None = None,
-    quiet: bool = True,
-) -> bool:
+    until: int,
+    resolve_reason: bool,
+    quiet: bool,
+) -> Violation | None:
     """
     Given two noise models noise_1 and noise_2 (required to be in pushed out form), determine if they are fault
     equivalent. This requires their underlying diagrams to be semantically equivalent, so stabilisers are only supplied
@@ -98,19 +110,21 @@ def _is_fault_equivalence(
 
     if not quiet:
         print("Compiling atomic faults for d1...")
-    g1_stabs = AugmentedStabilisers.from_stabilisers(stabilisers, num_detectors_1)
-    g1_sig_nf = _compile_atomic_faults(noise_1, g1_stabs, d1_edge_idx_map, d1_detector_idx_map)
+    d1_stabs = AugmentedStabilisers.from_stabilisers(stabilisers, num_detectors_1)
+    nm1_atomics = list(noise_1.atomic_faults_with_values())
+    g1_sig_nf = _compile_atomic_faults(nm1_atomics, d1_stabs, d1_edge_idx_map, d1_detector_idx_map)
     if not quiet:
         print(f"Retrieved {len(g1_sig_nf)} atomic faults for d1!")
 
     if not quiet:
         print("Compiling atomic faults for d2...")
-    g2_stabs = AugmentedStabilisers.from_stabilisers(stabilisers, num_detectors_2)
-    g2_sig_nf = _compile_atomic_faults(noise_2, g2_stabs, d2_edge_idx_map, d2_detector_idx_map)
+    d2_stabs = AugmentedStabilisers.from_stabilisers(stabilisers, num_detectors_2)
+    nm2_atomics = list(noise_2.atomic_faults_with_values())
+    g2_sig_nf = _compile_atomic_faults(nm2_atomics, d2_stabs, d2_edge_idx_map, d2_detector_idx_map)
     if not quiet:
         print(f"Retrieved {len(g2_sig_nf)} atomic faults for d2!")
 
-    violating_weight = _next_gen_strategy(
+    violation = next_gen_strategy(
         g1_sig_nf,
         g2_sig_nf,
         len(d1_edge_idx_map),
@@ -118,30 +132,69 @@ def _is_fault_equivalence(
         len(d2_edge_idx_map),
         num_detectors_2,
         until=until,
+        resolve_reason=resolve_reason,
         quiet=quiet,
     )
-    return violating_weight is None
+
+    if violation is None:
+        return None
+
+    idx_sum = 0
+    violating_faults: list[tuple[Fault, int]] = []
+    for f, vs in (nm1_atomics if violation.is_nm1 else nm2_atomics):
+        for i, v in enumerate(vs):
+            if idx_sum + i in violation.faults:
+                violating_faults.append((f, v))
+        idx_sum += len(vs)
+
+    return Violation(
+        is_nm1=violation.is_nm1,
+        weight=violation.weight,
+        faults=violating_faults,
+    )
 
 
+@overload
+def is_fault_equivalence(
+    noise_1: NoiseModelParam[int],
+    noise_2: NoiseModelParam[int],
+    *,
+    until: int | None = None,
+    resolve_reason: Literal[False] = False,
+    quiet: bool = True,
+) -> bool: ...
+@overload
+def is_fault_equivalence(
+    noise_1: NoiseModelParam[int],
+    noise_2: NoiseModelParam[int],
+    *,
+    until: int | None = None,
+    resolve_reason: Literal[True],
+    quiet: bool = True,
+) -> Violation | None: ...
 @noise_model_params("noise_1", "noise_2")
 def is_fault_equivalence(
     noise_1: NoiseModelParam[int],
     noise_2: NoiseModelParam[int],
     *,
     until: int | None = None,
+    resolve_reason: bool = False,
     quiet: bool = True,
-) -> bool:
+) -> bool | Violation | None:
     """
-    Given two noise models noise_1 and noise_2 (required to be in pushed out form), determine if they are fault
-    equivalent. This requires their underlying diagrams to be semantically equivalent, so stabilisers are only supplied
-    once.
+    Given two noise models noise_1 and noise_2 (required to be in pushed out form),
+    determine if they are fault equivalent. This requires their underlying diagrams to
+    be semantically equivalent, so stabilisers are only supplied once.
 
-    Note that currently only equally weighted noise models are supported.
-    Further note that for the result to be sound, the boundary nodes of the two diagrams must be ordered the same.
+    Note that currently only equally weighted noise models are supported. Further note
+    that for the result to be sound, the boundary nodes of the two diagrams must be
+    ordered the same.
 
     :param noise_1: First noise model to check
     :param noise_2: Second noise model to check
     :param until: Up to which weight (exclusive) to check the equivalence
+    :param resolve_reason: Whether to return the reason / fault combination failing the
+        fault equivalence check, if there is one.
     :param quiet: Whether to silence additional informative output
     """
     d1, d2 = noise_1.diagram, noise_2.diagram
@@ -159,12 +212,18 @@ def is_fault_equivalence(
     pushed_out_noise_1 = push_out(noise_1, flip_ops_1)
     pushed_out_noise_2 = push_out(noise_2, flip_ops_2)
 
-    return _is_fault_equivalence(
+    violation = _is_fault_equivalence(
         noise_1=pushed_out_noise_1,
         noise_2=pushed_out_noise_2,
         num_detectors_1=len(flip_ops_1.region_gen_set),
         num_detectors_2=len(flip_ops_2.region_gen_set),
         stabilisers=Stabilisers(stabs_1_rref),
         until=until,
+        resolve_reason=resolve_reason,
         quiet=quiet,
     )
+
+    if resolve_reason:
+        return violation
+
+    return violation is None

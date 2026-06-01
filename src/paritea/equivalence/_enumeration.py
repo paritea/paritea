@@ -3,9 +3,15 @@ import math
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from typing import NamedTuple
 
 from tqdm.auto import tqdm
 
+
+class CompiledViolation(NamedTuple):
+    is_nm1: bool
+    weight: int
+    faults: set[int]
 
 def _format_sig(sig: int, boundaries: int, sinks: int) -> str:
     sig_str = format(sig, "b").zfill(boundaries * 2 + sinks)
@@ -143,7 +149,7 @@ def _next_gen_unfold(
     return undetectables_generated
 
 
-def _next_gen_strategy(
+def next_gen_strategy(
     nm1_sigs: list[tuple[int, int]],
     nm2_sigs: list[tuple[int, int]],
     d1_boundaries: int,
@@ -152,8 +158,9 @@ def _next_gen_strategy(
     d2_detectors: int,
     *,
     until: int | None = None,
+    resolve_reason: bool,
     quiet: bool = True,
-) -> int | None:
+) -> CompiledViolation | None:
     """
     Takes weighted fault signatures of nm1,nm2 in normalised form (stabilisers factored out), encoded as integers with
     bits as `<z and x boundary flips><detector flips>`.
@@ -223,7 +230,11 @@ def _next_gen_strategy(
                         f"{_format_sig(sig, d1_boundaries, 0)} from nm1 has no equivalent in nm2, or it was not "
                         f"yet generated and thus has higher weight!"
                     )
-                return w
+                return CompiledViolation(
+                    weight=w,
+                    is_nm1=True,
+                    faults=[], # TODO
+                )
 
         for sig in nm2_undetectable:
             if sig not in nm1_undetectable_lookup:
@@ -232,7 +243,11 @@ def _next_gen_strategy(
                         f"{_format_sig(sig, d2_boundaries, 0)} from nm2 has no equivalent in nm1, or it was not "
                         f"yet generated and thus has higher weight!"
                     )
-                return w
+                return CompiledViolation(
+                    weight=w,
+                    is_nm1=False,
+                    faults=[], # TODO
+                )
     w_pgb.close()
 
     return None
