@@ -1,4 +1,4 @@
-name: Benchmark - Pauli Web Computation
+name: Benchmarks
 
 on:
   pull_request:
@@ -17,11 +17,10 @@ jobs:
   changes:
     uses: ./.github/workflows/changes.yml
 
-  benchmark:
+  build:
     needs: changes
     if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
 
@@ -32,11 +31,56 @@ jobs:
           enable-cache: 'true'
           python-version: '3.13'
 
-      - name: Install the project with bench dependencies
-        run: uv sync --locked --all-extras --group bench
+      - name: Cache Rust build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: bench-rust-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust/**', 'rust-bindings/**') }}
+          restore-keys: |
+            bench-rust-${{ runner.os }}-
 
-      - name: Install release version of paritea
-        run: uv sync -C "build-args=--profile=release-py"
+      - name: Install the project with bench dependencies (release build)
+        run: |
+          uv sync --locked --all-extras --group bench
+          uv sync -C "build-args=--profile=release-py"
+
+      - name: Package built wheel for downstream jobs
+        run: |
+          uv build --wheel -C "build-args=--profile=release-py" -o dist/
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: paritea-wheel
+          path: dist/*.whl
+          retention-days: 1
+
+  bench-web-compute:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.5"
+          enable-cache: 'true'
+          python-version: '3.13'
+
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: paritea-wheel
+          path: dist/
+
+      - name: Install from wheel with bench dependencies
+        run: |
+          uv sync --locked --all-extras --group bench --reinstall-package paritea
+          uv pip install --force-reinstall dist/*.whl
 
       - name: Run benchmarks
         run: uv run --no-sync pytest benchmarks/bench_web_compute.py --benchmark-json=benchmarks/results.json -v
@@ -44,102 +88,48 @@ jobs:
       - name: Generate plot
         run: uv run --no-sync python benchmarks/bench_web_compute.py benchmarks/results.json
 
-      - name: Commit benchmark plot to assets branch
-        id: commit-image
-        run: |
-          IMG_NAME="benchmark-${{ github.event.pull_request.number }}-$(date +%s).png"
-          # Set up a fresh worktree for the assets branch
-          git fetch origin assets/images --depth=1 || true
-          git worktree add --detach /tmp/assets-branch
-          cd /tmp/assets-branch
-          # Create the branch if it doesn't exist yet
-          git checkout assets/images 2>/dev/null || git checkout --orphan assets/images
-          # Clean any tracked files on first creation of the orphan branch
-          git rm -rf --ignore-unmatch . > /dev/null 2>&1
-          mkdir -p benchmarks
-          cp "$GITHUB_WORKSPACE/benchmarks/results.png" "benchmarks/$IMG_NAME"
-          git add "benchmarks/$IMG_NAME"
-          git -c user.name="github-actions[bot]" \
-              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              commit -m "Add benchmark plot for PR #${{ github.event.pull_request.number }}"
-          git push origin HEAD:assets/images
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "img_name=$IMG_NAME" >> "$GITHUB_OUTPUT"
-          cd "$GITHUB_WORKSPACE"
-          git worktree remove /tmp/assets-branch
-
-      - name: Post results to PR
-        uses: actions/github-script@v7
-        env:
-          IMG_SHA: ${{ steps.commit-image.outputs.sha }}
-          IMG_NAME: ${{ steps.commit-image.outputs.img_name }}
+      - name: Post benchmark results
+        uses: ./.github/actions/post-benchmark-comment
         with:
-          script: |
-            const fs = require('fs');
-            const results = JSON.parse(fs.readFileSync('benchmarks/results.json', 'utf8'));
+          image-path: benchmarks/results.png
+          results-json: benchmarks/results.json
+          title: "Benchmark Results — Pauli Web Computation"
+          image-prefix: bench-web
 
-            // Build a markdown summary table
-            // Parse params from name like "test_bench_stabilisers[d3_r1]"
-            function parseKey(name) {
-              const match = name.match(/^(test_bench_\w+)\[d(\d+)_r(\d+)\]$/);
-              if (!match) return { method: name, distance: 0, rounds: 0 };
-              return { method: match[1], distance: parseInt(match[2]), rounds: parseInt(match[3]) };
-            }
+  bench-fault-equivalence:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
 
-            const rows = results.benchmarks
-              .sort((a, b) => {
-                const ka = parseKey(a.name);
-                const kb = parseKey(b.name);
-                return (ka.distance - kb.distance) || (ka.rounds - kb.rounds) || ka.method.localeCompare(kb.method);
-              })
-              .map(b => {
-                const median = (b.stats.median * 1000).toFixed(1);
-                const stddev = (b.stats.stddev * 1000).toFixed(1);
-                const rounds = b.stats.rounds;
-                return `| \`${b.name}\` | ${median} ms | ±${stddev} ms | ${rounds} |`;
-              });
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.5"
+          enable-cache: 'true'
+          python-version: '3.13'
 
-            const imgUrl = `https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/${process.env.IMG_SHA}/benchmarks/${process.env.IMG_NAME}`;
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: paritea-wheel
+          path: dist/
 
-            const body = [
-              '## Benchmark Results — Pauli Web Computation',
-              '',
-              `![Benchmark plot](${imgUrl})`,
-              '',
-              '<details>',
-              '<summary>Detailed timing results</summary>',
-              '',
-              '| Benchmark | Median | Std Dev | Rounds |',
-              '|-----------|--------|---------|--------|',
-              ...rows,
-              '',
-              '</details>',
-              '',
-              `*Commit: ${context.sha.substring(0, 8)}*`,
-            ].join('\n');
+      - name: Install from wheel with bench dependencies
+        run: |
+          uv sync --locked --all-extras --group bench --reinstall-package paritea
+          uv pip install --force-reinstall dist/*.whl
 
-            // Find existing comment to update, or create a new one
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
+      - name: Run benchmarks
+        run: uv run --no-sync pytest benchmarks/bench_fault_equivalence.py --benchmark-json=benchmarks/fault_equiv_results.json -v
 
-            const marker = '## Benchmark Results — Pauli Web Computation';
-            const existing = comments.find(c => c.body.startsWith(marker));
+      - name: Generate plot
+        run: uv run --no-sync python benchmarks/bench_fault_equivalence.py benchmarks/fault_equiv_results.json
 
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
-            }
+      - name: Post benchmark results
+        uses: ./.github/actions/post-benchmark-comment
+        with:
+          image-path: benchmarks/fault_equiv_results.png
+          results-json: benchmarks/fault_equiv_results.json
+          title: "Benchmark Results — Fault Equivalence"
+          image-prefix: bench-fault-equiv
