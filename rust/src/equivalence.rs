@@ -71,11 +71,8 @@ impl AtomicFaults {
         }
     }
 
-    fn all_iter(&self) -> impl Iterator<Item = (&Fault, Weight)> {
-        self.undetectable
-            .iter()
-            .chain(self.detectable_with_detectors.keys())
-            .map(|sig| (sig, self.weight_lookup[sig]))
+    fn all_iter(&self) -> impl Iterator<Item = (&Fault, &Weight)> {
+        self.weight_lookup.iter()
     }
 
     /// Return all detectable sigs whose detector bits overlap with `detector_info`,
@@ -106,7 +103,7 @@ impl AtomicFaults {
 
 fn prepare_priority_queue(atomics: &AtomicFaults) -> FaultQueue {
     let mut queue = FaultQueue::default();
-    for (sig, v) in atomics.all_iter() {
+    for (sig, &v) in atomics.all_iter() {
         queue.entry(v).or_default().insert(sig.clone());
     }
     queue
