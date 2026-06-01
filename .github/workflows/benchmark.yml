@@ -79,7 +79,7 @@ jobs:
 
       - name: Install from wheel with bench dependencies
         run: |
-          uv sync --locked --all-extras --group bench --reinstall-package paritea
+          uv sync --locked --all-extras --group bench --no-build-package paritea
           uv pip install --force-reinstall dist/*.whl
 
       - name: Run benchmarks
@@ -117,7 +117,7 @@ jobs:
 
       - name: Install from wheel with bench dependencies
         run: |
-          uv sync --locked --all-extras --group bench --reinstall-package paritea
+          uv sync --locked --all-extras --group bench --no-build-package paritea
           uv pip install --force-reinstall dist/*.whl
 
       - name: Run benchmarks
