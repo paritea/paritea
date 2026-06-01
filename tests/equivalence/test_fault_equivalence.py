@@ -337,33 +337,23 @@ def test_parallel_syndrome_extraction():
         from_pyzx(g1, convert_had_edges=True), from_pyzx(g2, convert_had_edges=True), quiet=False
     )
 
-
-def test_surface_code_weight_limiting():
-    d = surface_code_memory_experiment(distance=3, rounds=1)
-    d.virtualize_io()
-    max_x = max(d.x(n) for n in d.node_indices())
-    d2 = deepcopy(d)
-    for n in d2.node_indices():
-        d2.set_x(n, d2.x(n) + max_x + 1)
-    orig_nodes = d.node_indices()
-    orig_in, orig_out = d.io()
-    other_in, other_out = d2.io()
-    node_map = d.compose(d2, dict(zip(orig_out, other_in)))
-    d.set_io(orig_in, [node_map[o] for o in other_out], virtual=True)
-    d.realize_io()
+@pytest.mark.parametrize("distance", [3, 5, 7])
+def test_surface_code_weight_limiting(distance):
+    d, partitions = surface_code_memory_experiment(distance=distance, rounds=2, partition=True)
+    [first_part, second_part] = partitions
 
     def _is_crossing_edge(e: int) -> bool:
         s, t = d.get_edge_endpoints_by_index(e)
 
-        return (s in node_map.values() and t in orig_nodes) or (t in node_map.values() and s in orig_nodes)
+        return (s in first_part and t in second_part) or (s in second_part and t in first_part)
 
     nm1 = NoiseModel.weighted_edge_flip_noise(d, idealised_edges=d.edge_indices())
     nm2 = NoiseModel.weighted_edge_flip_noise(
         d, w_x=1, w_y=1000, w_z=1000, idealised_edges=[e for e in d.edge_indices() if not _is_crossing_edge(e)]
     )
-    # The fault equivalence is valid until exactly weight 3, since the circuit has distance 3
-    assert is_fault_equivalence(nm1, nm2, until=3, quiet=False)
-    assert not is_fault_equivalence(nm1, nm2, until=4, quiet=False)
+    # The fault equivalence is valid until exactly weight == distance
+    assert is_fault_equivalence(nm1, nm2, until=distance, quiet=False)
+    assert not is_fault_equivalence(nm1, nm2, until=distance+1, quiet=False)
 
 
 def test_idempotent():
