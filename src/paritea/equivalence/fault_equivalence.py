@@ -4,11 +4,10 @@ import numpy as np
 from galois import GF2
 
 from paritea import build_flip_operators, push_out
+from paritea._bindings import _check_fault_equivalence
 from paritea.noise import Fault, NoiseModel
 from paritea.utils import NoiseModelParam, noise_model_params
 from paritea.web import row_reduce_webs
-
-from paritea._bindings import _check_fault_equivalence
 
 
 class Stabilisers:
