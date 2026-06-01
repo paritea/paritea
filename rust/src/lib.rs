@@ -2,6 +2,7 @@
 use rustworkx_core::petgraph::graph::NodeIndex;
 
 pub mod diagram;
+pub mod equivalence;
 pub mod pauli;
 pub mod web;
 

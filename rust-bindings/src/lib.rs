@@ -7,7 +7,9 @@ use pyo3::pymodule;
 /// `src/paritea/_bindings/__init__.pyi` type stubs.
 #[pymodule]
 mod _bindings {
+    use num_bigint::BigUint;
     use paritea::diagram::{Diagram, NodeType, Phase};
+    use paritea::equivalence::check_fault_equivalence;
     use paritea::pauli::PauliString;
     use paritea::web::{compute, pauli_webs_through_partitions};
     use pyo3::prelude::*;
@@ -154,5 +156,29 @@ mod _bindings {
                 .map(|r| _to_py_string(py, r, &rs_to_py_edges))
                 .collect(),
         ))
+    }
+
+    #[pyfunction]
+    #[pyo3(signature = (*, nm1_sigs, nm2_sigs, d1_boundaries, d1_detectors, d2_boundaries, d2_detectors, until, quiet))]
+    fn _check_fault_equivalence(
+        nm1_sigs: Vec<(BigUint, usize)>,
+        nm2_sigs: Vec<(BigUint, usize)>,
+        d1_boundaries: usize,
+        d1_detectors: usize,
+        d2_boundaries: usize,
+        d2_detectors: usize,
+        until: Option<usize>,
+        quiet: bool,
+    ) -> Option<usize> {
+        check_fault_equivalence(
+            nm1_sigs,
+            nm2_sigs,
+            d1_boundaries,
+            d1_detectors,
+            d2_boundaries,
+            d2_detectors,
+            until,
+            quiet,
+        )
     }
 }

@@ -19,6 +19,7 @@ bench = false
 
 [dependencies]
 paritea = { path = "../rust" }
-rustworkx-core = { workspace = true }
+rustworkx-core.workspace = true
+num-bigint.workspace = true
 
-pyo3 = { version = "0.28.0", features = ["extension-module", "abi3-py310", "anyhow"] }
+pyo3 = { version = "0.28.0", features = ["extension-module", "abi3-py310", "anyhow", "num-bigint"] }

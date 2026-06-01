@@ -328,6 +328,7 @@ dependencies = [
  "derive_more",
  "fraction",
  "itertools",
+ "num-bigint",
  "rustc-hash",
  "rustworkx-core",
 ]
@@ -336,6 +337,7 @@ dependencies = [
 name = "paritea-py"
 version = "0.1.0"
 dependencies = [
+ "num-bigint",
  "paritea",
  "pyo3",
  "rustworkx-core",
@@ -405,6 +407,8 @@ checksum = "91fd8e38a3b50ed1167fb981cd6fd60147e091784c427b8f7183a7ee32c31c12"
 dependencies = [
  "anyhow",
  "libc",
+ "num-bigint",
+ "num-traits",
  "once_cell",
  "portable-atomic",
  "pyo3-build-config",
