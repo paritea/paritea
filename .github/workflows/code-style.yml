@@ -1,0 +1,44 @@
+name: Code Style
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  ruff:
+    name: 🐍 - Lint and check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install ruff
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: "--version"
+
+      - name: Lint code
+        run: ruff check
+
+      - name: Check formatting
+        run: ruff format --check --diff
+  
+  rust:
+    name: 🦀 - Format, check and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check compilation
+        run: cargo check --workspace
+
+      - name: Lint with clippy
+        run: cargo clippy --workspace -- -D warnings      

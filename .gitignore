@@ -6,6 +6,10 @@ dist/
 wheels/
 *.egg-info
 
+# Rust-binding generated files
+target
+*.abi3.so
+
 # Virtual environments
 .venv
 
@@ -14,3 +18,4 @@ wheels/
 
 # Jetbrains
 .idea
+
