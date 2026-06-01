@@ -78,6 +78,7 @@ impl AtomicFaults {
     /// Return all detectable sigs whose detector bits overlap with `detector_info`,
     /// filtered to those with the lowest weight among them.
     fn detector_overlapping(&self, detector_info: &BigUint) -> Vec<&Fault> {
+        // TODO improvement by pre-sorting by weight (only improves for different weights (non-avg case))
         let mut lowest_weight: Option<Weight> = None;
         let mut lowest_weight_sigs = Vec::new();
 
