@@ -159,26 +159,15 @@ mod _bindings {
     }
 
     #[pyfunction]
-    #[pyo3(signature = (*, nm1_sigs, nm2_sigs, d1_boundaries, d1_detectors, d2_boundaries, d2_detectors, until, quiet))]
+    #[pyo3(signature = (*, nm1_sigs, nm2_sigs, d1_detectors, d2_detectors, until, quiet))]
     fn _check_fault_equivalence(
         nm1_sigs: Vec<(BigUint, usize)>,
         nm2_sigs: Vec<(BigUint, usize)>,
-        d1_boundaries: usize,
         d1_detectors: usize,
-        d2_boundaries: usize,
         d2_detectors: usize,
         until: Option<usize>,
         quiet: bool,
     ) -> Option<usize> {
-        check_fault_equivalence(
-            nm1_sigs,
-            nm2_sigs,
-            d1_boundaries,
-            d1_detectors,
-            d2_boundaries,
-            d2_detectors,
-            until,
-            quiet,
-        )
+        check_fault_equivalence(nm1_sigs, nm2_sigs, d1_detectors, d2_detectors, until, quiet)
     }
 }
