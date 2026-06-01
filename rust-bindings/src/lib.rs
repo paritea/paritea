@@ -9,7 +9,7 @@ use pyo3::pymodule;
 mod _bindings {
     use num_bigint::BigUint;
     use paritea::diagram::{Diagram, NodeType, Phase};
-    use paritea::equivalence::check_fault_equivalence;
+    use paritea::fault_equivalence::check_fault_equivalence;
     use paritea::pauli::PauliString;
     use paritea::web::{compute, pauli_webs_through_partitions};
     use pyo3::prelude::*;

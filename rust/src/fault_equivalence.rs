@@ -1,3 +1,5 @@
+//! Allows checking fault equivalence.
+
 use num_bigint::BigUint;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::hash_map::Entry;
@@ -79,6 +81,7 @@ impl AtomicFaults {
     /// filtered to those with the lowest weight among them.
     fn detector_overlapping(&self, detector_info: &BigUint) -> Vec<&Fault> {
         // TODO improvement by pre-sorting by weight (only improves for different weights (non-avg case))
+        // TODO improvement by pre-chunking for detector fields (make sure this is an implementation detail)
         let mut lowest_weight: Option<Weight> = None;
         let mut lowest_weight_sigs = Vec::new();
 
