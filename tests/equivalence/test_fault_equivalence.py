@@ -7,6 +7,7 @@ import pyzx as zx
 from paritea import generate
 from paritea.diagram import Diagram, NodeType
 from paritea.equivalence import is_fault_equivalence
+from paritea.generate import surface_code_memory_experiment
 from paritea.glue.pyzx import from_pyzx
 from paritea.noise import NoiseModel
 
@@ -338,11 +339,7 @@ def test_parallel_syndrome_extraction():
 
 
 def test_surface_code_weight_limiting():
-    d = generate.shor_extraction(
-        generate.rotated_planar_surface_code_stabilisers(3),
-        qubits=9,
-        repeat=1,
-    )
+    d = surface_code_memory_experiment(distance=3, rounds=1)
     d.virtualize_io()
     max_x = max(d.x(n) for n in d.node_indices())
     d2 = deepcopy(d)
