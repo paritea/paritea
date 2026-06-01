@@ -1,4 +1,3 @@
-from copy import deepcopy
 from fractions import Fraction
 
 import pytest
@@ -337,6 +336,7 @@ def test_parallel_syndrome_extraction():
         from_pyzx(g1, convert_had_edges=True), from_pyzx(g2, convert_had_edges=True), quiet=False
     )
 
+
 @pytest.mark.parametrize("distance", [3, 5, 7])
 def test_surface_code_weight_limiting(distance):
     d, partitions = surface_code_memory_experiment(distance=distance, rounds=2, partition=True)
@@ -353,7 +353,7 @@ def test_surface_code_weight_limiting(distance):
     )
     # The fault equivalence is valid until exactly weight == distance
     assert is_fault_equivalence(nm1, nm2, until=distance, quiet=False)
-    assert not is_fault_equivalence(nm1, nm2, until=distance+1, quiet=False)
+    assert not is_fault_equivalence(nm1, nm2, until=distance + 1, quiet=False)
 
 
 def test_idempotent():
