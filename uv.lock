@@ -1394,7 +1394,6 @@ dependencies = [
     { name = "rustworkx" },
     { name = "sinter" },
     { name = "stim" },
-    { name = "tqdm" },
 ]
 
 [package.dev-dependencies]
@@ -1430,7 +1429,6 @@ requires-dist = [
     { name = "rustworkx", specifier = ">=0.17.1" },
     { name = "sinter", specifier = "==1.16.dev1761611832" },
     { name = "stim", specifier = "==1.16.dev1761611832" },
-    { name = "tqdm", specifier = ">=4.67.1" },
 ]
 
 [package.metadata.requires-dev]
