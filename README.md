@@ -23,7 +23,7 @@ The project does not have any releases yet, so this remains sole way of installa
 different versions based on git refs, see [the corresponding
 `uv` documentation](https://docs.astral.sh/uv/concepts/projects/dependencies/#git).
 
-> [!IMPORTANT] In particular, you will need to have Rust installed to be able to build `paritea`, until the first
+> In particular, you will need to have Rust installed to be able to build `paritea`, until the first
 > release is made! Read the [developer requirements section](#requirements) for more information.
 
 ## Developer Setup
