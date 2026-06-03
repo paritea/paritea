@@ -92,16 +92,6 @@ impl AtomicFaults {
         }
     }
 
-    /// If the fault is a detectable atomic fault and the given weight is strictly smaller than the
-    /// recorded weight for the atomic fault, updates the recorded weight.
-    fn check_update_detectable_weight(&mut self, sig: &Fault, w: Weight) {
-        if let Some((existing_w, _)) = self.detectable_with_detectors.get_mut(sig)
-            && w < *existing_w
-        {
-            *existing_w = w;
-        }
-    }
-
     /// Return all detectable sigs whose detector bits overlap with `detector_info`,
     /// filtered to those with the lowest weight among them.
     fn detector_overlapping(
@@ -138,6 +128,16 @@ impl AtomicFaults {
                 .into_iter()
                 .map(move |sig| (sig, lowest_weight)),
         )
+    }
+
+    /// If the fault is a detectable atomic fault and the given weight is strictly smaller than the
+    /// recorded weight for the atomic fault, updates the recorded weight.
+    fn check_update_detectable_weight(&mut self, sig: &Fault, w: Weight) {
+        if let Some((existing_w, _)) = self.detectable_with_detectors.get_mut(sig)
+            && w < *existing_w
+        {
+            *existing_w = w;
+        }
     }
 }
 
