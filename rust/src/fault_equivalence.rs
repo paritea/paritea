@@ -81,6 +81,26 @@ impl AtomicFaults {
         Box::new(self.undetectable.iter().map(|f| (f, self.weight_lookup[f])))
     }
 
+    /// If the fault is an undetectable atomic fault and the given weight is strictly smaller than
+    /// the recorded weight for the atomic fault, updates the recorded weight.
+    fn check_update_undetectable_weight(&mut self, sig: &Fault, w: Weight) {
+        if let Some(existing_w) = self.weight_lookup.get_mut(sig)
+            && w < *existing_w
+        {
+            *existing_w = w;
+        }
+    }
+
+    /// If the fault is a detectable atomic fault and the given weight is strictly smaller than the
+    /// recorded weight for the atomic fault, updates the recorded weight.
+    fn check_update_detectable_weight(&mut self, sig: &Fault, w: Weight) {
+        if let Some(existing_w) = self.weight_lookup.get_mut(sig)
+            && w < *existing_w
+        {
+            *existing_w = w;
+        }
+    }
+
     /// Return all detectable sigs whose detector bits overlap with `detector_info`,
     /// filtered to those with the lowest weight among them.
     fn detector_overlapping(
@@ -157,6 +177,7 @@ fn next_gen_unfold(
                         detectable_lookup.insert(sig.clone(), w);
                     }
                 }
+                atomics.check_update_detectable_weight(sig, w);
             } else {
                 let sig_no_sinks = sig >> num_detectors;
 
@@ -167,12 +188,7 @@ fn next_gen_unfold(
                         undetectables_generated.insert(sig_no_sinks);
                     }
                 }
-            }
-
-            if let Some(existing_w) = atomics.weight_lookup.get_mut(sig)
-                && *existing_w > w
-            {
-                *existing_w = w; // Improved atomic weight found
+                atomics.check_update_undetectable_weight(sig, w)
             }
 
             let atomic_sigs = if !detectable {
