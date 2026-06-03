@@ -30,10 +30,10 @@ fn apply_mask(sig: &BigUint, mask: &BigUint) -> BigUint {
     sig & mask
 }
 
+#[derive(Debug, Default)]
 struct AtomicFaults {
-    weight_lookup: FxHashMap<Fault, Weight>,
-    undetectable: FxHashSet<Fault>,
-    detectable_with_detectors: FxHashMap<Fault, BigUint>,
+    undetectable: FxHashMap<Fault, Weight>,
+    detectable_with_detectors: FxHashMap<Fault, (Weight, BigUint)>,
 }
 
 impl AtomicFaults {
@@ -42,49 +42,50 @@ impl AtomicFaults {
         num_detectors: usize,
     ) -> Self {
         let detector_mask = ones_mask(num_detectors);
-        let mut weight_lookup = FxHashMap::default();
-        let mut undetectable = FxHashSet::default();
-        let mut detectable_with_detectors = FxHashMap::default();
+        let mut atomics = Self::default();
 
         for (sig, v) in atomic_faults {
             let detectable = has_any_bit(&sig, &detector_mask);
             if detectable {
-                if let Entry::Vacant(e) = detectable_with_detectors.entry(sig.clone()) {
-                    e.insert(apply_mask(&sig, &detector_mask));
-                    weight_lookup.insert(sig.clone(), v);
+                match atomics.detectable_with_detectors.entry(sig.clone()) {
+                    Entry::Occupied(mut entry) => {
+                        entry.get_mut().0 = v;
+                    }
+                    Entry::Vacant(entry) => {
+                        entry.insert((v, apply_mask(&sig, &detector_mask)));
+                    }
                 }
             } else {
-                if undetectable.insert(sig.clone()) {
-                    weight_lookup.insert(sig.clone(), v);
+                match atomics.undetectable.entry(sig.clone()) {
+                    Entry::Occupied(mut entry) => {
+                        *entry.get_mut() = v;
+                    }
+                    Entry::Vacant(entry) => {
+                        entry.insert(v);
+                    }
                 }
             }
-
-            if let Some(w) = weight_lookup.get_mut(&sig)
-                && v < *w
-            {
-                *w = v;
-            }
         }
 
-        Self {
-            weight_lookup,
-            undetectable,
-            detectable_with_detectors,
-        }
+        atomics
     }
 
     fn all_iter(&self) -> impl Iterator<Item = (&Fault, &Weight)> {
-        self.weight_lookup.iter()
+        self.undetectable.iter().chain(
+            self.detectable_with_detectors
+                .iter()
+                .map(|(sig, (w, _))| (sig, w)),
+        )
     }
 
     fn undetectable_iter(&self) -> Box<dyn Iterator<Item = (&Fault, Weight)> + '_> {
-        Box::new(self.undetectable.iter().map(|f| (f, self.weight_lookup[f])))
+        Box::new(self.undetectable.iter().map(|(s, &w)| (s, w)))
     }
 
     /// If the fault is an undetectable atomic fault and the given weight is strictly smaller than
     /// the recorded weight for the atomic fault, updates the recorded weight.
     fn check_update_undetectable_weight(&mut self, sig: &Fault, w: Weight) {
-        if let Some(existing_w) = self.weight_lookup.get_mut(sig)
+        if let Some(existing_w) = self.undetectable.get_mut(sig)
             && w < *existing_w
         {
             *existing_w = w;
@@ -94,7 +95,7 @@ impl AtomicFaults {
     /// If the fault is a detectable atomic fault and the given weight is strictly smaller than the
     /// recorded weight for the atomic fault, updates the recorded weight.
     fn check_update_detectable_weight(&mut self, sig: &Fault, w: Weight) {
-        if let Some(existing_w) = self.weight_lookup.get_mut(sig)
+        if let Some((existing_w, _)) = self.detectable_with_detectors.get_mut(sig)
             && w < *existing_w
         {
             *existing_w = w;
@@ -112,16 +113,15 @@ impl AtomicFaults {
         let mut lowest_weight: Option<Weight> = None;
         let mut lowest_weight_sigs = Vec::new();
 
-        for (sig, sig_info) in &self.detectable_with_detectors {
+        for (sig, (w, sig_info)) in &self.detectable_with_detectors {
             if !has_any_bit(detector_info, sig_info) {
                 continue;
             }
-            let w = self.weight_lookup[sig];
             match lowest_weight {
-                Some(lw) if w > lw => continue,
-                Some(lw) if w == lw => lowest_weight_sigs.push(sig),
+                Some(lw) if *w > lw => continue,
+                Some(lw) if *w == lw => lowest_weight_sigs.push(sig),
                 _ => {
-                    lowest_weight = Some(w);
+                    lowest_weight = Some(*w);
                     lowest_weight_sigs.clear();
                     lowest_weight_sigs.push(sig);
                 }
