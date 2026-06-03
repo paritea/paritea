@@ -77,9 +77,16 @@ impl AtomicFaults {
         self.weight_lookup.iter()
     }
 
+    fn undetectable_iter(&self) -> Box<dyn Iterator<Item = (&Fault, Weight)> + '_> {
+        Box::new(self.undetectable.iter().map(|f| (f, self.weight_lookup[f])))
+    }
+
     /// Return all detectable sigs whose detector bits overlap with `detector_info`,
     /// filtered to those with the lowest weight among them.
-    fn detector_overlapping(&self, detector_info: &BigUint) -> Vec<&Fault> {
+    fn detector_overlapping(
+        &self,
+        detector_info: &BigUint,
+    ) -> Box<dyn Iterator<Item = (&Fault, Weight)> + '_> {
         // TODO improvement by pre-sorting by weight (only improves for different weights (non-avg case))
         // TODO improvement by pre-chunking for detector fields (make sure this is an implementation detail)
         let mut lowest_weight: Option<Weight> = None;
@@ -101,7 +108,16 @@ impl AtomicFaults {
             }
         }
 
-        lowest_weight_sigs
+        let lowest_weight = lowest_weight.unwrap_or_else(|| {
+            assert!(lowest_weight_sigs.is_empty());
+            0
+        });
+
+        Box::new(
+            lowest_weight_sigs
+                .into_iter()
+                .map(move |sig| (sig, lowest_weight)),
+        )
     }
 }
 
@@ -159,22 +175,17 @@ fn next_gen_unfold(
                 *existing_w = w; // Improved atomic weight found
             }
 
-            let atomic_sigs: Vec<&Fault> = if !detectable {
-                atomics.undetectable.iter().collect()
+            let atomic_sigs = if !detectable {
+                atomics.undetectable_iter()
             } else {
-                atomics
-                    .detector_overlapping(&apply_mask(sig, &detector_mask))
-                    .into_iter()
-                    .collect()
+                atomics.detector_overlapping(&apply_mask(sig, &detector_mask))
             };
-
-            for atomic_sig in atomic_sigs {
-                let comb_w = atomics.weight_lookup[atomic_sig] + w;
+            for (atomic_sig, atomic_w) in atomic_sigs {
                 let combined = atomic_sig ^ sig;
-                if comb_w == w {
+                if atomic_w == 0 {
                     new_w_queue.insert(combined);
                 } else {
-                    queue.entry(comb_w).or_default().insert(combined);
+                    queue.entry(atomic_w + w).or_default().insert(combined);
                 }
             }
         }
