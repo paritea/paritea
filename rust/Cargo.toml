@@ -18,3 +18,4 @@ delegate = "0.13.5"
 fraction = "0.15.4"
 num-bigint.workspace = true
 derive_more.workspace = true
+indicatif = "0.18.4"

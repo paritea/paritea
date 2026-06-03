@@ -1,8 +1,10 @@
 //! Allows checking fault equivalence.
 
+use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
 use num_bigint::BigUint;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::hash_map::Entry;
+use std::time::{Duration, SystemTime};
 
 type Fault = BigUint;
 type Weight = usize;
@@ -149,6 +151,8 @@ fn prepare_priority_queue(atomics: &AtomicFaults) -> FaultQueue {
     queue
 }
 
+const PB_UPDATE_INTERVAL: usize = 1000;
+
 fn next_gen_unfold(
     w: Weight,
     queue: &mut FaultQueue,
@@ -156,6 +160,7 @@ fn next_gen_unfold(
     undetectable_lookup: &mut FxHashMap<BigUint, Weight>,
     atomics: &mut AtomicFaults,
     num_detectors: usize,
+    multi_pb: Option<&MultiProgress>,
 ) -> FxHashSet<BigUint> {
     let detector_mask = ones_mask(num_detectors);
 
@@ -165,22 +170,39 @@ fn next_gen_unfold(
     };
     let mut undetectables_generated = FxHashSet::default();
 
+    let pb = ProgressBar::new(current_queue.len() as u64);
+    pb.set_style(
+        ProgressStyle::with_template(
+            "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos} remaining",
+        )
+        .unwrap()
+        .progress_chars("#<-"),
+    );
+    pb.set_position(current_queue.len() as u64);
+    pb.enable_steady_tick(Duration::from_millis(50));
+    multi_pb.map(|m| m.add(pb.clone()));
+    let (mut items_done, start_time) = (0, SystemTime::now());
     while !current_queue.is_empty() {
         let mut new_w_queue = FxHashSet::default();
+        let items = current_queue.len();
+        items_done += items;
 
-        for sig in &current_queue {
-            let detectable = has_any_bit(sig, &detector_mask);
+        for (i, sig) in current_queue.into_iter().enumerate() {
+            let detectable = has_any_bit(&sig, &detector_mask);
+            if i % PB_UPDATE_INTERVAL == 0 {
+                pb.dec(PB_UPDATE_INTERVAL as u64);
+            }
+
             if detectable {
-                match detectable_lookup.get(sig) {
+                match detectable_lookup.get(&sig) {
                     Some(&existing_w) if existing_w <= w => continue, // No improvement
                     _ => {
                         detectable_lookup.insert(sig.clone(), w);
                     }
                 }
-                atomics.check_update_detectable_weight(sig, w);
+                atomics.check_update_detectable_weight(&sig, w);
             } else {
-                let sig_no_sinks = sig >> num_detectors;
-
+                let sig_no_sinks = &sig >> num_detectors;
                 match undetectable_lookup.get(&sig_no_sinks) {
                     Some(&existing_w) if existing_w <= w => continue, // No improvement
                     _ => {
@@ -188,25 +210,37 @@ fn next_gen_unfold(
                         undetectables_generated.insert(sig_no_sinks);
                     }
                 }
-                atomics.check_update_undetectable_weight(sig, w)
+                atomics.check_update_undetectable_weight(&sig, w)
             }
 
             let atomic_sigs = if !detectable {
                 atomics.undetectable_iter()
             } else {
-                atomics.detector_overlapping(&apply_mask(sig, &detector_mask))
+                atomics.detector_overlapping(&apply_mask(&sig, &detector_mask))
             };
             for (atomic_sig, atomic_w) in atomic_sigs {
-                let combined = atomic_sig ^ sig;
+                let combined = atomic_sig ^ &sig;
                 if atomic_w == 0 {
                     new_w_queue.insert(combined);
+                    pb.inc(1)
                 } else {
                     queue.entry(atomic_w + w).or_default().insert(combined);
                 }
             }
         }
+        pb.dec((items % PB_UPDATE_INTERVAL) as u64);
 
         current_queue = new_w_queue;
+    }
+    pb.finish_and_clear();
+    if let Some(multi_pb) = multi_pb {
+        let total_time = SystemTime::now().duration_since(start_time).unwrap();
+        multi_pb
+            .println(format!(
+                "|   w={w} iteration averaged {:.2}k iterations per second ...",
+                (items_done as f64 / total_time.as_secs_f64()) / 1000f64
+            ))
+            .unwrap();
     }
 
     undetectables_generated
@@ -231,7 +265,7 @@ pub fn check_fault_equivalence(
     d1_detectors: usize,
     d2_detectors: usize,
     until: Option<Weight>,
-    _quiet: bool,
+    quiet: bool,
 ) -> Option<usize> {
     let mut nm1_detectable_lookup = FxHashMap::default();
     let mut nm1_undetectable_lookup = FxHashMap::default();
@@ -249,8 +283,22 @@ pub fn check_fault_equivalence(
 
     let mut w: Weight = 0;
 
+    let multi_pb = MultiProgress::new();
+    multi_pb.set_draw_target(ProgressDrawTarget::stdout());
+    let pb = if quiet {
+        ProgressBar::hidden()
+    } else if let Some(until) = until {
+        ProgressBar::new(until as u64)
+    } else {
+        ProgressBar::no_length()
+    };
+    pb.set_style(ProgressStyle::with_template("{spinner} {msg}: {pos}").unwrap());
+    pb.set_message("Current weight");
+    pb.enable_steady_tick(Duration::from_millis(100));
+    multi_pb.add(pb.clone());
     while (!nm1_pq.is_empty() || !nm2_pq.is_empty()) && until.is_none_or(|u| w < u - 1) {
         w += 1;
+        pb.inc(1);
 
         let nm1_undetectable = next_gen_unfold(
             w,
@@ -259,7 +307,16 @@ pub fn check_fault_equivalence(
             &mut nm1_undetectable_lookup,
             &mut nm1_atomics,
             d1_detectors,
+            (!quiet).then_some(&multi_pb),
         );
+        if !quiet {
+            multi_pb
+                .println(format!(
+                    "|   Finished unfolding weight {w} in queue 1! Next items remaining: {}...",
+                    nm1_pq.get(&(w + 1)).map(|s| s.len()).unwrap_or(0)
+                ))
+                .unwrap();
+        }
 
         let nm2_undetectable = next_gen_unfold(
             w,
@@ -268,12 +325,24 @@ pub fn check_fault_equivalence(
             &mut nm2_undetectable_lookup,
             &mut nm2_atomics,
             d2_detectors,
+            (!quiet).then_some(&multi_pb),
         );
+        if !quiet {
+            multi_pb
+                .println(format!(
+                    "|   Finished unfolding weight {w} in queue 2! Next items remaining: {}...",
+                    nm2_pq.get(&(w + 1)).map(|s| s.len()).unwrap_or(0)
+                ))
+                .unwrap();
+        }
 
         for sig in &nm1_undetectable {
             if !nm2_undetectable_lookup.contains_key(sig) {
                 return Some(w);
             }
+        }
+        if !quiet {
+            multi_pb.println("|   Finished checking new undetectable faults from noise model 1 against noise model 2!").unwrap();
         }
 
         for sig in &nm2_undetectable {
@@ -281,7 +350,14 @@ pub fn check_fault_equivalence(
                 return Some(w);
             }
         }
+        if !quiet {
+            multi_pb.println("|   Finished checking new undetectable faults from noise model 2 against noise model 1!").unwrap();
+            multi_pb
+                .println(format!("Finished checking weight {w}!"))
+                .unwrap();
+        }
     }
+    pb.finish_and_clear();
 
     None
 }
