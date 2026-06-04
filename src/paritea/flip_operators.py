@@ -1,5 +1,4 @@
 import dataclasses
-from collections.abc import Iterable
 
 from .diagram import Diagram
 from .pauli import Pauli, PauliString
@@ -15,7 +14,7 @@ class FlipOperators:
 
 
 def _flip_operators(
-    web_generating_set: Iterable[PauliString],
+    web_generating_set: list[PauliString],
     restriction_func=lambda x: x,
 ) -> tuple[list[PauliString], list[PauliString]]:
     """
@@ -31,7 +30,7 @@ def _flip_operators(
     """
 
     flip_ops = []
-    new_gen_set = list(web_generating_set)
+    new_gen_set = web_generating_set
     for curr_gen_idx in range(len(new_gen_set)):
         curr_gen = restriction_func(new_gen_set[curr_gen_idx])
         flip_op = None
