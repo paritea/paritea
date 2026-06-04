@@ -45,14 +45,11 @@ jobs:
           restore-keys: |
             bench-rust-${{ runner.os }}-
 
-      - name: Install the project with bench dependencies (release build)
-        run: |
-          uv sync --locked --all-extras --group bench
-          uv sync -C "build-args=--profile=release-py"
-
       - name: Build wheel for downstream jobs
         run: |
           uv build --wheel -C "build-args=--profile=release-py" -o dist/
+          # Check built wheel contents
+          unzip -l dist/*.whl
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
@@ -78,7 +75,7 @@ jobs:
         with:
           name: paritea-wheel
           path: dist/
-      - name: Install from wheel with bench dependencies
+      - name: Install wheel with bench dependencies
         run: |
           uv sync --locked --all-extras --group bench --no-install-package paritea
           uv pip install dist/*.whl
@@ -114,7 +111,7 @@ jobs:
         with:
           name: paritea-wheel
           path: dist/
-      - name: Install from wheel with bench dependencies
+      - name: Install wheel with bench dependencies
         run: |
           uv sync --locked --all-extras --group bench --no-install-package paritea
           uv pip install dist/*.whl
