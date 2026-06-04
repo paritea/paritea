@@ -3,13 +3,14 @@
 use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
 use num_bigint::BigUint;
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::collections::hash_map::Entry;
+use std::collections::{BTreeMap, BTreeSet, btree_map};
 use std::time::{Duration, SystemTime};
 
 type Fault = BigUint;
 type Weight = usize;
 
-type FaultQueue = FxHashMap<Weight, FxHashSet<Fault>>;
+// TODO stabilise iteration for performance comparisons
+type FaultQueue = FxHashMap<Weight, BTreeSet<Fault>>;
 
 /// Build a bitmask of `num_bits` ones (i.e. `(1 << num_bits) - 1`).
 fn ones_mask(num_bits: usize) -> BigUint {
@@ -34,8 +35,8 @@ fn apply_mask(sig: &BigUint, mask: &BigUint) -> BigUint {
 
 #[derive(Debug, Default)]
 struct AtomicFaults {
-    undetectable: FxHashMap<Fault, Weight>,
-    detectable_with_detectors: FxHashMap<Fault, (Weight, BigUint)>,
+    undetectable: BTreeMap<Fault, Weight>,
+    detectable_with_detectors: BTreeMap<Fault, (Weight, BigUint)>,
 }
 
 impl AtomicFaults {
@@ -50,19 +51,19 @@ impl AtomicFaults {
             let detectable = has_any_bit(&sig, &detector_mask);
             if detectable {
                 match atomics.detectable_with_detectors.entry(sig.clone()) {
-                    Entry::Occupied(mut entry) => {
+                    btree_map::Entry::Occupied(mut entry) => {
                         entry.get_mut().0 = v;
                     }
-                    Entry::Vacant(entry) => {
+                    btree_map::Entry::Vacant(entry) => {
                         entry.insert((v, apply_mask(&sig, &detector_mask)));
                     }
                 }
             } else {
                 match atomics.undetectable.entry(sig.clone()) {
-                    Entry::Occupied(mut entry) => {
+                    btree_map::Entry::Occupied(mut entry) => {
                         *entry.get_mut() = v;
                     }
-                    Entry::Vacant(entry) => {
+                    btree_map::Entry::Vacant(entry) => {
                         entry.insert(v);
                     }
                 }
@@ -106,13 +107,18 @@ impl AtomicFaults {
         let mut lowest_weight_sigs = Vec::new();
 
         for (sig, (w, sig_info)) in &self.detectable_with_detectors {
-            if !has_any_bit(detector_info, sig_info) {
-                continue;
-            }
             match lowest_weight {
                 Some(lw) if *w > lw => continue,
-                Some(lw) if *w == lw => lowest_weight_sigs.push(sig),
+                Some(lw) if *w == lw => {
+                    if !has_any_bit(detector_info, sig_info) {
+                        continue;
+                    }
+                    lowest_weight_sigs.push(sig);
+                }
                 _ => {
+                    if !has_any_bit(detector_info, sig_info) {
+                        continue;
+                    }
                     lowest_weight = Some(*w);
                     lowest_weight_sigs.clear();
                     lowest_weight_sigs.push(sig);
@@ -170,6 +176,7 @@ fn next_gen_unfold(
     };
     let mut undetectables_generated = FxHashSet::default();
 
+    // TODO hide if quiet
     let pb = ProgressBar::new(current_queue.len() as u64);
     pb.set_style(
         ProgressStyle::with_template(
@@ -183,7 +190,7 @@ fn next_gen_unfold(
     multi_pb.map(|m| m.add(pb.clone()));
     let (mut items_done, start_time) = (0, SystemTime::now());
     while !current_queue.is_empty() {
-        let mut new_w_queue = FxHashSet::default();
+        let mut new_w_queue = BTreeSet::default();
         let items = current_queue.len();
         items_done += items;
 
