@@ -176,18 +176,20 @@ fn next_gen_unfold(
     };
     let mut undetectables_generated = FxHashSet::default();
 
-    // TODO hide if quiet
-    let pb = ProgressBar::new(current_queue.len() as u64);
-    pb.set_style(
-        ProgressStyle::with_template(
-            "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos} remaining",
-        )
-        .unwrap()
-        .progress_chars("#<-"),
-    );
-    pb.set_position(current_queue.len() as u64);
-    pb.enable_steady_tick(Duration::from_millis(50));
-    multi_pb.map(|m| m.add(pb.clone()));
+    let pb = multi_pb.map(|m| {
+        let pb = ProgressBar::new(current_queue.len() as u64);
+        pb.set_style(
+            ProgressStyle::with_template(
+                "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos} remaining",
+            )
+            .unwrap()
+            .progress_chars("#<-"),
+        );
+        pb.set_position(current_queue.len() as u64);
+        pb.enable_steady_tick(Duration::from_millis(50));
+        m.add(pb.clone());
+        pb
+    });
     let (mut items_done, start_time) = (0, SystemTime::now());
     while !current_queue.is_empty() {
         let mut new_w_queue = BTreeSet::default();
@@ -196,7 +198,9 @@ fn next_gen_unfold(
 
         for (i, sig) in current_queue.into_iter().enumerate() {
             let detectable = has_any_bit(&sig, &detector_mask);
-            if i % PB_UPDATE_INTERVAL == 0 {
+            if i % PB_UPDATE_INTERVAL == 0
+                && let Some(pb) = &pb
+            {
                 pb.dec(PB_UPDATE_INTERVAL as u64);
             }
 
@@ -229,17 +233,22 @@ fn next_gen_unfold(
                 let combined = atomic_sig ^ &sig;
                 if atomic_w == 0 {
                     new_w_queue.insert(combined);
-                    pb.inc(1)
+                    if let Some(pb) = &pb {
+                        pb.inc(1);
+                    }
                 } else {
                     queue.entry(atomic_w + w).or_default().insert(combined);
                 }
             }
         }
-        pb.dec((items % PB_UPDATE_INTERVAL) as u64);
-
+        if let Some(pb) = &pb {
+            pb.dec((items % PB_UPDATE_INTERVAL) as u64);
+        }
         current_queue = new_w_queue;
     }
-    pb.finish_and_clear();
+    if let Some(pb) = pb {
+        pb.finish_and_clear();
+    }
     if let Some(multi_pb) = multi_pb {
         let total_time = SystemTime::now().duration_since(start_time).unwrap();
         multi_pb
