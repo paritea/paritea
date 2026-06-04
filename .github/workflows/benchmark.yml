@@ -80,6 +80,10 @@ jobs:
           uv sync --locked --all-extras --group bench --no-install-package paritea
           uv pip install dist/*.whl
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+
       - name: Run benchmarks
         run: uv run --no-sync pytest benchmarks/bench_web_compute.py --benchmark-json=benchmarks/results.json -v
 
