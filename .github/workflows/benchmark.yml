@@ -13,6 +13,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+env:
+  UV_VERSION: "0.11.19"
+  PYTHON_VERSION: "3.13"
+
 jobs:
   changes:
     uses: ./.github/workflows/changes.yml
@@ -23,13 +27,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
-          version: "0.9.5"
+          version: ${{ env.UV_VERSION }}
           enable-cache: 'true'
-          python-version: '3.13'
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Cache Rust build artifacts
         uses: actions/cache@v4
@@ -47,7 +50,7 @@ jobs:
           uv sync --locked --all-extras --group bench
           uv sync -C "build-args=--profile=release-py"
 
-      - name: Package built wheel for downstream jobs
+      - name: Build wheel for downstream jobs
         run: |
           uv build --wheel -C "build-args=--profile=release-py" -o dist/
 
@@ -63,24 +66,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
-          version: "0.9.5"
+          version: ${{ env.UV_VERSION }}
           enable-cache: 'true'
-          python-version: '3.13'
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Download wheel
         uses: actions/download-artifact@v4
         with:
           name: paritea-wheel
           path: dist/
-
       - name: Install from wheel with bench dependencies
         run: |
           uv sync --locked --all-extras --group bench --no-install-package paritea
-          uv pip install --force-reinstall dist/*.whl
+          uv pip install dist/*.whl
 
       - name: Run benchmarks
         run: uv run --no-sync pytest benchmarks/bench_web_compute.py --benchmark-json=benchmarks/results.json -v
@@ -101,24 +102,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
-          version: "0.9.5"
+          version: ${{ env.UV_VERSION }}
           enable-cache: 'true'
-          python-version: '3.13'
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Download wheel
         uses: actions/download-artifact@v4
         with:
           name: paritea-wheel
           path: dist/
-
       - name: Install from wheel with bench dependencies
         run: |
           uv sync --locked --all-extras --group bench --no-install-package paritea
-          uv pip install --force-reinstall dist/*.whl
+          uv pip install dist/*.whl
 
       - name: Run benchmarks
         run: uv run --no-sync pytest benchmarks/bench_fault_equivalence.py --benchmark-json=benchmarks/fault_equiv_results.json -v
