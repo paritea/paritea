@@ -1,5 +1,6 @@
 import json
 from collections.abc import Callable, Mapping
+from typing import Protocol
 
 import numpy as np
 import pytest
@@ -70,9 +71,17 @@ def generate_web_files(web_io: WebFileIO) -> Callable[[Diagram, list[PauliString
     return _generate
 
 
+class PauliWebAssertion(Protocol):
+    def __call__(
+        self, d: Diagram, stabs: list[PauliString], regions: list[PauliString], *, allow_basis_change: bool = False
+    ) -> None: ...
+
+
 @pytest.fixture
-def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, list[PauliString], list[PauliString]], None]:
-    def _assert(d: Diagram, stabs: list[PauliString], regions: list[PauliString]) -> None:
+def assert_pauli_webs(web_io: WebFileIO) -> PauliWebAssertion:
+    def _assert(
+        d: Diagram, stabs: list[PauliString], regions: list[PauliString], *, allow_basis_change: bool = False
+    ) -> None:
         edge_idx_map = {e: i for i, e in enumerate(d.edge_indices())}
 
         compiled_stabs = GF2([web.compile(edge_idx_map) for web in stabs])
@@ -82,30 +91,34 @@ def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, list[PauliString]
 
         try:
             assert len(compiled_regions) == len(compiled_exp_regions)
+            assert len(compiled_stabs) == len(compiled_exp_stabs)
+
             if len(compiled_regions) > 0:
-                cr_rref = compiled_regions.row_reduce()
-                cer_rref = compiled_exp_regions.row_reduce()
+                if not allow_basis_change:
+                    assert np.array_equal(compiled_regions, compiled_exp_regions), "Region vectors are not the same!"
+                else:
+                    cr_rref = compiled_regions.row_reduce()
+                    cer_rref = compiled_exp_regions.row_reduce()
+                    cr_nonzero = [row for row in cr_rref if any(row)]
+                    cer_nonzero = [row for row in cer_rref if any(row)]
+                    assert len(cr_nonzero) == len(cr_rref)
+                    assert len(cer_nonzero) == len(cer_rref)
+                    assert np.array_equal(cr_rref, cer_rref), "Region spaces are not equal!"
 
-                cr_nonzero = [row for row in cr_rref if any(row)]
-                cer_nonzero = [row for row in cer_rref if any(row)]
-
-                assert len(cr_nonzero) == len(cr_rref)
-                assert len(cer_nonzero) == len(cer_rref)
-
-                assert np.array_equal(cr_rref, cer_rref), "Region spaces are not equal"
-
-            # Stabilising web spaces must only be equal modulo the detecting web spaces. Thus, test the entire Pauli web
-            # space for equality, which yields the property under test combined with detecting web space equality.
-            if len(compiled_regions) > 0:
-                web_space_basis = GF2(np.vstack([compiled_stabs, compiled_regions]))
-                exp_web_space_basis = GF2(np.vstack([compiled_exp_stabs, compiled_exp_regions]))
+            if not allow_basis_change:
+                assert np.array_equal(compiled_stabs, compiled_exp_stabs), "Stabiliser vectors are not the same!"
             else:
-                web_space_basis = compiled_stabs
-                exp_web_space_basis = compiled_exp_stabs
-
-            assert np.array_equal(web_space_basis.row_reduce(), exp_web_space_basis.row_reduce()), (
-                "Web spaces are not equal"
-            )
+                # Stabilising web spaces must only be equal modulo the detecting webs. Thus, test the entire web
+                # space for equality, which yields the property under test combined with detecting web space equality.
+                if len(compiled_regions) > 0:
+                    web_space_basis = GF2(np.vstack([compiled_stabs, compiled_regions]))
+                    exp_web_space_basis = GF2(np.vstack([compiled_exp_stabs, compiled_exp_regions]))
+                else:
+                    web_space_basis = compiled_stabs
+                    exp_web_space_basis = compiled_exp_stabs
+                assert np.array_equal(web_space_basis.row_reduce(), exp_web_space_basis.row_reduce()), (
+                    "Web spaces are not equal"
+                )
         except AssertionError:
             web_io.write_stabilising(stabs, d, file_name_suffix="_actual")
             web_io.write_detecting(regions, d, file_name_suffix="_actual")
@@ -137,8 +150,22 @@ def test_zweb_webs(assert_pauli_webs):
     assert_pauli_webs(d, stabs, regions)
 
 
-@pytest.mark.parametrize("code_size,repeat", [(3, 1), (5, 1), (5, 3)])
+ROTATED_SURFACE_CODE_SHOR_PARAMETERS = [(3, 1), (5, 1), (5, 3)]
+
+@pytest.mark.parametrize("code_size,repeat", ROTATED_SURFACE_CODE_SHOR_PARAMETERS)
 def test_rotated_surface_code_shor(code_size, repeat, assert_pauli_webs):
+    d = generate.shor_extraction(
+        generate.rotated_planar_surface_code_stabilisers(code_size),
+        qubits=code_size**2,
+        repeat=repeat,
+    )
+
+    stabs, regions = compute_pauli_webs(d)
+    assert_pauli_webs(d, stabs, regions)
+
+
+@pytest.mark.parametrize("code_size,repeat", ROTATED_SURFACE_CODE_SHOR_PARAMETERS)
+def test_rotated_surface_code_shor_partitioned(code_size, repeat, generate_web_files, assert_pauli_webs):
     d, partitions = generate.shor_extraction(
         generate.rotated_planar_surface_code_stabilisers(code_size),
         qubits=code_size**2,
@@ -147,6 +174,8 @@ def test_rotated_surface_code_shor(code_size, repeat, assert_pauli_webs):
     )
 
     stabs, regions = compute_pauli_webs(d)
-    assert_pauli_webs(d, stabs, regions)
+    assert_pauli_webs(d, stabs, regions, allow_basis_change=True)
+    stabs, regions = pauli_webs_through_partitions(d, partitions=partitions)
+    generate_web_files(d, stabs, regions)
     stabs, regions = pauli_webs_through_partitions(d, partitions=partitions)
     assert_pauli_webs(d, stabs, regions)
