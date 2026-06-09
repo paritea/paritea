@@ -337,7 +337,7 @@ def test_parallel_syndrome_extraction():
     )
 
 
-@pytest.mark.parametrize("distance", [3, 5, 7])
+@pytest.mark.parametrize("distance", [3, 5, 7, 9])
 def test_surface_code_weight_limiting(distance):
     d, partitions = surface_code_memory_experiment(distance=distance, rounds=2, partition=True)
     [first_part, second_part] = partitions
@@ -349,7 +349,7 @@ def test_surface_code_weight_limiting(distance):
 
     nm1 = NoiseModel.weighted_edge_flip_noise(d, idealised_edges=d.edge_indices())
     nm2 = NoiseModel.weighted_edge_flip_noise(
-        d, w_x=1, w_y=1000, w_z=1000, idealised_edges=[e for e in d.edge_indices() if not _is_crossing_edge(e)]
+        d, w_x=1, w_y=2, w_z=1, idealised_edges=[e for e in d.edge_indices() if not _is_crossing_edge(e)]
     )
     # The fault equivalence is valid until exactly weight == distance
     assert is_fault_equivalence(nm1, nm2, until=distance, quiet=False)

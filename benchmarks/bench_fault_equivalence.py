@@ -28,7 +28,7 @@ from paritea.noise import NoiseModel
 # Surface code benchmarks
 # ---------------------------------------------------------------------------
 
-SURFACE_CODE_DISTANCES = [3, 5, 7]
+SURFACE_CODE_DISTANCES = list(range(3, 9, 2))
 
 
 @dataclass(frozen=True)
@@ -48,7 +48,7 @@ def _build_surface_code_instance(distance: int) -> SurfaceCodeEquivInstance:
 
     nm1 = NoiseModel.weighted_edge_flip_noise(d, idealised_edges=d.edge_indices())
     nm2 = NoiseModel.weighted_edge_flip_noise(
-        d, w_x=1, w_y=1000, w_z=1000, idealised_edges=[e for e in d.edge_indices() if not _is_crossing_edge(e)]
+        d, w_x=1, w_y=2, w_z=1, idealised_edges=[e for e in d.edge_indices() if not _is_crossing_edge(e)]
     )
     return SurfaceCodeEquivInstance(distance=distance, nm1=nm1, nm2=nm2)
 
@@ -66,24 +66,17 @@ _SC_IDS = [f"d{d}" for d in SURFACE_CODE_DISTANCES]
 
 
 @pytest.mark.parametrize("distance", SURFACE_CODE_DISTANCES, ids=_SC_IDS)
-def test_bench_surface_code_equiv(benchmark, distance):
+def test_bench_surface_code(benchmark, distance):
     """Check fault equivalence up to weight=distance (should pass)."""
     inst = _get_surface_code_instance(distance)
     benchmark(is_fault_equivalence, inst.nm1, inst.nm2, until=distance, quiet=True)
-
-
-@pytest.mark.parametrize("distance", SURFACE_CODE_DISTANCES, ids=_SC_IDS)
-def test_bench_surface_code_non_equiv(benchmark, distance):
-    """Check fault equivalence up to weight=distance+1 (should fail)."""
-    inst = _get_surface_code_instance(distance)
-    benchmark(is_fault_equivalence, inst.nm1, inst.nm2, until=distance + 1, quiet=True)
 
 
 # ---------------------------------------------------------------------------
 # Cat state decomposition benchmarks
 # ---------------------------------------------------------------------------
 
-CAT_STATE_SIZES = [2, 3, 4, 5, 6, 7]
+CAT_STATE_SIZES = list(range(2, 8))
 
 
 def _add_cat_state(g: zx.graph.base.BaseGraph, size: int, qubit: int = 0, row: int = 0) -> tuple[int, list[int]]:
@@ -163,8 +156,7 @@ def plot_results(json_path: str) -> None:
         data = json.load(f)
 
     KIND_LABELS = {
-        "test_bench_surface_code_equiv": "Surface code (equiv)",
-        "test_bench_surface_code_non_equiv": "Surface code (non-equiv)",
+        "test_bench_surface_code": "Surface code (CSS Noise)",
         "test_bench_cat_state_decomposition": "Cat state decomposition",
     }
 
@@ -184,8 +176,7 @@ def plot_results(json_path: str) -> None:
     # Surface code variants share a color, only differ in line style
     STYLES: dict[str, tuple[str, str, int]] = {
         "Cat state decomposition": ("-", "^", 0),
-        "Surface code (equiv)": ("-", "o", 1),
-        "Surface code (non-equiv)": ("--", "s", 1),
+        "Surface code (CSS Noise)": ("-", "o", 1),
     }
 
     fig, ax = plt.subplots(figsize=(10, 6))
