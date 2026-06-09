@@ -6,12 +6,11 @@ use itertools::{Itertools, enumerate};
 use rustworkx_core::petgraph::graph::NodeIndex;
 use rustworkx_core::petgraph::stable_graph::EdgeIndex;
 use rustworkx_core::petgraph::visit::EdgeRef;
-use std::collections::hash_map::Entry;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, hash_map};
 
 #[derive(Default, Clone)]
 struct SubgraphTracker {
-    inc_edges: HashMap<EdgeIndex, Option<usize>>,
+    inc_edges: BTreeMap<EdgeIndex, Option<usize>>,
 }
 
 fn find_webs(
@@ -115,13 +114,13 @@ fn zip_webs(
         }
     }
 
-    if new_stabs.len() != new_boundaries.len() {
-        panic!(
-            "Something went wrong, I got the wrong number of stabilisers to form a basis (got {}, need {})!",
-            new_stabs.len(),
-            new_boundaries.len()
-        );
-    }
+    assert_eq!(
+        new_stabs.len(),
+        new_boundaries.len(),
+        "Wrong number of stabilisers to form a basis (got {}, need {})!",
+        new_stabs.len(),
+        new_boundaries.len()
+    );
 
     (new_stabs, new_regions)
 }
@@ -160,7 +159,7 @@ pub fn pauli_webs_through_partitions(
         let reverse_node_map = node_map
             .iter()
             .map(|(&k, &v)| (v, k))
-            .collect::<HashMap<_, _>>();
+            .collect::<BTreeMap<_, _>>();
 
         let mut tracker = SubgraphTracker::default();
         let tracker_id = sg_trackers.len();
@@ -173,7 +172,7 @@ pub fn pauli_webs_through_partitions(
                 };
 
                 io_nodes.push((node, e.id()));
-                if let Entry::Vacant(entry) = cut_edges.entry(e.id()) {
+                if let hash_map::Entry::Vacant(entry) = cut_edges.entry(e.id()) {
                     tracker.inc_edges.insert(e.id(), None);
                     entry.insert(tracker_id);
                 } else {
@@ -242,7 +241,7 @@ pub fn pauli_webs_through_partitions(
             .filter_map(|(&e, &tracker_id)| (tracker_id == Some(neighbour_id)).then_some(e))
             .collect();
 
-        let new_edges: HashMap<EdgeIndex, Option<usize>> = {
+        let new_edges: BTreeMap<EdgeIndex, Option<usize>> = {
             let neighbour = &sg_trackers[neighbour_id];
             sg_trackers[main_tracker_id]
                 .inc_edges

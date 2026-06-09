@@ -4,13 +4,13 @@ use crate::sorted_pair;
 use bitgauss::BitMatrix;
 use rustc_hash::FxHashMap;
 use rustworkx_core::petgraph::graph::NodeIndex;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) struct GraphOrdering {
-    graph_to_ordering: FxHashMap<NodeIndex, usize>,
-    ordering_to_graph: FxHashMap<usize, NodeIndex>,
+    graph_to_ordering: BTreeMap<NodeIndex, usize>,
+    ordering_to_graph: BTreeMap<usize, NodeIndex>,
 
-    pub z_boundaries: FxHashMap<NodeIndex, NodeIndex>,
+    pub z_boundaries: BTreeMap<NodeIndex, NodeIndex>,
     pub internal_spiders: Vec<NodeIndex>,
     pub pi_2_spiders: Vec<NodeIndex>,
 }
@@ -22,28 +22,28 @@ impl GraphOrdering {
 }
 
 pub(super) fn determine_ordering(d: &Diagram) -> GraphOrdering {
-    let boundaries = d.boundary_nodes().collect::<HashSet<_>>();
+    let boundaries = d.boundary_nodes().collect::<BTreeSet<_>>();
     let z_boundaries = boundaries
         .iter()
         .map(|&b| (d.neighbors(b).next().unwrap(), b))
-        .collect::<FxHashMap<_, _>>();
+        .collect::<BTreeMap<_, _>>();
     let internal_spiders = d
         .node_indices()
-        .collect::<HashSet<_>>()
+        .collect::<BTreeSet<_>>()
         .difference(&boundaries)
         .copied()
-        .collect::<HashSet<NodeIndex>>()
+        .collect::<BTreeSet<_>>()
         .difference(&z_boundaries.keys().copied().collect())
         .copied()
-        .collect::<HashSet<_>>();
+        .collect::<BTreeSet<_>>();
     let pi_2_spiders = internal_spiders
         .iter()
         .filter(|&&s| d.phase(s).denom() == Some(&2))
         .copied()
-        .collect::<HashSet<_>>();
+        .collect::<BTreeSet<_>>();
 
-    let mut graph_to_ordering: FxHashMap<NodeIndex, usize> = FxHashMap::default();
-    let mut ordering_to_graph: FxHashMap<usize, NodeIndex> = FxHashMap::default();
+    let mut graph_to_ordering: BTreeMap<NodeIndex, usize> = BTreeMap::default();
+    let mut ordering_to_graph: BTreeMap<usize, NodeIndex> = BTreeMap::default();
     let mut idx = 0;
     for boundary in z_boundaries.keys() {
         graph_to_ordering.insert(*boundary, idx);
