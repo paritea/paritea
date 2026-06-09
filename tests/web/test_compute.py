@@ -179,12 +179,14 @@ def test_rotated_surface_code_shor(code_size, repeat, assert_web_files):
         repeat=repeat,
     )
 
-    stabs, regions = compute_pauli_webs(d)
-    assert_web_files(d, stabs, regions)
+    stabs_1, regions_1 = compute_pauli_webs(d)
+    stabs_2, regions_2 = compute_pauli_webs(d)
+    assert_webs_eq(d, stabs_2, regions_2, stabs_1, regions_1)
+    assert_web_files(d, stabs_1, regions_1, allow_basis_change=True)
 
 
 @pytest.mark.parametrize("code_size,repeat", ROTATED_SURFACE_CODE_SHOR_PARAMETERS)
-def test_rotated_surface_code_shor_partitioned(code_size, repeat, generate_web_files, assert_web_files):
+def test_rotated_surface_code_shor_partitioned(code_size, repeat, assert_web_files):
     d, partitions = generate.shor_extraction(
         generate.rotated_planar_surface_code_stabilisers(code_size),
         qubits=code_size**2,
@@ -194,8 +196,7 @@ def test_rotated_surface_code_shor_partitioned(code_size, repeat, generate_web_f
 
     non_part_stabs, non_part_regions = compute_pauli_webs(d)
     stabs_1, regions_1 = pauli_webs_through_partitions(d, partitions=partitions)
-    generate_web_files(d, stabs_1, regions_1)
-    assert_web_files(d, stabs_1, regions_1)
     assert_webs_eq(d, stabs_1, regions_1, non_part_stabs, non_part_regions, allow_basis_change=True)
     stabs_2, regions_2 = pauli_webs_through_partitions(d, partitions=partitions)
     assert_webs_eq(d, stabs_2, regions_2, stabs_1, regions_1)
+    assert_web_files(d, stabs_1, regions_1, allow_basis_change=True)
