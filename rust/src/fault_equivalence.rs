@@ -9,7 +9,6 @@ use std::time::{Duration, SystemTime};
 type Fault = BigUint;
 type Weight = usize;
 
-// TODO stabilise iteration for performance comparisons
 type FaultQueue = FxHashMap<Weight, BTreeSet<Fault>>;
 
 /// Build a bitmask of `num_bits` ones (i.e. `(1 << num_bits) - 1`).
