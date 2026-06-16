@@ -163,10 +163,13 @@ mod _bindings {
     #[allow(dead_code)]
     /// A violation of fault equivalence
     struct _Violation {
+        #[pyo3(get)]
         /// Whether the violation originates from the first given noise model or the second
         is_nm1: bool,
+        #[pyo3(get)]
         /// The combined weight of the violation
         weight: usize,
+        #[pyo3(get)]
         /// The indices of the faults that compose to the violating fault
         faults: Option<Vec<usize>>,
     }
