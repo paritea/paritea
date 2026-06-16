@@ -200,7 +200,7 @@ def check_fault_equivalence(
 
         idx_sum = 0
         violating_faults = []
-        for f, vs in (nm1_unpushed_atomics if violation.is_nm1 else nm2_unpushed_atomics):
+        for f, vs in nm1_unpushed_atomics if violation.is_nm1 else nm2_unpushed_atomics:
             for i, v in enumerate(vs):
                 if idx_sum + i in violation.faults:
                     violating_faults.append((f, v))
@@ -211,6 +211,7 @@ def check_fault_equivalence(
         weight=violation.weight,
         faults=violating_faults,
     )
+
 
 @noise_model_params("noise_1", "noise_2")
 def is_fault_equivalence(
