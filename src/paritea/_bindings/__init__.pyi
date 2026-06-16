@@ -1,4 +1,5 @@
 from typing import NamedTuple
+
 from paritea.diagram import Diagram
 from paritea.pauli import PauliString
 

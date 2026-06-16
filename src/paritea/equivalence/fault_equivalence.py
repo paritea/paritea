@@ -1,5 +1,5 @@
-from collections.abc import Mapping
-from typing import NamedTuple, Iterable
+from collections.abc import Iterable, Mapping
+from typing import NamedTuple
 
 import numpy as np
 from galois import GF2
