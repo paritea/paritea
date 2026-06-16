@@ -5,9 +5,9 @@ from dataclasses import dataclass
 
 import stim
 
-from faulttools.diagram import Diagram, NodeType
-from faulttools.noise import Fault, NoiseModel
-from faulttools.pauli import Pauli, PauliString
+from paritea.diagram import Diagram, NodeType
+from paritea.noise import Fault, NoiseModel
+from paritea.pauli import Pauli, PauliString
 
 
 @dataclass(init=True, kw_only=True)

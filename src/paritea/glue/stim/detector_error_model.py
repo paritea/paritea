@@ -2,9 +2,9 @@ import numpy as np
 import stim
 from galois import GF2
 
-from faulttools import FlipOperators, Pauli, PauliString, build_flip_operators
-from faulttools.noise import NoiseModel
-from faulttools.pushout import push_out
+from paritea import FlipOperators, Pauli, PauliString, build_flip_operators
+from paritea.noise import NoiseModel
+from paritea.pushout import push_out
 
 
 def _flip_ops_for_detecting_operators(
