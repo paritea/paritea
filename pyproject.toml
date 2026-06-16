@@ -15,7 +15,6 @@ dependencies = [
     "rustworkx>=0.17.1",
     "sinter>=1.16",
     "stim>=1.16",
-    "tqdm>=4.67.1",
 ]
 
 [dependency-groups]
