@@ -1,0 +1,131 @@
+name: Benchmarks
+
+on:
+  pull_request:
+
+permissions:
+  contents: write # Required for image asset writing
+  pull-requests: write # Required to post comments
+
+# Limits the number of concurrent runs of this workflow for branches to one. For non-main branches, runs caused by newly
+# pushed commits thus cancel any in-progress runs for the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  UV_VERSION: "0.11.19"
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  changes:
+    uses: ./.github/workflows/changes.yml
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: 'true'
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: bench-rust-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust/**', 'rust-bindings/**') }}
+          restore-keys: |
+            bench-rust-${{ runner.os }}-
+
+      - name: Build wheel for downstream jobs
+        run: |
+          uv build --wheel -C "build-args=--profile=release-py" -o dist/
+          # Check built wheel contents
+          unzip -l dist/*.whl
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: paritea-wheel
+          path: dist/*.whl
+          retention-days: 1
+
+  bench-web-compute:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: 'true'
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: paritea-wheel
+          path: dist/
+      - name: Install wheel with bench dependencies
+        run: |
+          uv sync --locked --all-extras --group bench --no-install-package paritea
+          uv pip install dist/*.whl
+
+      - name: Run benchmarks
+        run: uv run --no-sync pytest benchmarks/bench_web_compute.py --benchmark-json=benchmarks/results.json -v
+
+      - name: Generate plot
+        run: uv run --no-sync python benchmarks/bench_web_compute.py benchmarks/results.json
+
+      - name: Post benchmark results
+        uses: ./.github/actions/post-benchmark-comment
+        with:
+          image-path: benchmarks/results.png
+          results-json: benchmarks/results.json
+          title: "Benchmark Results — Pauli Web Computation"
+          image-prefix: bench-web
+
+  bench-fault-equivalence:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: 'true'
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: paritea-wheel
+          path: dist/
+      - name: Install wheel with bench dependencies
+        run: |
+          uv sync --locked --all-extras --group bench --no-install-package paritea
+          uv pip install dist/*.whl
+
+      - name: Run benchmarks
+        run: uv run --no-sync pytest benchmarks/bench_fault_equivalence.py --benchmark-json=benchmarks/fault_equiv_results.json -v
+
+      - name: Generate plot
+        run: uv run --no-sync python benchmarks/bench_fault_equivalence.py benchmarks/fault_equiv_results.json
+
+      - name: Post benchmark results
+        uses: ./.github/actions/post-benchmark-comment
+        with:
+          image-path: benchmarks/fault_equiv_results.png
+          results-json: benchmarks/fault_equiv_results.json
+          title: "Benchmark Results — Fault Equivalence"
+          image-prefix: bench-fault-equiv

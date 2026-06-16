@@ -33,14 +33,19 @@ def shor_extraction(
     granular: bool = False,
 ) -> Diagram | tuple[Diagram, list[list[int]]]:
     """
-    Generates a ZX diagram measuring the given stabilisers one-by-one using Shor-style syndrome extraction. Diagrams are
-    post-selected on all-zero extraction measurements.
+    Generates a ZX diagram measuring the given stabilisers one-by-one using Shor-style
+    syndrome extraction. Diagrams are post-selected on all-zero extraction measurements.
 
-    Currently only supports measuring stabilisers made up of X and Z. Uses an assumed fault-free cat state preparation.
+    Currently only supports measuring stabilisers made up of X and Z. Uses an assumed
+    fault-free cat state preparation.
 
     :param partition: Whether to return partitions for the diagram.
-    :param granular: Whether to take a partition to be an entire measurement round (False) or an individual stabiliser
-    measurement (True).
+    :param granular: Whether to take a partition to be an entire measurement round
+        (False) or an individual stabiliser measurement (True).
+
+    Note that this function is unstable, in the sense that the returned diagram does not
+    necessarily have the same edge indices on every invocation. If you require stable
+    diagrams, do not use this function.
     """
 
     d = Diagram()

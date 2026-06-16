@@ -13,9 +13,8 @@ dependencies = [
     "pyzx>=0.9.0",
     "recordclass>=0.23.1",
     "rustworkx>=0.17.1",
-    "sinter==1.16.dev1761611832",
-    "stim==1.16.dev1761611832",
-    "tqdm>=4.67.1",
+    "sinter>=1.16",
+    "stim>=1.16",
 ]
 
 [dependency-groups]
@@ -23,10 +22,13 @@ dev = [
     { include-group = "bench" },
     { include-group = "lint" },
     { include-group = "test" },
+    "maturin>=1.4,<2.0",
 ]
 
 bench = [
+    "matplotlib>=3.9",
     "pyinstrument>=5.1.1",
+    "pytest-benchmark>=5.1",
 ]
 
 lint = [
@@ -37,3 +39,15 @@ lint = [
 test = [
     "pytest>=8.4.2",
 ]
+
+
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+module-name = "paritea._bindings"
+python-source = "src/"
+manifest-path = "rust-bindings/Cargo.toml"
+features = ["pyo3/extension-module"]       # skips linking against libpython.so
+profile = "dev-py"

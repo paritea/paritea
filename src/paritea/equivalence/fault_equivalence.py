@@ -5,11 +5,10 @@ import numpy as np
 from galois import GF2
 
 from paritea import build_flip_operators, push_out
+from paritea._bindings import _check_fault_equivalence
 from paritea.noise import Fault, NoiseModel
 from paritea.utils import NoiseModelParam, noise_model_params
 from paritea.web import row_reduce_webs
-
-from ._enumeration import next_gen_strategy
 
 
 class Stabilisers:
@@ -124,13 +123,11 @@ def _is_fault_equivalence(
     if not quiet:
         print(f"Retrieved {len(g2_sig_nf)} atomic faults for d2!")
 
-    violation = next_gen_strategy(
-        g1_sig_nf,
-        g2_sig_nf,
-        len(d1_edge_idx_map),
-        num_detectors_1,
-        len(d2_edge_idx_map),
-        num_detectors_2,
+    violating_weight = _check_fault_equivalence(
+        nm1_sigs=g1_sig_nf,
+        nm2_sigs=g2_sig_nf,
+        d1_detectors=num_detectors_1,
+        d2_detectors=num_detectors_2,
         until=until,
         resolve_reason=resolve_reason,
         quiet=quiet,

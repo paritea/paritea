@@ -1,5 +1,4 @@
 import dataclasses
-from collections.abc import Iterable
 
 from .diagram import Diagram
 from .pauli import Pauli, PauliString
@@ -15,20 +14,23 @@ class FlipOperators:
 
 
 def _flip_operators(
-    web_generating_set: Iterable[PauliString],
+    web_generating_set: list[PauliString],
     restriction_func=lambda x: x,
 ) -> tuple[list[PauliString], list[PauliString]]:
     """
-    Calculates flip operators for the given collection of webs, which is presumed to be a minimal generating set for
-    some space under the given restriction function (defaults to identity).
+    Calculates flip operators for the given collection of webs, which is presumed to be
+    a minimal generating set for some space under the given restriction function
+    (defaults to identity).
 
-    Note that this function might change the generating set in use, which will be returned.
+    Note that this function might change the generating set in use, which will be
+    returned.
 
-    :return: The flip operators and the new generating set, such that the items at the same indices correspond.
+    :return: The flip operators and the new generating set, such that the items at the
+        same indices correspond.
     """
 
     flip_ops = []
-    new_gen_set = list(web_generating_set)
+    new_gen_set = web_generating_set
     for curr_gen_idx in range(len(new_gen_set)):
         curr_gen = restriction_func(new_gen_set[curr_gen_idx])
         flip_op = None
@@ -59,6 +61,7 @@ def build_flip_operators(d: Diagram) -> FlipOperators:
 
     stabs, regions = compute_pauli_webs(d)
 
-    stab_flip_ops, stab_gen_set = _flip_operators(stabs, lambda w: w.restrict(d.boundary_edges()))
+    boundary = d.boundary_edges()
+    stab_flip_ops, new_stabs = _flip_operators(stabs, lambda w: w.restrict(boundary))
 
-    return FlipOperators(d, stab_flip_ops, stab_gen_set, regions)
+    return FlipOperators(d, stab_flip_ops, new_stabs, regions)
