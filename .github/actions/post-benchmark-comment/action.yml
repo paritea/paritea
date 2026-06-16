@@ -1,0 +1,115 @@
+name: Post benchmark results to PR
+description: >
+  Commits a benchmark plot image to the assets branch and posts (or updates)
+  a PR comment containing the image and a detailed timing table.
+
+inputs:
+  image-path:
+    description: Path to the benchmark plot PNG file
+    required: true
+  results-json:
+    description: Path to the pytest-benchmark JSON results file
+    required: true
+  title:
+    description: Title used in the PR comment header and image filename prefix
+    required: true
+  image-prefix:
+    description: >
+      Unique prefix for the image filename on the assets branch (avoids
+      collisions between different benchmark suites)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Commit benchmark plot to assets branch
+      id: commit-image
+      shell: bash
+      env:
+        IMAGE_PATH: ${{ inputs.image-path }}
+        IMAGE_PREFIX: ${{ inputs.image-prefix }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        IMG_NAME="${IMAGE_PREFIX}-${PR_NUMBER}-$(date +%s).png"
+        git fetch origin assets/images --depth=1 || true
+        git worktree add --detach /tmp/assets-branch
+        cd /tmp/assets-branch
+        git checkout assets/images 2>/dev/null || git checkout --orphan assets/images
+        git rm -rf --ignore-unmatch . > /dev/null 2>&1
+        mkdir -p benchmarks
+        cp "$GITHUB_WORKSPACE/$IMAGE_PATH" "benchmarks/$IMG_NAME"
+        git add "benchmarks/$IMG_NAME"
+        git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Add benchmark plot for PR #${PR_NUMBER}"
+        git push origin HEAD:assets/images
+        echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        echo "img_name=$IMG_NAME" >> "$GITHUB_OUTPUT"
+        cd "$GITHUB_WORKSPACE"
+        git worktree remove /tmp/assets-branch
+
+    - name: Post results to PR
+      uses: actions/github-script@v7
+      env:
+        IMG_SHA: ${{ steps.commit-image.outputs.sha }}
+        IMG_NAME: ${{ steps.commit-image.outputs.img_name }}
+        RESULTS_JSON: ${{ inputs.results-json }}
+        COMMENT_TITLE: ${{ inputs.title }}
+      with:
+        script: |
+          const fs = require('fs');
+          const results = JSON.parse(fs.readFileSync(process.env.RESULTS_JSON, 'utf8'));
+
+          const rows = results.benchmarks
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(b => {
+              const median = (b.stats.median * 1000).toFixed(1);
+              const stddev = (b.stats.stddev * 1000).toFixed(1);
+              const rounds = b.stats.rounds;
+              return `| \`${b.name}\` | ${median} ms | ±${stddev} ms | ${rounds} |`;
+            });
+
+          const imgUrl = `https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/${process.env.IMG_SHA}/benchmarks/${process.env.IMG_NAME}`;
+          const title = process.env.COMMENT_TITLE;
+          const marker = `## ${title}`;
+
+          const body = [
+            marker,
+            '',
+            `![Benchmark plot](${imgUrl})`,
+            '',
+            '<details>',
+            '<summary>Detailed timing results</summary>',
+            '',
+            '| Benchmark | Median | Std Dev | Rounds |',
+            '|-----------|--------|---------|--------|',
+            ...rows,
+            '',
+            '</details>',
+            '',
+            `*Commit: ${context.sha.substring(0, 8)}*`,
+          ].join('\n');
+
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const existing = comments.find(c => c.body.startsWith(marker));
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+          }
