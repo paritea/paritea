@@ -261,6 +261,35 @@ fn next_gen_unfold(
     undetectables_generated
 }
 
+#[derive(Clone, Debug)]
+/// A violation of fault equivalence
+pub struct Violation {
+    /// Whether the violation originates from the first given noise model or the second
+    pub is_nm1: bool,
+    /// The combined weight of the violation
+    pub weight: usize,
+    /// The indices of the faults that compose to the violating fault
+    pub faults: Option<Vec<usize>>,
+}
+
+impl Violation {
+    pub fn new_nm1(weight: usize) -> Self {
+        Self {
+            is_nm1: true,
+            weight,
+            faults: None,
+        }
+    }
+
+    pub fn new_nm2(weight: usize) -> Self {
+        Self {
+            is_nm1: false,
+            weight,
+            faults: None,
+        }
+    }
+}
+
 /// Takes weighted fault signatures of nm1,nm2 in normalised form (stabilisers factored out),
 /// encoded as integers with bits as `<z and x boundary flips><detector flips>`.
 ///
@@ -280,8 +309,9 @@ pub fn check_fault_equivalence(
     d1_detectors: usize,
     d2_detectors: usize,
     until: Option<Weight>,
+    provenance: bool,
     quiet: bool,
-) -> Option<usize> {
+) -> Option<Violation> {
     let mut nm1_detectable_lookup = FxHashMap::default();
     let mut nm1_undetectable_lookup = FxHashMap::default();
     nm1_undetectable_lookup.insert(Fault::ZERO, 0);
@@ -353,7 +383,7 @@ pub fn check_fault_equivalence(
 
         for sig in &nm1_undetectable {
             if !nm2_undetectable_lookup.contains_key(sig) {
-                return Some(w);
+                return Some(Violation::new_nm1(w));
             }
         }
         if !quiet {
@@ -362,7 +392,7 @@ pub fn check_fault_equivalence(
 
         for sig in &nm2_undetectable {
             if !nm1_undetectable_lookup.contains_key(sig) {
-                return Some(w);
+                return Some(Violation::new_nm2(w));
             }
         }
         if !quiet {

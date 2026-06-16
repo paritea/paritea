@@ -123,13 +123,13 @@ def _is_fault_equivalence(
     if not quiet:
         print(f"Retrieved {len(g2_sig_nf)} atomic faults for d2!")
 
-    violating_weight = _check_fault_equivalence(
+    violation = _check_fault_equivalence(
         nm1_sigs=g1_sig_nf,
         nm2_sigs=g2_sig_nf,
         d1_detectors=num_detectors_1,
         d2_detectors=num_detectors_2,
         until=until,
-        resolve_reason=resolve_reason,
+        provenance=resolve_reason,
         quiet=quiet,
     )
 

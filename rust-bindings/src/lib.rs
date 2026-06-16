@@ -9,6 +9,7 @@ use pyo3::pymodule;
 mod _bindings {
     use num_bigint::BigUint;
     use paritea::diagram::{Diagram, NodeType, Phase};
+    use paritea::fault_equivalence::Violation;
     use paritea::fault_equivalence::check_fault_equivalence;
     use paritea::pauli::PauliString;
     use paritea::web::{compute, pauli_webs_through_partitions};
@@ -158,16 +159,48 @@ mod _bindings {
         ))
     }
 
+    #[pyclass]
+    #[allow(dead_code)]
+    /// A violation of fault equivalence
+    struct _Violation {
+        /// Whether the violation originates from the first given noise model or the second
+        is_nm1: bool,
+        /// The combined weight of the violation
+        weight: usize,
+        /// The indices of the faults that compose to the violating fault
+        faults: Option<Vec<usize>>,
+    }
+
+    impl From<Violation> for _Violation {
+        fn from(violation: Violation) -> Self {
+            Self {
+                is_nm1: violation.is_nm1,
+                weight: violation.weight,
+                faults: violation.faults,
+            }
+        }
+    }
+
     #[pyfunction]
-    #[pyo3(signature = (*, nm1_sigs, nm2_sigs, d1_detectors, d2_detectors, until, quiet))]
+    #[pyo3(signature = (*, nm1_sigs, nm2_sigs, d1_detectors, d2_detectors, until, provenance, quiet))]
     fn _check_fault_equivalence(
         nm1_sigs: Vec<(BigUint, usize)>,
         nm2_sigs: Vec<(BigUint, usize)>,
         d1_detectors: usize,
         d2_detectors: usize,
         until: Option<usize>,
+        provenance: bool,
         quiet: bool,
-    ) -> Option<usize> {
-        check_fault_equivalence(nm1_sigs, nm2_sigs, d1_detectors, d2_detectors, until, quiet)
+    ) -> Option<_Violation> {
+        check_fault_equivalence(
+            nm1_sigs,
+            nm2_sigs,
+            d1_detectors,
+            d2_detectors,
+            until,
+            provenance,
+            quiet,
+        )
+        .map(|v| v.into())
     }
 }
