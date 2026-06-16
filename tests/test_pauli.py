@@ -1,4 +1,4 @@
-from faulttools import Pauli
+from paritea import Pauli
 
 
 def test_pauli_mult():

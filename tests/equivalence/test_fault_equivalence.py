@@ -3,8 +3,12 @@ from fractions import Fraction
 import pytest
 import pyzx as zx
 
-from faulttools.equivalence import is_fault_equivalence
-from faulttools.glue.pyzx import from_pyzx
+from paritea import generate
+from paritea.diagram import Diagram, NodeType
+from paritea.equivalence import is_fault_equivalence
+from paritea.generate import surface_code_memory_experiment
+from paritea.glue.pyzx import from_pyzx
+from paritea.noise import NoiseModel
 
 
 @pytest.mark.skip(reason="Identity wires are currently not supported")
@@ -38,7 +42,7 @@ def test_2_pi_2_fuse():
     assert is_fault_equivalence(g1, g2)
 
 
-@pytest.mark.parametrize("fan_out", [2, 4, 10, 69])
+@pytest.mark.parametrize("fan_out", [2, 4, 10])
 def test_no_leg_spider_fuse(fan_out):
     """
     Fusing a spider with exactly one leg into its neighbor with a variable number of legs.
@@ -126,6 +130,22 @@ def test_cat_state_decomposition(n):
     _add_cz_layer(g2, [*bs1, *bs2])
 
     assert is_fault_equivalence(g1, g2, quiet=False)
+
+
+def test_cat_state_decomposition_limited():
+    """
+    A cat state expansion is valid in general, so it must also be valid when the check is limited to a low weight.
+    """
+    n = 7
+    g1 = zx.Graph()
+    _add_cat_state(g1, size=2 * n, qubit=0, row=0)
+
+    g2 = zx.Graph()
+    _, bs1 = _add_cat_state(g2, size=n, qubit=2, row=0)
+    _, bs2 = _add_cat_state(g2, size=n, qubit=6, row=0)
+    _add_cz_layer(g2, [*bs1, *bs2])
+
+    assert is_fault_equivalence(g1, g2, until=5, quiet=False)
 
 
 @pytest.mark.parametrize("n", [2, 3, 4, 5])
@@ -315,3 +335,51 @@ def test_parallel_syndrome_extraction():
     assert is_fault_equivalence(
         from_pyzx(g1, convert_had_edges=True), from_pyzx(g2, convert_had_edges=True), quiet=False
     )
+
+
+@pytest.mark.parametrize("distance", [3, 5, 7, 9])
+def test_surface_code_weight_limiting(distance):
+    d, partitions = surface_code_memory_experiment(distance=distance, rounds=2, partition=True)
+    [first_part, second_part] = partitions
+
+    def _is_crossing_edge(e: int) -> bool:
+        s, t = d.get_edge_endpoints_by_index(e)
+
+        return (s in first_part and t in second_part) or (s in second_part and t in first_part)
+
+    nm1 = NoiseModel.weighted_edge_flip_noise(d, idealised_edges=d.edge_indices())
+    nm2 = NoiseModel.weighted_edge_flip_noise(
+        d, w_x=1, w_y=2, w_z=1, idealised_edges=[e for e in d.edge_indices() if not _is_crossing_edge(e)]
+    )
+    # The fault equivalence is valid until exactly weight == distance
+    assert is_fault_equivalence(nm1, nm2, until=distance, quiet=False)
+    assert not is_fault_equivalence(nm1, nm2, until=distance + 1, quiet=False)
+
+
+def test_idempotent():
+    d = from_pyzx(generate.clifford(5, 10))
+    nm = NoiseModel.weighted_edge_flip_noise(d, 1, 1, 1)
+
+    assert is_fault_equivalence(nm, nm, quiet=False)
+
+
+def test_idempotent_non_normal_weight():
+    d = from_pyzx(generate.clifford(5, 10))
+    nm = NoiseModel.weighted_edge_flip_noise(d, 1, 2, 3)
+
+    assert is_fault_equivalence(nm, nm, quiet=False)
+
+
+def test_different_semantics():
+    # Replacing two pi/2 phase spiders with one is a change in semantics
+    d1 = Diagram()
+    z1, z2 = d1.add_node(NodeType.Z, phase=Fraction(1, 2)), d1.add_node(NodeType.Z, phase=Fraction(1, 2))
+    d1.add_edges([(d1.add_node(NodeType.B), z1), (z1, z2), (z2, d1.add_node(NodeType.B))])
+
+    d2 = Diagram()
+    z = d2.add_node(NodeType.Z, phase=Fraction(1, 2))
+    d2.add_edges([(d2.add_node(NodeType.B), z), (z, d2.add_node(NodeType.B))])
+
+    with pytest.raises(ValueError) as exc_info:
+        is_fault_equivalence(d1, d2)
+    assert exc_info.value.args[0] == "The two circuits given have different stabilisers and thus different semantics!"

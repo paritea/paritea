@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "rust",
+    "rust-bindings",
+]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.91.0"
+
+[workspace.dependencies]
+rustworkx-core = "0.17.1"
+itertools = "0.14.0"
+rustc-hash = "2.1.2"
+derive_more = { version = "2", features = ["display", "from", "index"] }
+num-bigint = "0.4.6"
+
+[profile.dev-py]
+inherits = "dev"
+
+[profile.release-py]
+inherits = "release"
+lto = "fat"
+strip = "symbols"
+panic = "abort"

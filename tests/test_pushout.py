@@ -1,8 +1,8 @@
 import pytest
 
-from faulttools import FlipOperators, build_flip_operators, generate, push_out
-from faulttools.glue.pyzx import from_pyzx
-from faulttools.noise import NoiseModel
+from paritea import FlipOperators, build_flip_operators, generate, push_out
+from paritea.glue.pyzx import from_pyzx
+from paritea.noise import NoiseModel
 
 
 def group_fault_values_by_flips[T](

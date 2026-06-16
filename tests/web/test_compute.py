@@ -1,15 +1,17 @@
 import json
 from collections.abc import Callable, Mapping
+from typing import Protocol
 
 import numpy as np
 import pytest
 from galois import GF2
 
-from faulttools import Pauli, PauliString, generate
-from faulttools.diagram import Diagram, NodeType
-from faulttools.glue.pyzx import from_pyzx
-from faulttools.web import compute_pauli_webs
-from faulttools.web.partitions import pauli_webs_through_partitions
+from paritea import Pauli, PauliString, generate
+from paritea.diagram import Diagram, NodeType
+from paritea.generate import surface_code_memory_experiment
+from paritea.glue.pyzx import from_pyzx
+from paritea.web import compute_pauli_webs
+from paritea.web.partitions import pauli_webs_through_partitions
 
 SerializedPauliString = Mapping[str, Pauli]
 
@@ -70,52 +72,82 @@ def generate_web_files(web_io: WebFileIO) -> Callable[[Diagram, list[PauliString
     return _generate
 
 
+def assert_webs_eq(
+    d: Diagram,
+    stabs: list[PauliString],
+    regions: list[PauliString],
+    exp_stabs: list[PauliString],
+    exp_regions: list[PauliString],
+    *,
+    allow_basis_change: bool = False,
+) -> None:
+    edge_idx_map = {e: i for i, e in enumerate(d.edge_indices())}
+
+    compiled_stabs = GF2([web.compile(edge_idx_map) for web in stabs])
+    compiled_regions = GF2([web.compile(edge_idx_map) for web in regions])
+    compiled_exp_stabs = GF2([web.compile(edge_idx_map) for web in exp_stabs])
+    compiled_exp_regions = GF2([web.compile(edge_idx_map) for web in exp_regions])
+
+    assert len(compiled_regions) == len(compiled_exp_regions)
+    assert len(compiled_stabs) == len(compiled_exp_stabs)
+
+    if len(compiled_regions) > 0:
+        if not allow_basis_change:
+            assert np.array_equal(compiled_regions, compiled_exp_regions), "Region vectors are not the same!"
+        else:
+            cr_rref = compiled_regions.row_reduce()
+            cer_rref = compiled_exp_regions.row_reduce()
+            cr_nonzero = [row for row in cr_rref if any(row)]
+            cer_nonzero = [row for row in cer_rref if any(row)]
+            assert len(cr_nonzero) == len(cr_rref)
+            assert len(cer_nonzero) == len(cer_rref)
+            assert np.array_equal(cr_rref, cer_rref), "Region spaces are not equal!"
+
+    if not allow_basis_change:
+        assert np.array_equal(compiled_stabs, compiled_exp_stabs), "Stabiliser vectors are not the same!"
+    else:
+        # Stabilising web spaces must only be equal modulo the detecting webs. Thus, test the entire web
+        # space for equality, which yields the property under test combined with detecting web space equality.
+        if len(compiled_regions) > 0:
+            web_space_basis = GF2(np.vstack([compiled_stabs, compiled_regions]))
+            exp_web_space_basis = GF2(np.vstack([compiled_exp_stabs, compiled_exp_regions]))
+        else:
+            web_space_basis = compiled_stabs
+            exp_web_space_basis = compiled_exp_stabs
+        assert np.array_equal(web_space_basis.row_reduce(), exp_web_space_basis.row_reduce()), (
+            "Web spaces are not equal"
+        )
+
+
+class WebFileAssertion(Protocol):
+    def __call__(
+        self, d: Diagram, stabs: list[PauliString], regions: list[PauliString], *, allow_basis_change: bool = False
+    ) -> None: ...
+
+
 @pytest.fixture
-def assert_pauli_webs(web_io: WebFileIO) -> Callable[[Diagram, list[PauliString], list[PauliString]], None]:
-    def _assert(d: Diagram, stabs: list[PauliString], regions: list[PauliString]) -> None:
-        edge_idx_map = {e: i for i, e in enumerate(d.edge_indices())}
-
-        compiled_stabs = GF2([web.compile(edge_idx_map) for web in stabs])
-        compiled_regions = GF2([web.compile(edge_idx_map) for web in regions])
-        compiled_exp_stabs = GF2([web.compile(edge_idx_map) for web in web_io.read_stabilising(d)])
-        compiled_exp_regions = GF2([web.compile(edge_idx_map) for web in web_io.read_detecting(d)])
-
+def assert_web_files(web_io: WebFileIO) -> WebFileAssertion:
+    def _assert(
+        d: Diagram, stabs: list[PauliString], regions: list[PauliString], *, allow_basis_change: bool = False
+    ) -> None:
         try:
-            assert len(compiled_regions) == len(compiled_exp_regions)
-            if len(compiled_regions) > 0:
-                cr_rref = compiled_regions.row_reduce()
-                cer_rref = compiled_exp_regions.row_reduce()
-
-                cr_nonzero = [row for row in cr_rref if any(row)]
-                cer_nonzero = [row for row in cer_rref if any(row)]
-
-                assert len(cr_nonzero) == len(cr_rref)
-                assert len(cer_nonzero) == len(cer_rref)
-
-                assert np.array_equal(cr_rref, cer_rref), "Region spaces are not equal"
-
-            # Stabilising web spaces must only be equal modulo the detecting web spaces. Thus, test the entire Pauli web
-            # space for equality, which yields the property under test combined with detecting web space equality.
-            if len(compiled_regions) > 0:
-                web_space_basis = GF2(np.vstack([compiled_stabs, compiled_regions]))
-                exp_web_space_basis = GF2(np.vstack([compiled_exp_stabs, compiled_exp_regions]))
-            else:
-                web_space_basis = compiled_stabs
-                exp_web_space_basis = compiled_exp_stabs
-
-            assert np.array_equal(web_space_basis.row_reduce(), exp_web_space_basis.row_reduce()), (
-                "Web spaces are not equal"
+            assert_webs_eq(
+                d,
+                stabs,
+                regions,
+                web_io.read_stabilising(d),
+                web_io.read_detecting(d),
+                allow_basis_change=allow_basis_change,
             )
         except AssertionError:
             web_io.write_stabilising(stabs, d, file_name_suffix="_actual")
             web_io.write_detecting(regions, d, file_name_suffix="_actual")
-
             raise
 
     return _assert
 
 
-def test_identity_webs(assert_pauli_webs):
+def test_identity_webs(assert_web_files):
     d = Diagram()
     b1 = d.add_node(NodeType.B)
     b2 = d.add_node(NodeType.B)
@@ -125,28 +157,38 @@ def test_identity_webs(assert_pauli_webs):
     d.infer_io_from_boundaries()
 
     stabs, regions = compute_pauli_webs(d)
-    assert_pauli_webs(d, stabs, regions)
+    assert_web_files(d, stabs, regions)
     stabs, regions = pauli_webs_through_partitions(d, partitions=[[n]])
-    assert_pauli_webs(d, stabs, regions)
+    assert_web_files(d, stabs, regions)
 
 
-def test_zweb_webs(assert_pauli_webs):
+def test_zweb_webs(assert_web_files):
     d = from_pyzx(generate.zweb(2, 2))
     stabs, regions = compute_pauli_webs(d)
 
-    assert_pauli_webs(d, stabs, regions)
+    assert_web_files(d, stabs, regions)
 
 
-@pytest.mark.parametrize("code_size,repeat", [(3, 1), (5, 1), (5, 3)])
-def test_rotated_surface_code_shor(code_size, repeat, assert_pauli_webs):
-    d, partitions = generate.shor_extraction(
-        generate.rotated_planar_surface_code_stabilisers(code_size),
-        qubits=code_size**2,
-        repeat=repeat,
-        partition=True,
-    )
+ROTATED_SURFACE_CODE_SHOR_PARAMETERS = [(3, 1), (5, 1), (5, 3)]
 
-    stabs, regions = compute_pauli_webs(d)
-    assert_pauli_webs(d, stabs, regions)
-    stabs, regions = pauli_webs_through_partitions(d, partitions=partitions)
-    assert_pauli_webs(d, stabs, regions)
+
+@pytest.mark.parametrize("d,repeat", ROTATED_SURFACE_CODE_SHOR_PARAMETERS)
+def test_rotated_surface_code_shor(d, repeat, assert_web_files):
+    d = surface_code_memory_experiment(distance=d, rounds=repeat)
+
+    stabs_1, regions_1 = compute_pauli_webs(d)
+    stabs_2, regions_2 = compute_pauli_webs(d)
+    assert_webs_eq(d, stabs_2, regions_2, stabs_1, regions_1)
+    assert_web_files(d, stabs_1, regions_1)
+
+
+@pytest.mark.parametrize("d,repeat", ROTATED_SURFACE_CODE_SHOR_PARAMETERS)
+def test_rotated_surface_code_shor_partitioned(d, repeat, assert_web_files):
+    d, partitions = surface_code_memory_experiment(distance=d, rounds=repeat, partition=True)
+
+    non_part_stabs, non_part_regions = compute_pauli_webs(d)
+    stabs_1, regions_1 = pauli_webs_through_partitions(d, partitions=partitions)
+    assert_webs_eq(d, stabs_1, regions_1, non_part_stabs, non_part_regions, allow_basis_change=True)
+    stabs_2, regions_2 = pauli_webs_through_partitions(d, partitions=partitions)
+    assert_webs_eq(d, stabs_2, regions_2, stabs_1, regions_1)
+    assert_web_files(d, stabs_1, regions_1)

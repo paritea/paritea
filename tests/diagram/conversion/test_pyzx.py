@@ -1,7 +1,7 @@
 import pyzx.generate
 from pyzx import Graph
 
-from faulttools.glue.pyzx import from_pyzx
+from paritea.glue.pyzx import from_pyzx
 
 
 def test_empty():

@@ -1,0 +1,260 @@
+use crate::diagram::{Diagram, NodeType, Phase};
+use crate::pauli::Pauli;
+use crate::sorted_pair;
+use fraction::{CheckedDiv, Zero};
+use itertools::Itertools;
+use rustc_hash::FxHashMap;
+use rustworkx_core::petgraph::graph::NodeIndex;
+use std::collections::BTreeSet;
+
+#[derive(Debug, Clone, Copy)]
+struct ExtraIdNode {
+    node: NodeIndex,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ExpandedHadamard {
+    r1_node: NodeIndex,
+    r2_node: NodeIndex,
+    r3_node: NodeIndex,
+    origin: NodeIndex,
+}
+
+#[derive(Debug, Default)]
+pub struct AdditionalNodes {
+    extra_id_nodes: Vec<ExtraIdNode>,
+    expanded_hadamards: Vec<ExpandedHadamard>,
+}
+
+impl AdditionalNodes {
+    fn add_extra_id_node(&mut self, node: NodeIndex) {
+        self.extra_id_nodes.push(ExtraIdNode { node });
+    }
+
+    fn add_expanded_hadamard(&mut self, expanded_hadamard: ExpandedHadamard) {
+        self.expanded_hadamards.push(expanded_hadamard);
+    }
+
+    fn remove_extra_id_node(
+        adj: &mut FxHashMap<NodeIndex, BTreeSet<NodeIndex>>,
+        webs: &mut [FxHashMap<(NodeIndex, NodeIndex), Pauli>],
+        id_node: ExtraIdNode,
+    ) {
+        let (v1, v2) = adj[&id_node.node].iter().copied().collect_tuple().unwrap();
+        for web in webs.iter_mut() {
+            if let Some(p) = web.remove(&sorted_pair(v1, id_node.node)) {
+                web.insert(sorted_pair(v1, v2), p);
+                debug_assert!(web.contains_key(&sorted_pair(id_node.node, v2)));
+                web.remove(&sorted_pair(id_node.node, v2));
+            } else {
+                debug_assert!(!web.contains_key(&sorted_pair(id_node.node, v2)));
+            }
+        }
+        let v1_mut = adj.get_mut(&v1).unwrap();
+        v1_mut.insert(v2);
+        v1_mut.remove(&id_node.node);
+        let id_node_mut = adj.get_mut(&id_node.node).unwrap();
+        id_node_mut.remove(&v1);
+        id_node_mut.remove(&v2);
+        let v2_mut = adj.get_mut(&v2).unwrap();
+        v2_mut.insert(v1);
+        v2_mut.remove(&id_node.node);
+    }
+
+    fn remove_expanded_hadamard(
+        adj: &mut FxHashMap<NodeIndex, BTreeSet<NodeIndex>>,
+        webs: &mut [FxHashMap<(NodeIndex, NodeIndex), Pauli>],
+        hadamard: ExpandedHadamard,
+    ) {
+        let (w1, w2, w3) = (hadamard.r1_node, hadamard.r2_node, hadamard.r3_node);
+        let (w1_left, w1_right) = adj[&w1].iter().copied().collect_tuple().unwrap();
+        let l = if w1_right == w2 { w1_left } else { w1_right };
+        let (w3_left, w3_right) = adj[&w3].iter().copied().collect_tuple().unwrap();
+        let r = if w3_left == w2 { w3_right } else { w3_left };
+
+        adj.get_mut(&l).unwrap().insert(hadamard.origin);
+        adj.entry(hadamard.origin)
+            .or_insert(BTreeSet::new())
+            .extend([l, r]);
+        adj.get_mut(&r).unwrap().insert(hadamard.origin);
+        for web in webs.iter_mut() {
+            if let Some(p) = web.remove(&sorted_pair(l, w1)) {
+                web.insert(sorted_pair(l, hadamard.origin), p);
+                debug_assert!(web.contains_key(&sorted_pair(w1, w2)));
+                debug_assert!(web.contains_key(&sorted_pair(w2, w3)));
+                debug_assert_eq!(web.get(&sorted_pair(w3, r)), Some(&p.flip()));
+                web.insert(sorted_pair(hadamard.origin, r), p.flip());
+                web.remove(&sorted_pair(w1, w2));
+                web.remove(&sorted_pair(w2, w3));
+                web.remove(&sorted_pair(w3, r));
+            } else {
+                debug_assert!(!web.contains_key(&sorted_pair(w1, w2)));
+                debug_assert!(!web.contains_key(&sorted_pair(w2, w3)));
+                debug_assert!(!web.contains_key(&sorted_pair(w3, r)));
+            }
+        }
+        adj.get_mut(&l).unwrap().remove(&w1);
+        let w1_mut = adj.get_mut(&w1).unwrap();
+        w1_mut.remove(&l);
+        w1_mut.remove(&w2);
+        let w2_mut = adj.get_mut(&w2).unwrap();
+        w2_mut.remove(&w1);
+        w2_mut.remove(&w3);
+        let w3_mut = adj.get_mut(&w3).unwrap();
+        w3_mut.remove(&w2);
+        w3_mut.remove(&r);
+        adj.get_mut(&r).unwrap().remove(&w3);
+    }
+
+    pub fn remove_from(&self, d: &Diagram, webs: &mut [FxHashMap<(NodeIndex, NodeIndex), Pauli>]) {
+        let mut adj = d
+            .node_indices()
+            .map(|n| (n, d.neighbors(n).collect()))
+            .collect();
+        for &id_node in &self.extra_id_nodes {
+            Self::remove_extra_id_node(&mut adj, webs, id_node);
+        }
+        for &hadamard in &self.expanded_hadamards {
+            Self::remove_expanded_hadamard(&mut adj, webs, hadamard);
+        }
+    }
+}
+
+fn place_node_between(d: &mut Diagram, nt: NodeType, n1: NodeIndex, n2: NodeIndex) -> NodeIndex {
+    let node = d.add_node(nt, None);
+    d.remove_edge_between(n1, n2);
+    d.add_edges([(n1, node), (node, n2)]);
+
+    node
+}
+
+const _EULER_DECOMPOSITION_XZX: [NodeType; 3] = [NodeType::X, NodeType::Z, NodeType::X];
+const _EULER_DECOMPOSITION_ZXZ: [NodeType; 3] = [NodeType::Z, NodeType::X, NodeType::Z];
+
+/// A cut down version of pyzx.euler_expansion which does not add global scalars and does not
+/// prematurely 'merge' spiders.
+fn euler_expand_edges(d: &mut Diagram) -> Vec<ExpandedHadamard> {
+    let mut expanded_hadamards = Vec::new();
+    for v in d.node_indices().collect_vec() {
+        if d.node_type(v) != NodeType::H {
+            continue;
+        }
+
+        let (v1, v2) = d.neighbors(v).collect_tuple().unwrap();
+
+        d.remove_node(v);
+        d.add_edge(v1, v2);
+
+        let flip = d.node_type(v1) == d.node_type(v2) && d.node_type(v1) == NodeType::X;
+
+        // Change decomposition to avoid introducing more X-spiders due to adjacent Z-spider
+        let pattern = if flip {
+            _EULER_DECOMPOSITION_XZX
+        } else {
+            _EULER_DECOMPOSITION_ZXZ
+        };
+
+        let w2 = place_node_between(d, pattern[1], v1, v2);
+        d.add_to_phase(w2, Phase::new(1u32, 2u32));
+        let w1 = place_node_between(d, pattern[0], v1, w2);
+        d.add_to_phase(w1, Phase::new(1u32, 2u32));
+        let w3 = place_node_between(d, pattern[2], w2, v2);
+        d.add_to_phase(w3, Phase::new(1u32, 2u32));
+
+        expanded_hadamards.push(ExpandedHadamard {
+            r1_node: w1,
+            r2_node: w2,
+            r3_node: w3,
+            origin: v,
+        });
+    }
+
+    expanded_hadamards
+}
+
+fn ensure_red_green(d: &mut Diagram) -> Vec<NodeIndex> {
+    let mut new_nodes = Vec::new();
+    // Introduce intermediate nodes
+    for (s, t) in d.edge_list().collect_vec() {
+        if d.node_type(s) == d.node_type(t) {
+            let new_type = if d.node_type(s) == NodeType::X {
+                NodeType::Z
+            } else {
+                NodeType::X
+            };
+            new_nodes.push(place_node_between(d, new_type, s, t));
+        }
+    }
+
+    // Introduce intermediate nodes for boundary <-> boundary connections
+    for (s, t) in d.edge_list().collect_vec() {
+        if d.node_type(s) == NodeType::B && d.node_type(t) == NodeType::B {
+            new_nodes.push(place_node_between(d, NodeType::X, s, t));
+        }
+    }
+
+    // Ensure boundaries are not connected to a red spider
+    let boundaries = d.boundary_nodes().collect_vec();
+    for &boundary in &boundaries {
+        let neighbour = d.neighbors(boundary).next().unwrap();
+        if d.node_type(neighbour) == NodeType::X {
+            new_nodes.push(place_node_between(d, NodeType::Z, boundary, neighbour));
+        }
+    }
+
+    // Ensure boundaries are not connected to green spiders with nonzero phase or more than one boundary connection
+    for boundary in boundaries {
+        let neighbour = d.neighbors(boundary).next().unwrap();
+        let neighbour_boundaries = d
+            .neighbors(neighbour)
+            .filter(|&v| d.node_type(v) == NodeType::B)
+            .collect_vec();
+        if !d.phase(neighbour).is_zero() || neighbour_boundaries.len() > 1 {
+            let new_x = place_node_between(d, NodeType::X, boundary, neighbour);
+            new_nodes.push(new_x);
+            new_nodes.push(place_node_between(d, NodeType::Z, boundary, new_x));
+        }
+    }
+
+    new_nodes
+}
+
+pub fn to_red_green_form(d: &mut Diagram) -> AdditionalNodes {
+    if d.has_parallel_edges() {
+        panic!("Can only work on diagrams containing no parallel edges."); // TODO result
+    }
+
+    // Convert all H-edges and Hadamards to red and green spiders
+    let mut additional_nodes = AdditionalNodes::default();
+    for hadamard in euler_expand_edges(d) {
+        additional_nodes.add_expanded_hadamard(hadamard);
+    }
+
+    // Verify that diagram is clifford
+    let offending_vertices = d
+        .node_indices()
+        .filter(|&n| {
+            d.phase(n).checked_div(&Phase::new(2u32, 1u32)).is_none()
+                || (d.node_type(n) != NodeType::Z
+                    && d.node_type(n) != NodeType::X
+                    && d.node_type(n) != NodeType::B)
+        })
+        .collect_vec();
+    if !offending_vertices.is_empty() {
+        panic!(
+            "Given diagram is not a Clifford diagram up to hadamard expansion. The following \
+             vertices are either not of type X,Z,BOUNDARY or have a non-clifford \
+             phase: {}",
+            offending_vertices
+                .iter()
+                .map(|v| v.index().to_string())
+                .join(", ")
+        );
+    }
+
+    for node in ensure_red_green(d) {
+        additional_nodes.add_extra_id_node(node);
+    }
+
+    additional_nodes
+}
