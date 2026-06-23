@@ -54,22 +54,21 @@ def push_out_for_measurement_detectors[T](
 def export_to_stim_dem(
     nm: NoiseModel[float], *, logical_regions: set[int], detector_regions: set[int]
 ) -> stim.DetectorErrorModel:
-    dem_str = ""
+    dem = stim.DetectorErrorModel()
     for fault, p in nm.atomic_faults_with_values_unpacked():
         if len(fault.detector_flips) == 0:
             continue
 
-        dem_part = ""
+        dem_targets: list[stim.DemTarget] = []
         for detector in fault.detector_flips:
             if detector in logical_regions:
-                dem_part += f"L{detector} "
+                dem_targets.append(stim.DemTarget(f"L{detector}"))
             elif detector in detector_regions:
-                dem_part += f"D{detector} "
+                dem_targets.append(stim.DemTarget(f"D{detector}"))
             else:
                 raise ValueError(f"Region {detector} is neither known as a logical nor as a detector")
 
-        if dem_part != "":
-            dem_str += f"error({p}) {dem_part}\n"
-    dem = stim.DetectorErrorModel(dem_str)
+        if len(dem_targets) > 0:
+            dem.append("error", [p], dem_targets)
 
     return dem
