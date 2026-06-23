@@ -183,6 +183,25 @@ def test_rotated_surface_code_shor(d, repeat, assert_web_files):
 
 
 @pytest.mark.parametrize("d,repeat", ROTATED_SURFACE_CODE_SHOR_PARAMETERS)
+def test_rotated_surface_code_closed(d, repeat, assert_web_files):
+    """A closed version of the surface code memory experiment with no boundary edges.
+    Should generate no stabilizers."""
+    d = surface_code_memory_experiment(distance=d, rounds=repeat)
+
+    # Cap off boundary with |0> initialization and <0|-selected measurements
+    d.virtualize_io()
+    for b in d.io_sorted():
+        d.add_edge(d.add_node(NodeType.X), b)
+    d.set_io([], [], virtual=False)
+
+    stabs_1, regions_1 = compute_pauli_webs(d)
+    stabs_2, regions_2 = compute_pauli_webs(d)
+    assert len(stabs_1) == len(stabs_2) == 0
+    assert_webs_eq(d, stabs_2, regions_2, stabs_1, regions_1)
+    assert_web_files(d, stabs_1, regions_1)
+
+
+@pytest.mark.parametrize("d,repeat", ROTATED_SURFACE_CODE_SHOR_PARAMETERS)
 def test_rotated_surface_code_shor_partitioned(d, repeat, assert_web_files):
     d, partitions = surface_code_memory_experiment(distance=d, rounds=repeat, partition=True)
 

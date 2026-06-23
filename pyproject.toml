@@ -41,6 +41,15 @@ test = [
     "pytest>=8.4.2",
 ]
 
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "rust/**/*.rs" },
+    { file = "rust/Cargo.toml" },
+    { file = "rust-bindings/**/*.rs" },
+    { file = "rust-bindings/Cargo.toml" },
+]
 
 [build-system]
 requires = ["maturin>=1.4,<2.0"]
