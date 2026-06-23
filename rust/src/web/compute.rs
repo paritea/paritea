@@ -81,13 +81,17 @@ pub fn compute(
     } else {
         // Search for solutions that do not highlight boundary edges, i.e. detecting regions
         let transp = sol_row_basis.transposed();
-        let boundary_selected_basis = BitMatrix::from_bool_vec(
-            &(0..(ordering.z_boundaries.len() * 2))
-                .map(|i| transp.row(i).iter().take(transp.cols()).collect_vec())
-                .collect_vec(),
-        );
-        let boundary_nullspace_vectors =
-            BitMatrix::vstack_from_iter(&boundary_selected_basis.nullspace());
+        // No boundary edges -> forward solution basis as is, as it will contain only detecting webs
+        let boundary_nullspace_vectors = if ordering.z_boundaries.is_empty() {
+            BitMatrix::identity(sol_row_basis.rows())
+        } else {
+            let boundary_selected_basis = BitMatrix::from_bool_vec(
+                &(0..(ordering.z_boundaries.len() * 2))
+                    .map(|i| transp.row(i).iter().take(transp.cols()).collect_vec())
+                    .collect_vec(),
+            );
+            BitMatrix::vstack_from_iter(&boundary_selected_basis.nullspace())
+        };
         // Empty nullspace of boundary edges -> no webs that highlight no boundary edges -> no detecting regions
         let region_sols = if boundary_nullspace_vectors.rows() == 0 {
             Vec::new()
