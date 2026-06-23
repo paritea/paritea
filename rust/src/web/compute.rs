@@ -82,7 +82,7 @@ pub fn compute(
         // Search for solutions that do not highlight boundary edges, i.e. detecting regions
         let transp = sol_row_basis.transposed();
         // No boundary edges -> forward solution basis as is, as it will contain only detecting webs
-        let boundary_nullspace_vectors = if ordering.z_boundaries.len() == 0 {
+        let boundary_nullspace_vectors = if ordering.z_boundaries.is_empty() {
             BitMatrix::identity(sol_row_basis.rows())
         } else {
             let boundary_selected_basis = BitMatrix::from_bool_vec(
