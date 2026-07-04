@@ -28,10 +28,20 @@ class _DiagramBuildingState:
             self.current_qubit_nodes[qubit] = self.d.add_node(NodeType.X, x=self.row_offset - 1, y=qubit)
 
 
+def _assert_non_inverted_qubit(tar: stim.GateTarget, gate: str) -> None:
+    if not tar.is_qubit_target or tar.is_inverted_result_target:
+        raise ValueError(f"{gate}: Can only process non-inverted qubit targets")
+
+
+def _assert_non_inverted_record(tar: stim.GateTarget, gate: str) -> None:
+    if not tar.is_measurement_record_target or tar.is_inverted_result_target:
+        raise ValueError(f"{gate}: Can only process non-inverted measurement record targets")
+
+
 def _h(state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[tuple[int, int]]:
     updated_qubits = []
     for tar in instr.targets_copy():
-        assert tar.is_qubit_target and not tar.is_inverted_result_target
+        _assert_non_inverted_qubit(tar, "H")
         q = tar.qubit_value
         state.ensure_initialized(q)
         h = state.d.add_node(NodeType.H, x=state.row_offset, y=q)
@@ -46,9 +56,10 @@ def _h(state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[tup
 def _cnot(state: _DiagramBuildingState, instr: stim.CircuitInstruction) -> list[tuple[int, int]]:
     updated_qubits = []
     for group in instr.target_groups():
-        assert len(group) == 2
+        if len(group) != 2:
+            raise AssertionError("CNOT: Expected groups of length 2")
         for tar in group:
-            assert tar.is_qubit_target and not tar.is_inverted_result_target
+            _assert_non_inverted_qubit(tar, "CNOT")
 
         q_control = group[0].qubit_value
         q_target = group[1].qubit_value
@@ -122,7 +133,7 @@ def from_stim(
             # Measurements / Resets
             case "R" | "RZ":
                 for tar in instr.targets_copy():
-                    assert tar.is_qubit_target and not tar.is_inverted_result_target
+                    _assert_non_inverted_qubit(tar, "R|RZ")
                     q = tar.qubit_value
                     if state.is_initialized(q):
                         # Silent measurement
@@ -135,7 +146,7 @@ def from_stim(
                 state.row_offset += 2
             case "MR" | "MRZ" | "M" | "MZ":
                 for tar in instr.targets_copy():
-                    assert tar.is_qubit_target and not tar.is_inverted_result_target
+                    _assert_non_inverted_qubit(tar, "MR|MRZ|M|MZ")
                     # Silent measurement
                     q = tar.qubit_value
                     state.ensure_initialized(q)
@@ -149,29 +160,24 @@ def from_stim(
                 state.row_offset += 2
             # Error mechanisms
             case "X_ERROR":
-                args = instr.gate_args_copy()
-                assert len(args) == 1
+                [p] = instr.gate_args_copy()
                 for tar in instr.targets_copy():
-                    assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    queue_for_edge_replacement({tar.qubit_value: Pauli.X}, args[0])
+                    _assert_non_inverted_qubit(tar, "X_ERROR")
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.X}, p)
             case "Y_ERROR":
-                args = instr.gate_args_copy()
-                assert len(args) == 1
+                [p] = instr.gate_args_copy()
                 for tar in instr.targets_copy():
-                    assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    queue_for_edge_replacement({tar.qubit_value: Pauli.Y}, args[0])
+                    _assert_non_inverted_qubit(tar, "Y_ERROR")
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.Y}, p)
             case "Z_ERROR":
-                args = instr.gate_args_copy()
-                assert len(args) == 1
+                [p] = instr.gate_args_copy()
                 for tar in instr.targets_copy():
-                    assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    queue_for_edge_replacement({tar.qubit_value: Pauli.Z}, args[0])
+                    _assert_non_inverted_qubit(tar, "Z_ERROR")
+                    queue_for_edge_replacement({tar.qubit_value: Pauli.Z}, p)
             case "DEPOLARIZE1":
-                args = instr.gate_args_copy()
-                assert len(args) == 1
+                [p] = instr.gate_args_copy()
                 for tar in instr.targets_copy():
-                    assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    p = args[0]
+                    _assert_non_inverted_qubit(tar, "DEPOLARIZE1")
                     if p > 0.75:
                         raise RuntimeError("Cannot approximate single-qubit depolarizing channel with p > 0.75!")
                     # Apply the magic formula to decorrelate depolarization, see https://algassert.com/post/2001
@@ -180,13 +186,12 @@ def from_stim(
                     queue_for_edge_replacement({tar.qubit_value: Pauli.Y}, independent_p)
                     queue_for_edge_replacement({tar.qubit_value: Pauli.Z}, independent_p)
             case "DEPOLARIZE2":
-                args = instr.gate_args_copy()
-                assert len(args) == 1
+                [p] = instr.gate_args_copy()
                 for group in instr.target_groups():
-                    assert len(group) == 2
+                    if len(group) != 2:
+                        raise AssertionError("CNOT: Expected groups of length 2")
                     for tar in group:
-                        assert tar.is_qubit_target and not tar.is_inverted_result_target
-                    p = args[0]
+                        _assert_non_inverted_qubit(tar, "DEPOLARIZE2")
                     if p > 15 / 16:
                         raise RuntimeError("Cannot approximate double-qubit depolarizing channel with p > 15/16!")
                     # Apply the magic formula to decorrelate depolarization, see https://algassert.com/post/2001
@@ -200,17 +205,16 @@ def from_stim(
             case "DETECTOR":
                 detector = []
                 for tar in instr.targets_copy():
-                    assert tar.is_measurement_record_target and not tar.is_inverted_result_target
+                    _assert_non_inverted_record(tar, "DETECTOR")
                     detector.append(measurement_nodes[tar.value])
                 detectors.append(detector)
             case "OBSERVABLE_INCLUDE":
-                args = instr.gate_args_copy()
-                assert len(args) == 1
-                obs_idx = int(args[0])
+                [obs_idx] = instr.gate_args_copy()
+                obs_idx = int(obs_idx)
                 if obs_idx not in observables:
                     observables[obs_idx] = []
                 for tar in instr.targets_copy():
-                    assert tar.is_measurement_record_target and not tar.is_inverted_result_target
+                    _assert_non_inverted_record(tar, "OBSERVABLE_INCLUDE")
                     observables[obs_idx].append(measurement_nodes[tar.value])
             # Irrelevant instructions
             case "TICK" | "QUBIT_COORDS":
