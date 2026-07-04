@@ -11,12 +11,12 @@ def _flip_ops_for_detecting_operators(
     flip_ops: FlipOperators, measurement_nodes: list[int], operators: list[PauliString]
 ) -> FlipOperators:
     measurement_edges = {flip_ops.diagram.incident_edges(n)[0]: i for i, n in enumerate(measurement_nodes)}
+    compiled_gen_set = GF2(
+        [p.restrict(measurement_edges.keys()).compile(measurement_edges) for p in flip_ops.region_gen_set]
+    )
 
     region_gen_set: list[PauliString] = []
     for operator in operators:
-        compiled_gen_set = GF2(
-            [p.restrict(measurement_edges.keys()).compile(measurement_edges) for p in flip_ops.region_gen_set]
-        )
         b = GF2.Zeros(len(measurement_edges) * 2)
         for e, p in operator.items():
             if p == Pauli.X or p == Pauli.Y:
