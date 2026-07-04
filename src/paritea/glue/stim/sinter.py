@@ -1,5 +1,7 @@
 import sinter
 from stim import CompiledDemSampler, DetectorErrorModel
+from math import sqrt
+from scipy.stats import norm
 
 
 class DemWrappingCircuit:
@@ -58,3 +60,54 @@ def wrap_dem_as_sinter_task(dem: DetectorErrorModel, *_, **kwargs) -> sinter.Tas
         detector_error_model=dem,
         **kwargs,
     )
+
+
+def _wilson_interval(k: int, n: int, confidence: float) -> tuple[float, float]:
+    """Wilson score interval for a single binomial proportion. Returns (low, high)."""
+    if n == 0:
+        raise ValueError("n must be > 0")
+
+    p = k / n
+    z = norm.ppf(1 - (1 - confidence) / 2)
+
+    denom = 1 + (z * z) / n
+    center = (p + (z * z) / (2 * n)) / denom
+    margin = z * sqrt(p * (1 - p) / n + (z * z) / (4 * n * n)) / denom
+
+    return center - margin, center + margin
+
+
+def _confidence_interval_for_difference(
+    a_errors: int,
+    a_shots: int,
+    b_errors: int,
+    b_shots: int,
+    confidence: float = 0.90,
+):
+    """Newcombe CI for difference of proportions: (p1 - p2).
+    Uses Wilson intervals and combines them as: [L1 - U2, U1 - L2]."""
+
+    if not (0 < confidence < 1):
+        raise ValueError("confidence_level must be in (0, 1)")
+
+    a_l, a_h = _wilson_interval(a_errors, a_shots, confidence)
+    b_l, b_h = _wilson_interval(b_errors, b_shots, confidence)
+
+    return a_l - b_h, a_h - b_l
+
+
+def error_rates_equal(
+    a: sinter.TaskStats,
+    b: sinter.TaskStats,
+    *,
+    delta: float = 1e-5,
+    confidence: float = 0.95,
+) -> bool:
+    """Asserts that the error rates derived from the two sinter products is at most
+    `delta`, with the given `confidence`."""
+    if confidence < 0 or confidence > 1:
+        raise ValueError(f"Only 0 <= confidence <= 1 is allowed, {confidence} given.")
+
+    low, high = _confidence_interval_for_difference(a.errors, a.shots, b.errors, b.shots, confidence)
+
+    return low >= -delta and high <= delta

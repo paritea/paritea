@@ -14,6 +14,8 @@ dependencies = [
     "pyzx>=0.9.0",
     "recordclass>=0.23.1",
     "rustworkx>=0.17.1",
+    "scipy>=1.16.3",
+    "scipy-stubs~=1.16.3",
     "sinter>=1.16",
     "stim>=1.16",
 ]
