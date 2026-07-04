@@ -44,8 +44,8 @@ def _flip_ops_for_detecting_operators(
 def push_out_for_measurement_detectors[T](
     nm: NoiseModel[T], *, measurement_nodes: list[int], logicals: list[PauliString], detectors: list[PauliString]
 ) -> tuple[NoiseModel[T], set[int], set[int]]:
-    d = nm.diagram
-    flip_ops = _flip_ops_for_detecting_operators(build_flip_operators(d), measurement_nodes, logicals + detectors)
+    flip_ops = build_flip_operators(nm.diagram)
+    flip_ops = _flip_ops_for_detecting_operators(flip_ops, measurement_nodes, logicals + detectors)
     new_nm = push_out(nm, flip_ops)
 
     return new_nm, set(range(len(logicals))), set(range(len(logicals), len(logicals) + len(detectors)))
@@ -67,8 +67,6 @@ def export_to_stim_dem(
                 dem_targets.append(stim.DemTarget(f"D{detector}"))
             else:
                 raise ValueError(f"Region {detector} is neither known as a logical nor as a detector")
-
-        if len(dem_targets) > 0:
-            dem.append("error", [p], dem_targets)
+        dem.append("error", [p], dem_targets)
 
     return dem

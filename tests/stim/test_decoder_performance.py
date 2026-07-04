@@ -1,7 +1,13 @@
 import sinter
 import stim
 
-from paritea.glue.stim import export_to_stim_dem, from_stim, push_out_for_measurement_detectors, wrap_dem_as_sinter_task, error_rates_equal
+from paritea.glue.stim import (
+    error_rates_equal,
+    export_to_stim_dem,
+    from_stim,
+    push_out_for_measurement_detectors,
+    wrap_dem_as_sinter_task,
+)
 
 
 def test_decoder_performance_parity():
@@ -20,7 +26,7 @@ def test_decoder_performance_parity():
     c = c.flattened()
     stim_dem = c.detector_error_model()
     # Paritea translate and dem
-    d, nm, measurement_nodes, observables, detectors = from_stim(c)
+    _, nm, measurement_nodes, observables, detectors = from_stim(c)
     pushed_out, logical_regions, detector_regions = push_out_for_measurement_detectors(
         nm,
         measurement_nodes=measurement_nodes,

@@ -1,7 +1,8 @@
-import sinter
-from stim import CompiledDemSampler, DetectorErrorModel
 from math import sqrt
+
+import sinter
 from scipy.stats import norm
+from stim import CompiledDemSampler, DetectorErrorModel
 
 
 class DemWrappingCircuit:
