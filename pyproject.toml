@@ -7,6 +7,7 @@ license-files = ["LICENSE.md", "NOTICE.md"]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "bitgauss>=0.4.2",
     "frozendict>=2.4.6",
     "galois>=0.4.7",
     "notebook>=7.4.7",
