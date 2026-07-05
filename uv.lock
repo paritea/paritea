@@ -135,6 +135,44 @@ wheels = [
 ]
 
 [[package]]
+name = "bitgauss"
+version = "0.4.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/ee/c5c38d6629c2656d55050aefe673ad3f7cbcd35c322aee1b821973066563/bitgauss-0.4.2.tar.gz", hash = "sha256:18569107cb1dc835acbdba523a95fb9ad8eafb4ec3fabe2d0311d183bd6d3e2c", size = 69549, upload-time = "2026-07-05T08:37:22.34Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/71/0464476ad4031003e4ea5f4ee86f33ba3efa57f234b5299c3f85dbc19bed/bitgauss-0.4.2-cp314-cp314t-macosx_10_12_x86_64.whl", hash = "sha256:490bf29c89f93bff046e4a47dcb74d5ccf5164f969730ac4fc0be20e67c61de1", size = 351828, upload-time = "2026-07-05T08:36:48.708Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/64/dc106c91ff68e69c2ff3a30728240edb9b8d813296b490fcf4b195b3f88a/bitgauss-0.4.2-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:918f2d6e401fed6f782bcc952d9acacac3f3b3d344ac420b1995dbd53c09fb7f", size = 347576, upload-time = "2026-07-05T08:36:50.055Z" },
+    { url = "https://files.pythonhosted.org/packages/46/58/f6bd4bbcabedd0c480799f41a3b534ad41bc026e13d98a554291354e5798/bitgauss-0.4.2-cp314-cp314t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3a56b58503d2f78417c36d56851020f3ace6656ebc57bd1bb044bf513bcdf5d8", size = 389986, upload-time = "2026-07-05T08:36:51.286Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/df/539b8797b4da4cb39b5d55cb7de433ad7e0e1f933be4015831a0aec831f3/bitgauss-0.4.2-cp314-cp314t-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:24a3bce8412fbe202bae1d270ceae779b228b1fb4987f2259a8e3d2bc74a83c6", size = 391171, upload-time = "2026-07-05T08:36:52.397Z" },
+    { url = "https://files.pythonhosted.org/packages/05/6d/ac3089b8044acf3c5ea045f204842d965a2b2926e86969217f3f96907db4/bitgauss-0.4.2-cp314-cp314t-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:ceb007ae3ee953087ac474dcf45f0c18e9c84776d1fa6a8eb8efc2f3d883e0b4", size = 515210, upload-time = "2026-07-05T08:36:53.608Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/a5/f72f7200a1d4bc529c69b086e74703bbe160b55e4eb74cd934a4156edd01/bitgauss-0.4.2-cp314-cp314t-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:881574192756071686737cf2a46a2afedc138c879cbfa84202b6d9742dda3783", size = 415676, upload-time = "2026-07-05T08:36:54.646Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/6a/2fa5a4cb8ca54522c4880b782260ebaafbec00f3bff0b4177be062ef7245/bitgauss-0.4.2-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:349ee725540970dccdec8cf85ebf6c8e7c949632c0f7688185abff435a91c866", size = 390883, upload-time = "2026-07-05T08:36:55.843Z" },
+    { url = "https://files.pythonhosted.org/packages/51/ed/960a33e7b685de460bacb70e65745535079ed579da475f09906d508bda2a/bitgauss-0.4.2-cp314-cp314t-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:08c88b819269455d0eff5f0267effc9b515067195f907ec76d04e91740495953", size = 419882, upload-time = "2026-07-05T08:36:56.849Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/2a/5b312e9ec480248cfd87ffc831fff8da630ad33fca5beca7de74ba02c122/bitgauss-0.4.2-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:a3534e663905546da126ccd35b3e417047b501369effecff8c9ecbfcf0660f67", size = 566102, upload-time = "2026-07-05T08:36:57.829Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/06/03457a2c44a597ad005a9d4229be08d875fc938eba244a9cd383dbbafdb7/bitgauss-0.4.2-cp314-cp314t-musllinux_1_2_armv7l.whl", hash = "sha256:c8a3954e82b68b9bbacada1b744bd954969fd003d5baf191028c53e1154b0124", size = 665445, upload-time = "2026-07-05T08:36:59.085Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/b5/5fff2a8aa4791ddc37220250b22c45ba34ce15b0bffebcfb64e7728970c7/bitgauss-0.4.2-cp314-cp314t-musllinux_1_2_i686.whl", hash = "sha256:01e2c7f29f29da0b6be77038d772cf8e52322e5c199a47b45cf7ea0694c8a67f", size = 632399, upload-time = "2026-07-05T08:37:00.039Z" },
+    { url = "https://files.pythonhosted.org/packages/14/8f/68cdfd740b4080196534bc78bbbf7d94c8dd628bdcdc918b66a5df112540/bitgauss-0.4.2-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:74b74b4766914e73098e0208ce6288ba476b41d7bec0752ee359723b58c0a625", size = 596997, upload-time = "2026-07-05T08:37:01.076Z" },
+    { url = "https://files.pythonhosted.org/packages/21/45/e44e392b1472a46a995641fe9a5460318c3e3786eaaba454ded3d909305c/bitgauss-0.4.2-cp314-cp314t-win32.whl", hash = "sha256:1df74e3f83ad1adf0dddf5c362ac67189ea5d3865245fa459957b270abfcb4c4", size = 232235, upload-time = "2026-07-05T08:37:02.595Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/cb/6dda039a6fa85f2c04d317d11335845aafb0ce12831a9bc5fd566376c60f/bitgauss-0.4.2-cp314-cp314t-win_amd64.whl", hash = "sha256:d9e6438fc2525a33eefc80f621349e862b3683bc21b1182623b0181b79977a15", size = 242846, upload-time = "2026-07-05T08:37:03.786Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/2f/af0c74775a2144b9b367b6c630adb8c0a561c66cbf49e748cf0d91176bcc/bitgauss-0.4.2-cp314-cp314t-win_arm64.whl", hash = "sha256:c95fa8d30c3df7f9a832995826b02723d995edeec6a73375cb12d5ce3b71ab36", size = 235868, upload-time = "2026-07-05T08:37:04.934Z" },
+    { url = "https://files.pythonhosted.org/packages/18/50/a1422d1a60916248c4b2974270034a7455c73805a8bded62e7965a37d2a4/bitgauss-0.4.2-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:4139e91a22ecdb1ee705e4da877e38bbd4e65111ca6f5ea0f192d6d7e1b84e6c", size = 365029, upload-time = "2026-07-05T08:37:05.993Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/b4/f279612148a4b7eb111dde635800f5e7e450520d8c85200822a35482849b/bitgauss-0.4.2-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:a1e4095be492dddedc3281d6f68d0492eda6102c117ddceff8c794069b4db9c5", size = 358923, upload-time = "2026-07-05T08:37:07.036Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/56/c111b1affbabebaedcc4883a6d8075e995891cba90df8a5880eb18ffa900/bitgauss-0.4.2-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d645f8d3038c13395c276eb0af098fce7877f43ebb002b5f73b8b59b1a39e6a7", size = 393852, upload-time = "2026-07-05T08:37:08.032Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/09/301043cff9b43af6d3c7119fd7f98c90fe616bfa5b5beab57089d34c8b78/bitgauss-0.4.2-cp39-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:a5a097c00d440938d918a7c2603f8955c14f005b6d83ac0ea139d09ec6005c42", size = 394611, upload-time = "2026-07-05T08:37:09.077Z" },
+    { url = "https://files.pythonhosted.org/packages/73/58/a763cdeab6d5bb73863c6c881961cacdea247580cc683b24099c01f89bad/bitgauss-0.4.2-cp39-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:a4d6752447b035867974b444836d9e507f4b2e360ac99bffd64d812477754352", size = 520230, upload-time = "2026-07-05T08:37:10.15Z" },
+    { url = "https://files.pythonhosted.org/packages/75/d7/d27068a2e6e35fab5f046bc9fdccacba736bff2ab8ac4f3130764821d26c/bitgauss-0.4.2-cp39-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:f5c7a7d60e6abe9be772e7ca34a260c56e72a1cbe844d36d5a024c79d911df5d", size = 420157, upload-time = "2026-07-05T08:37:11.187Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/d2/ecfb2ce38319db33f2c0755ff4094e9c821e6688e50d6f6018277b830893/bitgauss-0.4.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2292cd097c04d382453ee3c57bfc535c62e0ffdc031abe8682c5f544441738aa", size = 395082, upload-time = "2026-07-05T08:37:12.43Z" },
+    { url = "https://files.pythonhosted.org/packages/62/ff/955f493970137dc08b96a69a1076584ae3bea13bc1d4774a7d20ef473a0b/bitgauss-0.4.2-cp39-abi3-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:a74115827263dda106989ecebe4d2518bc55fee46c3a5f280d88b7a905cd6902", size = 425402, upload-time = "2026-07-05T08:37:13.514Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/61/6ee5bdc3977985da7b2b0f427914562f5f7d17423cab0cc61e413762b827/bitgauss-0.4.2-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:27eaa95dcc150692ad58d27dcb1b1e420115e438044fddb91102d56da55fd755", size = 569265, upload-time = "2026-07-05T08:37:14.584Z" },
+    { url = "https://files.pythonhosted.org/packages/47/d0/26930b339f192ef7fb3b96f46a408f8ce05da76f4cf800e510795aad6789/bitgauss-0.4.2-cp39-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:efeee426f8076a8b608d45156e3c0a3a862883a30b8c1dd183e935328afa170e", size = 670430, upload-time = "2026-07-05T08:37:15.621Z" },
+    { url = "https://files.pythonhosted.org/packages/34/e0/ae86adfba8951e84772fd26fb0a68354332344fbb27e3fd6f89da73028d4/bitgauss-0.4.2-cp39-abi3-musllinux_1_2_i686.whl", hash = "sha256:cba781d3596539d601a0b85fc6f97068513fae15ad33cd9310f0ef8cf79756ec", size = 636480, upload-time = "2026-07-05T08:37:16.84Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/71/fbd26b0a47a9dc92c32e8b14747d0f18fb07ae22bc343d94426cd247e5c4/bitgauss-0.4.2-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:f58c158733114cccb0187b06f4cbfc8f0a4aa62e1e8b7f38a28126f84cf4a89a", size = 600913, upload-time = "2026-07-05T08:37:17.928Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/e0/48a0c8bede8dbdeb1e096995f92683c560db25a2a71d0ff58b1c80212d38/bitgauss-0.4.2-cp39-abi3-win32.whl", hash = "sha256:6b0166d4bb9426c40982b0fd59b055e0d5bbfdba1fb3b80cf6a560656e0687ab", size = 235476, upload-time = "2026-07-05T08:37:19.112Z" },
+    { url = "https://files.pythonhosted.org/packages/45/40/10df788b937282632294c2dded9cfe86ae21d13aef1abff38e696f0dacb6/bitgauss-0.4.2-cp39-abi3-win_amd64.whl", hash = "sha256:9599475e066302df2c81358ece86cdabae588ca750c775ef58c4843fe5082d46", size = 245532, upload-time = "2026-07-05T08:37:20.122Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/e3/e9a35ec91fe283ad9976383a1836cddf3424d4db87a49ea8d99e683c7f14/bitgauss-0.4.2-cp39-abi3-win_arm64.whl", hash = "sha256:b774f5b4f2ccebf5184ab927c10d70cf3214a6d1154661902e4916207fac0cee", size = 239391, upload-time = "2026-07-05T08:37:21.199Z" },
+]
+
+[[package]]
 name = "bleach"
 version = "6.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1425,6 +1463,7 @@ name = "paritea"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "bitgauss" },
     { name = "frozendict" },
     { name = "galois" },
     { name = "notebook" },
@@ -1463,6 +1502,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "bitgauss", specifier = ">=0.4.2" },
     { name = "frozendict", specifier = ">=2.4.6" },
     { name = "galois", specifier = ">=0.4.7" },
     { name = "notebook", specifier = ">=7.4.7" },
