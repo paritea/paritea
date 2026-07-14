@@ -1,3 +1,5 @@
+from typing import NamedTuple
+
 from paritea.diagram import Diagram
 from paritea.pauli import PauliString
 
@@ -7,6 +9,12 @@ def _compute_pauli_webs(
 def _compute_pauli_webs_through_partitions(
     a: Diagram, *, partitions: list[list[int]]
 ) -> tuple[list[PauliString], list[PauliString]]: ...
+
+class _Violation(NamedTuple):
+    is_nm1: bool
+    weight: int
+    faults: list[int] | None
+
 def _check_fault_equivalence(
     *,
     nm1_sigs: list[tuple[int, int]],
@@ -14,5 +22,6 @@ def _check_fault_equivalence(
     d1_detectors: int,
     d2_detectors: int,
     until: int | None,
+    provenance: bool,
     quiet: bool,
-) -> int | None: ...
+) -> _Violation | None: ...
