@@ -22,8 +22,11 @@ class _NodeInfo(RecordClass):
 
 class SupportsPositioning(Protocol):
     def set_x(self, node_idx: int, x: float | int) -> None: ...
+
     def set_y(self, node_idx: int, y: float | int) -> None: ...
+
     def x(self, node_idx: int) -> float | int: ...
+
     def y(self, node_idx: int) -> float | int: ...
 
 
@@ -46,8 +49,6 @@ class Diagram(SupportsPositioning, Protocol):
         self.additional_keys = set(additional_keys or [])
         for key in self.additional_keys:
             setattr(self, f"_{key}", {})
-            setattr(self, f"{key}", lambda idx, _key=key: getattr(self, f"_{_key}").get(idx))
-            setattr(self, f"set_{key}", lambda idx, arg, _key=key: getattr(self, f"_{_key}").update({idx: arg}) or self)
         self._rebind_methods()
 
     def _rebind_methods(self):
@@ -67,6 +68,10 @@ class Diagram(SupportsPositioning, Protocol):
         self.add_edges = self._g.add_edges_from_no_data
         self.remove_edge = self._g.remove_edge
         self.neighbors = self._g.neighbors
+        # Additional key accessors
+        for key in self.additional_keys:
+            setattr(self, f"{key}", lambda idx, _key=key: getattr(self, f"_{_key}").get(idx))
+            setattr(self, f"set_{key}", lambda idx, arg, _key=key: getattr(self, f"_{_key}").update({idx: arg}) or self)
 
     def __deepcopy__(self, memo) -> Self:
         cls = self.__class__
