@@ -25,6 +25,7 @@ node_type_to_pyzx_v_type = {
 
 class SupportsPyZXIndex(Protocol):
     def set_pyzx_index(self, node_idx: int, pyzx_idx: int) -> None: ...
+
     def pyzx_index(self, node_idx: int) -> int: ...
 
 
@@ -34,18 +35,24 @@ class DiagramWithPyZXIndex(Diagram, SupportsPyZXIndex, Protocol):
 
 @overload
 def from_pyzx(
-    pyzx_graph: BaseGraph,
-    *,
-    convert_had_edges: bool = False,
-    positions: bool = False,
-    reversible: Literal[False] = False,
+        pyzx_graph: BaseGraph,
+        *,
+        convert_had_edges: bool = False,
+        positions: bool = False,
+        reversible: Literal[False] = False,
 ) -> Diagram: ...
+
+
 @overload
 def from_pyzx(
-    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, positions: bool = False, reversible: Literal[True]
+        pyzx_graph: BaseGraph, *, convert_had_edges: bool = False,
+        positions: bool = False, reversible: Literal[True]
 ) -> DiagramWithPyZXIndex: ...
+
+
 def from_pyzx(
-    pyzx_graph: BaseGraph, *, convert_had_edges: bool = False, positions: bool = False, reversible: bool = False
+        pyzx_graph: BaseGraph, *, convert_had_edges: bool = False,
+        positions: bool = False, reversible: bool = False
 ) -> Diagram | DiagramWithPyZXIndex:
     """
     :param pyzx_graph: The PyZX graph to convert to a diagram.
@@ -74,7 +81,7 @@ def from_pyzx(
 
         node = diagram.add_node(pyzx_v_type_to_node_type[v_type], phase=v_phase)
         if positions:
-            diagram.set_x(node, pyzx_graph.qubit(v)).set_y(node, pyzx_graph.row(v))
+            diagram.set_x(node, pyzx_graph.row(v)).set_y(node, pyzx_graph.qubit(v))
         if reversible:
             diagram.set_pyzx_index(node, v)
         vertex_to_id[v] = node
@@ -89,8 +96,10 @@ def from_pyzx(
             if convert_had_edges:
                 h = diagram.add_node(NodeType.H)
                 if positions:
-                    diagram.set_x(h, (pyzx_graph.qubit(source) + pyzx_graph.qubit(target)) / 2)
-                    diagram.set_y(h, (pyzx_graph.row(source) + pyzx_graph.row(target)) / 2)
+                    diagram.set_x(h,
+                                  (pyzx_graph.row(source) + pyzx_graph.row(target)) / 2)
+                    diagram.set_y(h, (pyzx_graph.qubit(source) + pyzx_graph.qubit(
+                        target)) / 2)
                 diagram.add_edge(vertex_to_id[source], h)
                 diagram.add_edge(h, vertex_to_id[target])
             else:
@@ -115,9 +124,15 @@ def from_pyzx(
 
 @overload
 def to_pyzx(d: Diagram, *, with_mapping: Literal[False] = False) -> BaseGraph: ...
+
+
 @overload
-def to_pyzx(d: Diagram, *, with_mapping: Literal[True]) -> tuple[BaseGraph, dict[int, int]]: ...
-def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> BaseGraph | tuple[BaseGraph, dict[int, int]]:
+def to_pyzx(d: Diagram, *, with_mapping: Literal[True]) -> tuple[
+    BaseGraph, dict[int, int]]: ...
+
+
+def to_pyzx(d: Diagram, *, with_mapping: bool = False) -> BaseGraph | tuple[
+    BaseGraph, dict[int, int]]:
     """
     Constructs a PyZX diagram from the given diagram instance, reassigning original node ids and positions. Does not
     convert original hadamard edges back.
