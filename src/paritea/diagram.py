@@ -49,13 +49,7 @@ class Diagram(SupportsPositioning, Protocol):
         self.additional_keys = set(additional_keys or [])
         for key in self.additional_keys:
             setattr(self, f"_{key}", {})
-        self._rebind_additional_keys()
         self._rebind_methods()
-
-    def _rebind_additional_keys(self):
-        for key in self.additional_keys:
-            setattr(self, f"{key}", lambda idx, _key=key: getattr(self, f"_{_key}").get(idx))
-            setattr(self, f"set_{key}", lambda idx, arg, _key=key: getattr(self, f"_{_key}").update({idx: arg}) or self)
 
     def _rebind_methods(self):
         # Delegations from the wrapped graph, which must be rebound on each new instance
@@ -74,6 +68,10 @@ class Diagram(SupportsPositioning, Protocol):
         self.add_edges = self._g.add_edges_from_no_data
         self.remove_edge = self._g.remove_edge
         self.neighbors = self._g.neighbors
+        # Additional key accessors
+        for key in self.additional_keys:
+            setattr(self, f"{key}", lambda idx, _key=key: getattr(self, f"_{_key}").get(idx))
+            setattr(self, f"set_{key}", lambda idx, arg, _key=key: getattr(self, f"_{_key}").update({idx: arg}) or self)
 
     def __deepcopy__(self, memo) -> Self:
         cls = self.__class__
@@ -81,7 +79,6 @@ class Diagram(SupportsPositioning, Protocol):
         memo[id(self)] = result
         for k, v in self.__dict__.items():
             setattr(result, k, deepcopy(v, memo))
-        result._rebind_additional_keys()  # noqa: SLF001
         result._rebind_methods()  # noqa: SLF001
         return result
 
