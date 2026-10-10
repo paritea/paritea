@@ -127,7 +127,7 @@ class Diagram(SupportsPositioning, Protocol):
 
         return other, node_map
 
-    def compose(self, other: "Diagram", node_map: Mapping[int, int]) -> dict[int, int]:
+    def compose(self, other: "Diagram", node_map: Mapping[int, int] | None = None) -> dict[int, int]:
         """
         Add another diagram into this diagram.
 
@@ -139,13 +139,21 @@ class Diagram(SupportsPositioning, Protocol):
             Diagram to the equivalent node index in this Diagram after they've
             been combined.
         """
+        if node_map is None:
+            node_map = {}
 
         new_node_ids = self._g.compose(other._g, {i: (o, None) for i, o in node_map.items()})  # noqa: SLF001
         for other_node, new_this_node in new_node_ids.items():
-            self._x[new_this_node] = other._x[other_node]  # noqa: SLF001
-            self._y[new_this_node] = other._y[other_node]  # noqa: SLF001
+            if other_node in other._x:
+                self._x[new_this_node] = other._x[other_node]  # noqa: SLF001
+            if other_node in other._y:
+                self._y[new_this_node] = other._y[other_node]  # noqa: SLF001
             for key in self.additional_keys.intersection(other.additional_keys):
-                getattr(self, f"_{key}")[new_this_node] = getattr(other, f"_{key}")[other_node]
+                prop = getattr(other, f"_{key}")
+                if other_node in prop:
+                    getattr(self, f"_{key}")[new_this_node] = prop[other_node]
+
+        # TODO take over unconnected IO from other diagram
 
         return new_node_ids
 

@@ -58,7 +58,7 @@ impl Diagram {
     /// index through isomorphic conversion to a states outputs, i.e. they are indexed as
     /// <...all-inputs><...all-outputs>.
     pub fn set_virtual_io(&mut self, inputs: Vec<NodeIndex>, outputs: Vec<NodeIndex>) {
-        if !self.boundary_nodes().collect_vec().is_empty() {
+        if self.boundary_nodes().next().is_some() {
             panic!("Graph may not contain any boundaries when setting virtual IO!");
         }
 

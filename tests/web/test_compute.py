@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from galois import GF2
 
-from paritea import Pauli, PauliString, generate
+from paritea import Pauli, PauliString, generate, draw
 from paritea.diagram import Diagram, NodeType
 from paritea.generate import surface_code_memory_experiment
 from paritea.glue.pyzx import from_pyzx
@@ -166,6 +166,33 @@ def test_zweb_webs(assert_web_files):
     d = from_pyzx(generate.zweb(2, 2))
     stabs, regions = compute_pauli_webs(d)
 
+    assert_web_files(d, stabs, regions)
+
+
+def test_double_disjoint_zweb_webs(assert_web_files, generate_web_files):
+    d = from_pyzx(generate.zweb(2, 2))
+    d.compose(from_pyzx(generate.zweb(2, 2)))
+    stabs, regions = compute_pauli_webs(d)
+
+    assert len(stabs) == 8
+    assert len(regions) == 2
+
+    generate_web_files(d, stabs, regions)
+    assert_web_files(d, stabs, regions)
+
+def test_double_disjoint_zweb_partitioned_webs(assert_web_files, generate_web_files):
+    """Regression test for computing partitioned webs """
+    d = from_pyzx(generate.zweb(2, 2))
+    first_nodes = list(set(d.node_indices()).difference(d.boundary_nodes()))
+    d.compose(from_pyzx(generate.zweb(2, 2)))
+    second_nodes = list(set(d.node_indices()).difference(first_nodes))
+    d.infer_io_from_boundaries()
+    stabs, regions = pauli_webs_through_partitions(d, partitions=[first_nodes, second_nodes])
+
+    assert len(stabs) == 8
+    assert len(regions) == 2
+
+    generate_web_files(d, stabs, regions)
     assert_web_files(d, stabs, regions)
 
 
