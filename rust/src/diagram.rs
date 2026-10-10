@@ -2,7 +2,6 @@
 use delegate::delegate;
 use derive_more::Display;
 use fraction::Fraction;
-use itertools::Itertools;
 use rustworkx_core::graph_ext::HasParallelEdgesUndirected;
 use rustworkx_core::petgraph::Undirected;
 use rustworkx_core::petgraph::graph::{EdgeIndex, NodeIndex};
