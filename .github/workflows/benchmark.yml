@@ -41,7 +41,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: bench-rust-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust/**', 'rust-bindings/**') }}
+          key: bench-rust-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust/**') }}
           restore-keys: |
             bench-rust-${{ runner.os }}-
 

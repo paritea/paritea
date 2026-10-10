@@ -6,6 +6,10 @@ edition.workspace = true
 rust-version.workspace = true
 publish = false
 
+[lib]
+name = "rust"
+crate-type = ["cdylib", "rlib"]
+
 [lints.rust]
 missing_docs = "warn"
 
@@ -19,3 +23,9 @@ fraction = "0.15.4"
 num-bigint.workspace = true
 derive_more.workspace = true
 indicatif = "0.18.4"
+
+pyo3 = { version = "0.28.0", features = ["extension-module", "abi3-py310", "anyhow", "num-bigint"], optional = true }
+
+[features]
+default = []
+py = ["pyo3"]

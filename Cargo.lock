@@ -403,17 +403,8 @@ dependencies = [
  "indicatif",
  "itertools",
  "num-bigint",
- "rustc-hash",
- "rustworkx-core",
-]
-
-[[package]]
-name = "paritea-py"
-version = "0.1.0"
-dependencies = [
- "num-bigint",
- "paritea",
  "pyo3",
+ "rustc-hash",
  "rustworkx-core",
 ]
 

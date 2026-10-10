@@ -25,7 +25,6 @@ jobs:
           filters: |
             rust:
               - 'rust/**'
-              - 'rust-bindings/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
             python:

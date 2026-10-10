@@ -7,11 +7,11 @@ use pyo3::pymodule;
 /// `src/paritea/_bindings/__init__.pyi` type stubs.
 #[pymodule]
 mod _bindings {
+    use crate::diagram::{Diagram, NodeType, Phase};
+    use crate::fault_equivalence::check_fault_equivalence;
+    use crate::pauli::{Pauli, PauliString};
+    use crate::web::{compute, pauli_webs_through_partitions};
     use num_bigint::BigUint;
-    use paritea::diagram::{Diagram, NodeType, Phase};
-    use paritea::fault_equivalence::check_fault_equivalence;
-    use paritea::pauli::PauliString;
-    use paritea::web::{compute, pauli_webs_through_partitions};
     use pyo3::prelude::*;
     use pyo3::types::PyDict;
     use rustworkx_core::petgraph::graph::{EdgeIndex, NodeIndex};
@@ -89,10 +89,10 @@ mod _bindings {
         let dict = PyDict::new(py);
         for (e, p) in ps.0 {
             let p_py_str = match p {
-                paritea::pauli::Pauli::I => "I",
-                paritea::pauli::Pauli::X => "X",
-                paritea::pauli::Pauli::Y => "Y",
-                paritea::pauli::Pauli::Z => "Z",
+                Pauli::I => "I",
+                Pauli::X => "X",
+                Pauli::Y => "Y",
+                Pauli::Z => "Z",
             };
 
             dict.set_item(rs_to_py_edges[&e], pauli_class.call1((p_py_str,)).unwrap())
