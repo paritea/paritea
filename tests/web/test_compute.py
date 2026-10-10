@@ -179,8 +179,9 @@ def test_double_disjoint_zweb_webs(assert_web_files):
 
     assert_web_files(d, stabs, regions)
 
+
 def test_double_disjoint_zweb_partitioned_webs(assert_web_files):
-    """Regression test for computing partitioned webs """
+    """Regression test for computing partitioned webs"""
     d = from_pyzx(generate.zweb(2, 2))
     first_nodes = list(set(d.node_indices()).difference(d.boundary_nodes()))
     d.compose(from_pyzx(generate.zweb(2, 2)))

@@ -144,9 +144,9 @@ class Diagram(SupportsPositioning, Protocol):
 
         new_node_ids = self._g.compose(other._g, {i: (o, None) for i, o in node_map.items()})  # noqa: SLF001
         for other_node, new_this_node in new_node_ids.items():
-            if other_node in other._x:
+            if other_node in other._x:  # noqa: SLF001
                 self._x[new_this_node] = other._x[other_node]  # noqa: SLF001
-            if other_node in other._y:
+            if other_node in other._y:  # noqa: SLF001
                 self._y[new_this_node] = other._y[other_node]  # noqa: SLF001
             for key in self.additional_keys.intersection(other.additional_keys):
                 prop = getattr(other, f"_{key}")
@@ -155,7 +155,7 @@ class Diagram(SupportsPositioning, Protocol):
 
         if self._io is not None:
             self_ins, self_outs = self._io
-            other_ins, other_outs = other._io or ([], [])
+            other_ins, other_outs = other._io or ([], [])  # noqa: SLF001
             self_ins.extend(new_node_ids[n] for n in other_ins if n not in node_map.values())
             self_outs.extend(new_node_ids[n] for n in other_outs if n not in node_map.values())
 
