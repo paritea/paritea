@@ -8,7 +8,7 @@ use rustworkx_core::petgraph::stable_graph::EdgeIndex;
 use rustworkx_core::petgraph::visit::EdgeRef;
 use std::collections::{BTreeMap, BTreeSet, HashMap, hash_map};
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 struct SubgraphTracker {
     inc_edges: BTreeMap<EdgeIndex, Option<usize>>,
 }
@@ -227,47 +227,58 @@ pub fn pauli_webs_through_partitions(
         .unzip::<_, _, Vec<_>, Vec<_>>();
 
     // Zip all webs together
-    let main_tracker_id = 0;
-    let mut cur_stabs = stabilisers[main_tracker_id].clone();
-    let mut regions = regions.into_iter().flatten().collect_vec();
-    while let Some(neighbour_id) = sg_trackers[main_tracker_id]
-        .inc_edges
-        .values()
-        .find_map(|&s| s)
+    let mut handled_trackers = BTreeSet::new();
+    let mut total_stabs = vec![];
+    let mut total_regions = regions.into_iter().flatten().collect_vec();
+    while let Some(start_tracker_id) =
+        (0..sg_trackers.len()).find(|i| !handled_trackers.contains(i))
     {
-        let edges_to_neighbour: BTreeSet<_> = sg_trackers[main_tracker_id]
+        // Zip webs of a connected component from one of the starting trackers
+        let mut cur_stabs = stabilisers[start_tracker_id].clone();
+        let mut regions = vec![];
+        handled_trackers.insert(start_tracker_id);
+        while let Some(neighbour_id) = sg_trackers[start_tracker_id]
             .inc_edges
-            .iter()
-            .filter_map(|(&e, &tracker_id)| (tracker_id == Some(neighbour_id)).then_some(e))
-            .collect();
-
-        let new_edges: BTreeMap<EdgeIndex, Option<usize>> = {
-            let neighbour = &sg_trackers[neighbour_id];
-            sg_trackers[main_tracker_id]
+            .values()
+            .find_map(|&s| s)
+        {
+            let edges_to_neighbour: BTreeSet<_> = sg_trackers[start_tracker_id]
                 .inc_edges
                 .iter()
-                .filter(|(e, _)| !edges_to_neighbour.contains(e))
-                .chain(
-                    neighbour
-                        .inc_edges
-                        .iter()
-                        .filter(|(e, _)| !edges_to_neighbour.contains(e)),
-                )
-                .map(|(&e, &t_id)| (e, t_id))
-                .collect()
-        };
+                .filter_map(|(&e, &tracker_id)| (tracker_id == Some(neighbour_id)).then_some(e))
+                .collect();
 
-        let (nex_stabs, nex_regions) = zip_webs(
-            &cur_stabs,
-            &stabilisers[neighbour_id],
-            edges_to_neighbour,
-            new_edges.keys().copied().collect(),
-        );
-        sg_trackers[main_tracker_id].inc_edges = new_edges;
+            let new_edges: BTreeMap<EdgeIndex, Option<usize>> = {
+                let neighbour = &sg_trackers[neighbour_id];
+                sg_trackers[start_tracker_id]
+                    .inc_edges
+                    .iter()
+                    .filter(|(e, _)| !edges_to_neighbour.contains(e))
+                    .chain(
+                        neighbour
+                            .inc_edges
+                            .iter()
+                            .filter(|(e, _)| !edges_to_neighbour.contains(e)),
+                    )
+                    .map(|(&e, &t_id)| (e, t_id))
+                    .collect()
+            };
 
-        cur_stabs = nex_stabs;
-        regions.extend(nex_regions);
+            let (nex_stabs, nex_regions) = zip_webs(
+                &cur_stabs,
+                &stabilisers[neighbour_id],
+                edges_to_neighbour,
+                new_edges.keys().copied().collect(),
+            );
+            sg_trackers[start_tracker_id].inc_edges = new_edges;
+
+            cur_stabs = nex_stabs;
+            regions.extend(nex_regions);
+            handled_trackers.insert(neighbour_id);
+        }
+        total_stabs.extend(cur_stabs);
+        total_regions.extend(regions);
     }
 
-    (cur_stabs, regions)
+    (total_stabs, total_regions)
 }
