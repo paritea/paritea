@@ -185,7 +185,7 @@ def test_double_disjoint_zweb_partitioned_webs(assert_web_files, generate_web_fi
     d = from_pyzx(generate.zweb(2, 2))
     first_nodes = list(set(d.node_indices()).difference(d.boundary_nodes()))
     d.compose(from_pyzx(generate.zweb(2, 2)))
-    second_nodes = list(set(d.node_indices()).difference(first_nodes))
+    second_nodes = list(set(d.node_indices()).difference(d.boundary_nodes()).difference(first_nodes))
     d.infer_io_from_boundaries()
     stabs, regions = pauli_webs_through_partitions(d, partitions=[first_nodes, second_nodes])
 
