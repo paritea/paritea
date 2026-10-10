@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from galois import GF2
 
-from paritea import Pauli, PauliString, generate, draw
+from paritea import Pauli, PauliString, generate
 from paritea.diagram import Diagram, NodeType
 from paritea.generate import surface_code_memory_experiment
 from paritea.glue.pyzx import from_pyzx
@@ -185,7 +185,6 @@ def test_double_disjoint_zweb_partitioned_webs(assert_web_files):
     first_nodes = list(set(d.node_indices()).difference(d.boundary_nodes()))
     d.compose(from_pyzx(generate.zweb(2, 2)))
     second_nodes = list(set(d.node_indices()).difference(d.boundary_nodes()).difference(first_nodes))
-    d.infer_io_from_boundaries()
     stabs, regions = pauli_webs_through_partitions(d, partitions=[first_nodes, second_nodes])
 
     assert len(stabs) == 8

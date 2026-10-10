@@ -132,8 +132,8 @@ class Diagram(SupportsPositioning, Protocol):
         Add another diagram into this diagram.
 
         :param Self other: The other Diagram to add onto this diagram.
-        :param Mapping[int, int] node_map: A map from nodes in this diagram to nodes in the other, where an edge should
-            be created.
+        :param Mapping[int, int] node_map: A map from nodes in this diagram to nodes in
+            the other, where an edge should be created.
 
         :returns: new_node_ids: A dictionary mapping node index from the other
             Diagram to the equivalent node index in this Diagram after they've
@@ -153,7 +153,11 @@ class Diagram(SupportsPositioning, Protocol):
                 if other_node in prop:
                     getattr(self, f"_{key}")[new_this_node] = prop[other_node]
 
-        # TODO take over unconnected IO from other diagram
+        if self._io is not None:
+            self_ins, self_outs = self._io
+            other_ins, other_outs = other._io or ([], [])
+            self_ins.extend(new_node_ids[n] for n in other_ins if n not in node_map.values())
+            self_outs.extend(new_node_ids[n] for n in other_outs if n not in node_map.values())
 
         return new_node_ids
 
